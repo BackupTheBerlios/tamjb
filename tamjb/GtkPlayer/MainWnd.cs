@@ -89,7 +89,7 @@ namespace tam.GtkPlayer
      
             int result = md.Run ();
          }
-         Console.WriteLine( "Main> bye" );
+         Trace.WriteLine( "Main> bye" );
 
          // If any stray threads are around, deal with it here.
       }
@@ -354,7 +354,7 @@ namespace tam.GtkPlayer
       {
          // Save settings?
          _settings.Store();
-         Console.WriteLine( "MainWnd> bye" );
+         Trace.WriteLine( "MainWnd> bye" );
       }
 
       // Gtk.ToggledHandler not implemented...at this time.
@@ -366,7 +366,7 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Console.WriteLine( "SuckChanged" );
+            Trace.WriteLine( "SuckChanged" );
             
             _OnSliderChanged( _suckSlider,
                               ref _suckValue,
@@ -375,7 +375,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception ex)
          {
-            Console.WriteLine( ex.ToString() );
+            Trace.WriteLine( ex.ToString() );
          }
       }
 
@@ -383,7 +383,7 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Console.WriteLine( "AppropriateChanged" );
+            Trace.WriteLine( "AppropriateChanged" );
             _OnSliderChanged( _appropriateSlider,
                               ref _appropriateValue,
                               (uint)_runningPlaylistKey,
@@ -391,7 +391,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception ex)
          {
-            Console.WriteLine( ex.ToString() );
+            Trace.WriteLine( ex.ToString() );
          }
       }
 
@@ -450,7 +450,7 @@ namespace tam.GtkPlayer
             /// \todo Should we go to an "establishing connection" 
             ///   interface here (and allow reconfiguration)?
             ///
-            Console.WriteLine( "Could not update displayed track info: " 
+            Trace.WriteLine( "Could not update displayed track info: " 
                                + e.ToString() );
          }
 
@@ -497,7 +497,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -508,7 +508,7 @@ namespace tam.GtkPlayer
       ///
       void _UpdateNowPlayingInfo()
       {
-         Console.WriteLine( "_UpdateNowPlayingInfo" );
+         Trace.WriteLine( "_UpdateNowPlayingInfo" );
 
          ITrackInfo trackInfo = null;
          if (null != _engineState)
@@ -650,7 +650,7 @@ namespace tam.GtkPlayer
       /// on the current state.
       void _UpdateButtonState()
       {
-         // Console.WriteLine( "_UpdateButtonState" );
+         // Trace.WriteLine( "_UpdateButtonState" );
 
          // Implement me! :)
          // check _nowPlaying, _currentTrackKey, and _pendingUpdate etc
@@ -720,7 +720,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -735,7 +735,7 @@ namespace tam.GtkPlayer
             if (_runningPlaylistKey == 0)
                return;
 
-            Console.WriteLine( "MainWnd: Right! (" + 
+            Trace.WriteLine( "MainWnd: Right! (" + 
                                _runningPlaylistKey +
                                ")" );
 
@@ -747,7 +747,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -755,7 +755,7 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Console.WriteLine( "MainWnd: Sucks" );
+            Trace.WriteLine( "MainWnd: Sucks" );
 
             if (_engineState.currentTrackIndex >= 0)
             {
@@ -774,7 +774,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -787,7 +787,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -807,7 +807,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -818,11 +818,11 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Console.WriteLine( "MainWnd: Config" );
+            Trace.WriteLine( "MainWnd: Config" );
 
             if ((int)ResponseType.Ok == _configDlg.Run())
             {
-               Console.WriteLine( "OK" );
+               Trace.WriteLine( "OK" );
 
                // (re)connect to the player
                _backend = null;
@@ -832,7 +832,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Console.WriteLine( e.ToString() );
+            Trace.WriteLine( e.ToString() );
          }
       }
 
@@ -841,7 +841,7 @@ namespace tam.GtkPlayer
       ///
       void _DeleteHandler( object sender, DeleteEventArgs delArgs )
       {
-         Console.WriteLine( "MainWnd: Closed By Request" );
+         Trace.WriteLine( "MainWnd: Closed By Request" );
          Application.Quit();
       }
 
@@ -853,7 +853,7 @@ namespace tam.GtkPlayer
             string serverUrl = 
                "http://" + serverName + ":" + serverPort + "/Engine";
 
-            Console.WriteLine( serverUrl );
+            Trace.WriteLine( serverUrl );
 
             // Retrieve a reference to the remote object
             IEngine engine = (IEngine) Activator.GetObject( typeof(IEngine), 

@@ -387,7 +387,7 @@ namespace tam.SimpleMp3Player
       ///
       static void _Mp3ReaderThread()
       {
-         Console.WriteLine( "MP3> HELLO" );            
+         Trace.WriteLine( "MP3> HELLO" );
 
          Thread audioThread = null;
          try
@@ -397,7 +397,7 @@ namespace tam.SimpleMp3Player
             ///    info etc etc. :/
             ///
             
-            Console.WriteLine( "MP3> Starting esd" );
+            Trace.WriteLine( "MP3> Starting esd" );
             ///
             /// \todo Exceptions won't propagate back to the parent 
             ///   thread. How do we indicate esd errors?
@@ -411,7 +411,7 @@ namespace tam.SimpleMp3Player
             // audioThread.Priority = ThreadPriority.BelowNormal;
             audioThread.Start();
 
-            Console.WriteLine( "MP3> Entering main loop" );
+            Trace.WriteLine( "MP3> Entering main loop" );
             _configMutex.WaitOne();
             while (true)
             {
@@ -423,7 +423,7 @@ namespace tam.SimpleMp3Player
                switch (_state)
                {
                case State.STOP:
-                  Console.WriteLine( "MP3> STOP" );
+                  Trace.WriteLine( "MP3> STOP" );
                   
                   // Wait until the parent wakes us up.
                   _configMutex.ReleaseMutex();
@@ -436,7 +436,7 @@ namespace tam.SimpleMp3Player
                   break;
                   
                case State.PLAY_FILE_REQUEST:
-                  Console.WriteLine( "MP3> PLAY_FILE_REQUEST" );
+                  Trace.WriteLine( "MP3> PLAY_FILE_REQUEST" );
                   
                   if (_bufferSizeChanged)
                   {
@@ -454,7 +454,7 @@ namespace tam.SimpleMp3Player
                         ///
                         /// \todo Set sample rate here as well
                         ///
-                        Console.WriteLine( "creating buffers!" );
+                        Trace.WriteLine( "creating buffers!" );
                         _CreateBuffers();
                         _underflowEvent.Set();
                         _bufferSizeChanged = false; // no longer
@@ -474,7 +474,7 @@ namespace tam.SimpleMp3Player
                   break;
                   
                case State.PLAYING:
-                  // Console.WriteLine( "MP3> PLAYING" );
+                  // Trace.WriteLine( "MP3> PLAYING" );
                   
                   // Wait for a free audio buffer
                   Buffer buffer = _WaitForAndPopFreeBuffer();
@@ -497,7 +497,7 @@ namespace tam.SimpleMp3Player
                      // I'm not sure, but I think we may have to destroy
                      // and recreate the Mp3Stream to get it working again
                      // here.
-                     Console.WriteLine( "Problem Reading from MP3:" 
+                     Trace.WriteLine( "Problem Reading from MP3:" 
                                         + e.ToString() );
 
                      // Flag the stream as finished. Heh!
@@ -535,7 +535,7 @@ namespace tam.SimpleMp3Player
                   break;
                   
                case State.SHUTDOWN_REQUEST:
-                  Console.WriteLine( "MP3> SHUTDOWN_REQUEST" );
+                  Trace.WriteLine( "MP3> SHUTDOWN_REQUEST" );
                   _configMutex.ReleaseMutex();
                   // Handle cleanup in the "finally" block
                   return;
@@ -563,7 +563,7 @@ namespace tam.SimpleMp3Player
             if (null != _estream)
                _estream.Close();
 
-            Console.WriteLine( "MP3> bye" );
+            Trace.WriteLine( "MP3> bye" );
          }
       }
 
@@ -603,7 +603,7 @@ namespace tam.SimpleMp3Player
             Queue synced = Queue.Synchronized( _playFilesQueue );
             if (synced.Count == 0)
             {
-               Console.WriteLine( "_InternalStartNextFile: queue empty" );
+               Trace.WriteLine( "_InternalStartNextFile: queue empty" );
                if (_mp3Stream != null)
                {
                   _mp3Stream.Close();
@@ -616,7 +616,7 @@ namespace tam.SimpleMp3Player
             TrackInfo info = null;
             try
             {
-               Console.WriteLine( "_InternalStartNextFile" );
+               Trace.WriteLine( "_InternalStartNextFile" );
 
                info = (TrackInfo)synced.Dequeue(); 
                _playingTrack.path = info.path;
@@ -645,11 +645,11 @@ namespace tam.SimpleMp3Player
 
                if (null == info)
                {
-                  Console.WriteLine( "Queue is empty: " + e.ToString() );
+                  Trace.WriteLine( "Queue is empty: " + e.ToString() );
                }
                else
                {
-                  Console.WriteLine( "Error opening file: " + e.ToString() );
+                  Trace.WriteLine( "Error opening file: " + e.ToString() );
 
                   // We dequeued a track but couldn't play it. Notify
                   // the player of the track's "finished with error" status.
@@ -678,7 +678,7 @@ namespace tam.SimpleMp3Player
       {
          if (! _freeBuffersEvent.WaitOne(0, false)) // Out of buffers to play?
          {
-            // Console.WriteLine( "+FREE Underflow" ); // this is usually ok
+            // Trace.WriteLine( "+FREE Underflow" ); // this is usually ok
          }
 
          // Wait (using this fine object) until there are free buffers
@@ -703,14 +703,14 @@ namespace tam.SimpleMp3Player
       ///
       static Buffer _WaitForAndPopMp3Buffer()
       {
-         // Console.WriteLine( "_WaitForMp3" );
+         // Trace.WriteLine( "_WaitForMp3" );
 
          // Wait (using this fine object) until there are free buffers
          if (! _mp3BuffersEvent.WaitOne(0, false)) // Out of buffers to play?
          {
             // We have to deal with underflow here. Ick.
             _underflowEvent.Set();
-            // Console.WriteLine( "+MP3 Underflow" ); // This is usually bad
+            // Trace.WriteLine( "+MP3 Underflow" ); // This is usually bad
          }
 
          while (true)
@@ -782,7 +782,7 @@ namespace tam.SimpleMp3Player
       ///
       static void _AudioThread()
       {
-         Console.WriteLine( "AUD> hello" );
+         Trace.WriteLine( "AUD> hello" );
          
          while (true)
          {
@@ -792,7 +792,7 @@ namespace tam.SimpleMp3Player
             
             if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, false ))
             {
-               Console.WriteLine( "AUD> Timed out waiting for the audio mutex" );
+               Trace.WriteLine( "AUD> Timed out waiting for the audio mutex" );
                continue;  // keep trying
             }
 

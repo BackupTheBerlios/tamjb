@@ -150,7 +150,7 @@ namespace tam.Server
 
          if (! _engine.EntryExists( path )) 
          {
-            Console.WriteLine( "add> " + path );
+            Trace.WriteLine( "add> " + path );
 
             PlayableData data = new PlayableData();
             data.filePath = path;

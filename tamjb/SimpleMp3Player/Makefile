@@ -10,7 +10,7 @@ TARGET = $(LIBDIR)/tam.SimpleMp3Player.dll
 SOURCES = Player.cs \
         TrackFinishedInfo.cs
 
-DEBUGFLAGS = -g -define:DEBUG
+DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 #        -r gtk-sharp 
 #        -r glib-sharp 

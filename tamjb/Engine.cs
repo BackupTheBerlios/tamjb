@@ -109,7 +109,7 @@ namespace tam
       
       ~Engine()
       {
-         Console.WriteLine( "[~Engine]" );
+         Trace.WriteLine( "[~Engine]" );
          _fileSelector = null;
          _database = null;
 
@@ -193,7 +193,7 @@ namespace tam
       ///
       bool EnqueueRandomSong()
       {
-         Console.WriteLine( "EnqueueRandomSong" );
+         Trace.WriteLine( "EnqueueRandomSong" );
 
          try
          {
@@ -206,7 +206,7 @@ namespace tam
          }
          catch (PlaylistEmptyException e)
          {
-            Console.WriteLine( "No songs found" );
+            Trace.WriteLine( "No songs found" );
             return false;
          }
       }
@@ -487,7 +487,7 @@ namespace tam
 
       void SetPlaylist( uint index )
       {
-         Console.WriteLine( "_SetPrimaryPlaylist( " + index + ")" );
+         Trace.WriteLine( "_SetPrimaryPlaylist( " + index + ")" );
 
          // Import any new entries from the local-files tables to the
          // attribute tables. This is only necessary if some external
@@ -542,7 +542,7 @@ namespace tam
             _serializer.WaitOne();
 
             PlayableData prevFile = _PlaylistGoPrev();
-            Console.WriteLine( "PREV = " + prevFile.title );
+            Trace.WriteLine( "PREV = " + prevFile.title );
             if (null != prevFile)
                Player.PlayFile( prevFile.filePath, prevFile.key );
 
@@ -565,7 +565,7 @@ namespace tam
 //          // Previous track could be nothing?
 //          if (null != info)
 //          {            
-//             Console.WriteLine( "Track Finished " + info.key );
+//             Trace.WriteLine( "Track Finished " + info.key );
 
 //             // Because of the threading, I don't know we can guarantee
 //             // this will never happen, but let's find out:

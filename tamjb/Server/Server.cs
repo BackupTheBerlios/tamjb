@@ -55,15 +55,18 @@ namespace tam.Server
       /// \return
       ///   An object representing the log stream. And so on.
       ///
-      static TextWriter _GetLogFile( string logFileName )
+      static TextWriter _RedirectLogFile( string logFileName )
       {
-         if ("-" == logFileName)
-            return Console.Out;
+         StreamWriter logWriter = 
+            new StreamWriter( new FileStream( logFileName,
+                                              FileMode.Create,
+                                              FileAccess.Write,
+                                              FileShare.Read ) );
 
-         return new StreamWriter( new FileStream( logFileName,
-                                                  FileMode.Create,
-                                                  FileAccess.Write,
-                                                  FileShare.Read ) );
+         Console.SetOut( logWriter );
+         Console.SetError( logWriter );
+
+         return logWriter;
       }
 
       ///
@@ -82,6 +85,7 @@ namespace tam.Server
 
          // defaults
          string logFile = "-";
+         string dbUrl = null;
          _port = 0;
 
          for (int i = 0; i < args.Length; i++)
@@ -98,6 +102,14 @@ namespace tam.Server
                logFile = args[++i];
                break;
 
+            case "--dbUrl":
+               dbUrl = args[++i];
+               break;
+
+            case "--dir":
+               _mp3RootDirs.Add( args[++i] );
+               break;
+
             default:
                Console.WriteLine( "Unknown argument: {0}", arg );
                _Usage();
@@ -107,24 +119,34 @@ namespace tam.Server
 
          if (_port == 0)
          {
+            Console.WriteLine( "--port required" );
+            _Usage();
+            return 2;
+         }
+
+         if (null == dbUrl)
+         {
+            Console.WriteLine( "--dbUrl required" );
             _Usage();
             return 2;
          }
 
          try
          {
-            TextWriter logFileWriter = _GetLogFile( logFile );
+            TextWriter traceWriter;
+            if ("-" == logFile)
+               traceWriter = Console.Out;
+            else
+            {
+               traceWriter = 
+                  TextWriter.Synchronized(_RedirectLogFile( logFile ));
+            }
             
             // Spit all trace output to logfile, unless 
-            Trace.Listeners.Add( new TextWriterTraceListener(logFileWriter) );
+            Trace.Listeners.Add( new TextWriterTraceListener(traceWriter) );
             Trace.AutoFlush = true;
 
-            _connectionString = "URI=" + args[0];
-
-            for (int i = 2; i < args.Length; i++)
-            {
-               _mp3RootDirs.Add( args[i] );
-            }
+            _connectionString = "URI=" + dbUrl;
 
             // Configure the database engine so the global engine will
             // be constructed correctly. There's GOTTA be a better way
@@ -155,7 +177,7 @@ namespace tam.Server
             Engine engine = (Engine) Activator.GetObject( typeof(Engine), 
                                                           serverUrl );
 
-            Console.WriteLine("tam.Server started on port " + _port );
+            Trace.WriteLine( "tam.Server started on port " + _port );
 
             RecursiveScanner scanner = null;;
             int scannerIndex = 0;
@@ -214,7 +236,8 @@ namespace tam.Server
             SimpleMp3Player.Player.ShutDown();
          }
 
-         return 0;
+         // Unreachable?
+         // return 3;
       }
 
       ///

@@ -12,7 +12,7 @@ SOURCES = PlaylistCriteria.cs \
         PlayableData.cs \
         LocalFileDatabase.cs
 
-DEBUGFLAGS = -g -define:DEBUG
+DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 
 REFS = -r System.Data.dll \

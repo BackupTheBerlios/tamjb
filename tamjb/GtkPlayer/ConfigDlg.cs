@@ -58,7 +58,7 @@ namespace tam.GtkPlayer
          switch (args.ResponseId)
          {
          case (int)ResponseType.Ok:         // save
-            Console.WriteLine( "ConfigDlg: Ok" );
+            Trace.WriteLine( "ConfigDlg: Ok" );
             bool convertOk = false;
             int port = 0;
             try
@@ -70,7 +70,7 @@ namespace tam.GtkPlayer
             {
                // I think we should prevent all invalid entry rather
                // than catching it here after the fact.
-               Console.WriteLine( "Invalid port - " + e.ToString() );
+               Trace.WriteLine( "Invalid port - " + e.ToString() );
             }
             
             if (convertOk)
@@ -90,7 +90,7 @@ namespace tam.GtkPlayer
             break;
             
          default:
-            Console.WriteLine( "ConfigDlg: Unexpected Response" );
+            Trace.WriteLine( "ConfigDlg: Unexpected Response" );
             break;
          }
       }

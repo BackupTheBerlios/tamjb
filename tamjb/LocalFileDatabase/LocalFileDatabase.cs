@@ -310,7 +310,7 @@ namespace tam.LocalFileDatabase
          //
          uint offset = (uint)_rng.Next( 0, (int)count );
 
-         Console.WriteLine( "Choosing track: " + offset );
+         Trace.WriteLine( "Choosing track: " + offset );
 
          string query = 
             _BuildFullQuery( criteria )
@@ -321,7 +321,7 @@ namespace tam.LocalFileDatabase
          IDataReader reader = null;
          try
          {
-            Console.WriteLine( query );
+            Trace.WriteLine( query );
 
             cmd = _dbcon.CreateCommand();
             cmd.CommandText = query;
@@ -368,7 +368,7 @@ namespace tam.LocalFileDatabase
          IDbCommand cmd = null;
          try
          {
-            Console.WriteLine( query );
+            Trace.WriteLine( query );
 
             cmd = _dbcon.CreateCommand();
             cmd.CommandText = query;
@@ -470,7 +470,7 @@ namespace tam.LocalFileDatabase
             + " WHERE track_attribute.playlist_key = " + attribKey
             ;
 
-         Console.WriteLine( query );
+         Trace.WriteLine( query );
          _ExecuteNonQuery( query );
       }
 
@@ -554,7 +554,7 @@ namespace tam.LocalFileDatabase
       ///
 //       public void Scan( string root )
 //       {
-//          Console.WriteLine( "dir> " + root );
+//          Trace.WriteLine( "dir> " + root );
 
 //          // Note: insert all files in a subdirectory as a single
 //          //   transaction to reduce the number of times we have to
@@ -610,7 +610,7 @@ namespace tam.LocalFileDatabase
 // //          if (tag.Title.Length == 0)
 // //          {
 // //             // Use the file basename?
-// //             // Console.WriteLine( "Missing info: " + path );
+// //             // Trace.WriteLine( "Missing info: " + path );
 // //          }
 
 //          string genre;
@@ -621,7 +621,7 @@ namespace tam.LocalFileDatabase
 
 //          if (! Mp3FileEntryExists( path )) // If not already entered,
 //          {
-//             Console.WriteLine( "add> " + path );
+//             Trace.WriteLine( "add> " + path );
 
 //             PlayableData data = new PlayableData();
 //             data.filePath = path;

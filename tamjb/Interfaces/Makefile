@@ -4,7 +4,7 @@ LIBDIR = ../../lib
 
 LIBPATH = -L $(LIBDIR)
 
-DEBUGFLAGS = -g -define:DEBUG
+DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 REFS = 
 
