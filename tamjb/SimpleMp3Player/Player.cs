@@ -803,7 +803,8 @@ namespace byteheaven.tamjb.SimpleMp3Player
                _playingTrack.index = info.index;
             
                FileStream stream = new FileStream( _playingTrack.path, 
-                                                   FileMode.Open );
+                                                   FileMode.Open,
+                                                   FileAccess.Read );
 
                // Note: there is a handy Mp3Stream(FileName) constructor,
                //   but if it throws an exception (say, file not found),
