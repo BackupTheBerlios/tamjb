@@ -20,6 +20,11 @@ if [ -d $PACKAGE_DIR ] ; then
   exit 1
 fi
 
+if [ -d $PACKAGE_DIR-bin ] ; then 
+  echo "Package dir ${PACKAGE_DIR}-bin exists! Bailing"
+  exit 1
+fi
+
 mkdir $PACKAGE_DIR
 
 # Get the package
