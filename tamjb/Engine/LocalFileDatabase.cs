@@ -1123,18 +1123,16 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-// #if USE_SQLITE
-//       // This allows single-tics ("'") because they are escaped separately
-//       // by tickRegex. (this is far from inclusive, I know I know...)
-//       //
-//       // This is a workaround for SQLITE's complaining. If the SQLITE 
-//       // wrapper adds support for parameters, we can eliminate this. 
-//       // Probably.
-//       static Regex _invalidCharRegex = 
-//          new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
+      // This allows single-tics ("'") because they are escaped separately
+      // by tickRegex. (this is far from inclusive, I know I know...)
+      //
+      // This is a workaround for SQLITE's complaining. If the SQLITE 
+      // wrapper adds support for parameters, we can eliminate this. 
+      // Probably.
+      static Regex _invalidCharRegex = 
+         new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
 
-//       Regex _tickRegex = new Regex( "'" );
-// #endif // USE_SQLITE
+      Regex _tickRegex = new Regex( "'" );
 
       ///
       /// Removes any special chars from the supplied string, to
@@ -1142,33 +1140,31 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Also, escape any single-tick characters.
       ///
-//       string _StripEvil( string impureString )
-//       {
-//          // Note: regex seems to cause massive resource leak
+      string _StripEvil( string impureString )
+      {
+         // Note: regex seems to cause massive resource leak
 
-//          // string firstResult = _invalidCharRegex.Replace( impureString, " " );
-//          // string secondResult = _tickRegex.Replace( firstResult, "''" );
+         // string firstResult = _invalidCharRegex.Replace( impureString, " " );
+         // string secondResult = _tickRegex.Replace( firstResult, "''" );
 
-//          // First escape any escape characters in thestring
-//          // string pure = _invalidCharRegex.Replace( impureString, " " );
+         // First escape any escape characters in thestring
+         // string pure = _invalidCharRegex.Replace( impureString, " " );
 
-//          string pure = impureString.Replace( "\\", "\\\\" );
+         string pure = impureString.Replace( "\\", "\\\\" );
 
-//          // Second, escape any single ticks
-//          pure = pure.Replace( "'", "''" ); 
+         // Second, escape any single ticks
+         pure = pure.Replace( "'", "''" ); 
 
-// #if USE_SQLITE
-//          /// \todo Find out why special characters (other than single-tick)
-//          ///   cause SQLite to
-//          ///   throw exceptions and replace this regex workaround that
-//          ///   isn't very friendly to non-english-language users.
-//          ///
-//          pure = _tickRegex.Replace( pure, " " );
+         /// \todo Find out why special characters (other than single-tick)
+         ///   cause SQLite to
+         ///   throw exceptions and replace this regex workaround that
+         ///   isn't very friendly to non-english-language users.
+         ///   (Some characters also cause problems on postgres.)
+         ///
+         pure = _tickRegex.Replace( pure, " " );
 
-// #endif // USE_SQLITE
-
-//          return pure;
-//       }
+         return pure;
+      }
 
       ///
       /// selects one song at random based on the supplied playlist
