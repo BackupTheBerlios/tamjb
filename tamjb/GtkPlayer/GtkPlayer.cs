@@ -253,7 +253,7 @@ namespace byteheaven.tamjb.GtkPlayer
             catch (Exception e)
             {
                // dump stack trace
-               _Trace( "Problem during Poll(): " + e.ToString() );
+               _TraceError( "Problem during Poll(): " + e.ToString() );
                _Status( "Problem during Poll", 120 );
                shouldStop = true;
             }
@@ -275,7 +275,7 @@ namespace byteheaven.tamjb.GtkPlayer
             {
                // dump stack trace
                // _Complain( "Problem scanning for files", e );
-               _Trace( "Problem scanning for files: " + e.ToString() );
+               _TraceError( "Problem scanning for files: " + e.ToString() );
                _Status( "Problem scanning for files", 120 );
                // shouldStop = true;
             }
@@ -340,8 +340,8 @@ namespace byteheaven.tamjb.GtkPlayer
             ///
 
             // dump stack trace
-            _Trace( "Could not update displayed track info: " 
-                    + e.ToString() );
+            _TraceError( "Could not update displayed track info: " 
+                         + e.ToString() );
 
             _Status( "Could not update displayed track info: " 
                      + e.Message, 20 );
@@ -647,7 +647,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -678,7 +678,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -710,7 +710,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -738,7 +738,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -758,7 +758,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -789,7 +789,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -807,7 +807,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -824,7 +824,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -913,7 +913,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -965,7 +965,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -1017,7 +1017,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
       
@@ -1038,7 +1038,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -1059,7 +1059,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception ex)
          {
-            _Trace( e.ToString() );
+            _TraceError( e.ToString() );
          }
       }
 
@@ -1158,8 +1158,8 @@ namespace byteheaven.tamjb.GtkPlayer
       void _Complain( string msg, Exception e )
       {
          // Dump details to log for posterity
-         _Trace( msg );
-         _Trace( e.ToString() );
+         _TraceError( msg );
+         _TraceError( e.ToString() );
 
          MessageDialog md = 
             new MessageDialog( _mainWindow, 
@@ -1174,6 +1174,11 @@ namespace byteheaven.tamjb.GtkPlayer
       void _Trace( string msg )
       {
          Trace.WriteLine( msg, "GtkPlayer" );
+      }
+
+      void _TraceError( string msg )
+      {
+         Trace.WriteLine( msg, "Error" );
       }
 
       // Configuration

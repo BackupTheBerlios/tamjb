@@ -60,7 +60,16 @@ namespace byteheaven.tamjb.GtkPlayer
             if (traceEnableSwitch.Enabled)
             {
                // Spit all trace output to stdout if desired
+               Console.WriteLine( "Tracing Enabled" );
                Trace.Listeners.Add( new TextWriterTraceListener(Console.Out) );
+            }
+            else
+            {
+               // By default, listen only to the "Error" trace messages
+               // Does not work: what am I doing wrong?
+               Console.WriteLine( "Error Tracing enabled" );
+               Trace.Listeners.Add( new TextWriterTraceListener(Console.Out,
+                                                                "Error") );
             }
 
             Trace.AutoFlush = true;
