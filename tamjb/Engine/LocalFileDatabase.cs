@@ -462,10 +462,7 @@ namespace byteheaven.tamjb.Engine
          string query =
             "SELECT count(*) from ( " 
             + _BuildFullQuery( criteria )
-            + " )";
-
-         _Trace( "WARNING: using hacked count value for development" );
-         query = "SELECT count(*) from file_info";
+            + " ) as count_table";
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;

@@ -61,7 +61,10 @@ Track Attribute Manager - Jukebox
    Once again, the code and binaries
 
 
- - SQLite
+ - SQLite OR PostgreSQL
+
+   Define what is preferred in Engine/Makefile. Note that the huge memory
+   leak reported previously seems to be SQLite-related. :(
 
    C# support for sqlite is built into mono at this point. You will need
    an actual sqlite binary though. The calls have been wrapped so
@@ -70,6 +73,7 @@ Track Attribute Manager - Jukebox
    Known good configuration:
 
      Gentoo: sqlite-2.8.11
+     Gentoo: postgresql-7.4.3
 
    If you want to edit the database constructor or add multi-database 
    support, any database provider should work.
@@ -153,8 +157,13 @@ Track Attribute Manager - Jukebox
  Create the Database:
   You will need to create the audio file database. Use tam.Server.exe's
   --create option to do this. The command line is something like
-    
-    tam.Server.exe --dbUrl=file:/home/myname/audiofiles.db --create
+
+  with PostgreSQL
+    tam.Server.exe --connectString "<your connect string>"  --create
+        
+  with SQLite:     
+    tam.Server.exe --dbUrl <url> --create
+
 
  Start the Server:
   Launch tam.Server.exe with appropriate options.
