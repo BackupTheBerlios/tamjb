@@ -1,18 +1,15 @@
 # $Id$
 
-LIBDIR = ../../lib
-
-LIBPATH = -L $(LIBDIR)
-
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 REFS = 
 
-INTERFACE_DLL = $(LIBDIR)/tam.Interfaces.dll
+INTERFACE_DLL = tamjb.Interfaces.dll
 
 all: $(INTERFACE_DLL)
 
-INTERFACE_SRCS =  IEngine.cs \
+INTERFACE_SRCS = AssemblyInfo.cs \
+        IEngine.cs \
         IPlaylistCriterion.cs \
         ITrackInfo.cs
 
