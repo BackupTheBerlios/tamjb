@@ -148,5 +148,22 @@ namespace byteheaven.tamjb.Interfaces
       /// Starts playback if stopped
       ///
       void StartPlaying();
+
+      //
+      // Compression parameters
+      //
+      double compressAttack { get; set; }
+      double compressDecay { get; set; }
+      int compressThreshold { get; set; }
+      double compressRatio{ get; set; }
+
+      int gateThreshold{ get; set; }
+
+      ///
+      /// SOFT clip threshold.
+      ///
+      int clipThreshold{ get; set; }
+
+      
    }
 }

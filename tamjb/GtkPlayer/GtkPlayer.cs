@@ -234,6 +234,7 @@ namespace byteheaven.tamjb.GtkPlayer
             if (_backend.CheckState(ref _engineState) || _pendingUpdate )
             {
                _Status( "Updating...", 30 );
+               _backend.GetCurrentUserAndMood( out _credentials, out _mood );
                _UpdateNowPlayingInfo();
                _Status( "Done", 4 );
             }
@@ -825,6 +826,26 @@ namespace byteheaven.tamjb.GtkPlayer
                // Save for future generations!
                _settings.Store();
             }
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      ///
+      /// Run the configuration dialog.
+      ///
+      void _AudioBtnClick( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_AudioBtnClick]" );
+
+            MiscSettingsDialog dlg = 
+               new MiscSettingsDialog( _mainWindow, _backend );
+
+            // dlg.Run();
          }
          catch (Exception e)
          {

@@ -4,6 +4,8 @@
 /// Configuration interfaces
 ///
 
+#error File is obsolete (and not very good GTK code either)
+
 // Copyright (C) 2004 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.

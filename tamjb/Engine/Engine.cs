@@ -733,6 +733,8 @@ namespace byteheaven.tamjb.Engine
 
          // Assumes the buffer is 16-bit little-endian stereo.
 
+         _compressMutex.WaitOne();
+
          int offset = 0;
          double correction;
          while (offset + 3 < length)
@@ -751,14 +753,14 @@ namespace byteheaven.tamjb.Engine
             if (magnitude > _decayingAveragePower)
             {
                _decayingAveragePower = 
-                  ((_decayingAveragePower * ATTACK_RATIO_OLD) +
-                   (magnitude * ATTACK_RATIO_NEW));
+                  ((_decayingAveragePower * _attackRatioOld) +
+                   (magnitude * _attackRatioNew));
             }
             else
             {
                _decayingAveragePower = 
-                  ((_decayingAveragePower * DECAY_RATIO_OLD) +
-                   (magnitude * DECAY_RATIO_NEW));
+                  ((_decayingAveragePower * _decayRatioOld) +
+                   (magnitude * _decayRatioNew));
             }
 
             double right = (((long)(sbyte)buffer[offset + 3] << 8) |
@@ -768,25 +770,26 @@ namespace byteheaven.tamjb.Engine
             if (magnitude > _decayingAveragePower)
             {
                _decayingAveragePower = 
-                  ((_decayingAveragePower * ATTACK_RATIO_OLD) +
-                   (magnitude * ATTACK_RATIO_NEW));
+                  ((_decayingAveragePower * _attackRatioOld) +
+                   (magnitude * _attackRatioNew));
             }
             else
             {
                _decayingAveragePower = 
-                  ((_decayingAveragePower * DECAY_RATIO_OLD) +
-                   (magnitude * DECAY_RATIO_NEW));
+                  ((_decayingAveragePower * _decayRatioOld) +
+                   (magnitude * _decayRatioNew));
             }
 
             // How far off from the target power are we?
-            if (_decayingAveragePower < GATE_LEVEL)
-               correction = TARGET_POWER_LEVEL / GATE_LEVEL;
+            if (_decayingAveragePower < _gateLevel)
+               correction = _targetPowerLevel / _gateLevel;
             else
-               correction = TARGET_POWER_LEVEL / _decayingAveragePower;
+               correction = _targetPowerLevel / _decayingAveragePower;
 
             // For inf:1 compression, use "offset", otherwise
             // use this ratio to get other ratios:
-            correction *= RATIO;
+            correction = (correction * _compressRatio) 
+               + (1.0 - _compressRatio);
 
             // Write new values to the samples: left
 
@@ -803,39 +806,24 @@ namespace byteheaven.tamjb.Engine
             offset += 4;
          }
 
-//          ++ _spew;
-//          if (_spew > 25)
-//          {
-//             _spew = 0;
-//             _Trace( "POWER: " + _decayingAveragePower
-//                     + ", SCALE: " + correction);
-//          }
+         _compressMutex.ReleaseMutex();
       }
 
       double _SoftClip( double original )
       {
-         if (original > CLIP_THRESHOLD) // Soft-clip 
+         if (original > _clipThreshold) // Soft-clip 
          {
-//             if (original > 32767 || original < -32767)
-//             {
-//                // Fascinating, soft clipping saved us from an awful noise!
-//                Console.WriteLine( "CLIP: " + original );
-//             }
-
-            if (original > 0)
-            {
-               // Unsophisticated asympotic clipping algorithm
-               // I came up with in the living room in about 15 minutes.
-               return (CLIP_THRESHOLD +
-                       (CLIP_LEFTOVER * (1 - (CLIP_THRESHOLD / original)))); 
-            }
-            else
-            {
-               // Unsophisticated asympotic clipping algorithm
-               // I came up with in the living room in about 15 minutes.
-               return -(CLIP_THRESHOLD -
-                        (CLIP_LEFTOVER * (1 + (CLIP_THRESHOLD / original)))); 
-            }
+            // Unsophisticated asympotic clipping algorithm
+            // I came up with in the living room in about 15 minutes.
+            return (_clipThreshold +
+                    (_clipLeftover * (1 - (_clipThreshold / original)))); 
+         }
+         else if (original < (- _clipThreshold))
+         {
+            // Unsophisticated asympotic clipping algorithm
+            // I came up with in the living room in about 15 minutes.
+            return ((-_clipThreshold) -
+                    (_clipLeftover * (1 + (_clipThreshold / original)))); 
          }
 
          return original;
@@ -848,13 +836,13 @@ namespace byteheaven.tamjb.Engine
       /// like -3dB from the absolute max level. Oh well, might 
       /// as well match that.
       ///
-      static readonly double TARGET_POWER_LEVEL = 16000.0;
+      double _targetPowerLevel = 16000.0;
 
       ///
       /// Level below which we stop compressing and start
       /// expanding (if possible)
       ///
-      static readonly double GATE_LEVEL = 1000.0;
+      double _gateLevel = 1000.0;
 
       /// 
       /// Compression ratio where for n:1 compression, 
@@ -867,23 +855,223 @@ namespace byteheaven.tamjb.Engine
       /// 0.5 = 2:1
       /// 0.0 = no compression 
       ///
-      static readonly double RATIO = 0.833;
+      double _compressRatio = 0.833;
 
       //
       // Attack time really should be more than a 10 milliseconds to 
       // avoid distortion on kick drums, unless the release time is 
       // really long and you want to use it as a limiter, etc.
       //
-      static readonly double ATTACK_RATIO_NEW = 0.002;
-      static readonly double ATTACK_RATIO_OLD = 0.998;
+      double _attackRatioNew = 0.002;
+      double _attackRatioOld = 0.998;
 
-      static readonly double DECAY_RATIO_NEW = 0.00000035;
-      static readonly double DECAY_RATIO_OLD = 0.99999965;
+      double _decayRatioNew = 0.00000035;
+      double _decayRatioOld = 0.99999965;
 
       // Sample value for start of soft clipping. Leftover must
-      // be 32767 - CLIP_THRESHOLD.
-      static readonly double CLIP_THRESHOLD = 18000.0;
-      static readonly double CLIP_LEFTOVER =  14767.0;
+      // be 32767 - _clipThreshold.
+      double _clipThreshold = 18000.0;
+      double _clipLeftover =  14767.0;
+
+      //
+      // Attack ratio per-sample. Hmmm.
+      //
+      public double compressAttack
+      {
+         get
+         {
+            return _attackRatioNew;
+         }
+         set
+         {
+            _Lock();
+            _compressMutex.WaitOne();
+            try
+            {
+               _attackRatioNew = value;
+               if (_attackRatioNew >= 1.0)
+                  _attackRatioNew = 1.0;
+               
+               if (_attackRatioNew <= 0.0)
+                  _attackRatioNew = 0.0;
+               
+               _attackRatioOld = 1.0 - _attackRatioNew;
+
+               _Trace( "attackRatio:" + _attackRatioNew );
+            }
+            finally
+            {
+               _compressMutex.ReleaseMutex();
+               _Unlock();
+            }
+         }
+      }
+
+      public double compressDecay
+      {
+         get
+         {
+            return _decayRatioNew;
+         }
+         set
+         {
+            _Lock();
+            _compressMutex.WaitOne();
+            try
+            {
+               _decayRatioNew = value;
+               if (_decayRatioNew >= 1.0)
+                  _decayRatioNew = 1.0;
+               
+               if (_decayRatioNew <= 0.0)
+                  _decayRatioNew = 0.0;
+               
+               _decayRatioOld = 1.0 - _decayRatioNew;
+
+               _Trace( "decayRatio:" + _decayRatioNew );
+            }
+            finally
+            {
+               _compressMutex.ReleaseMutex();
+               _Unlock();
+            }
+         }
+      }
+
+      ///
+      /// Compress threshold as a 16-bit unsigned int. 
+      ///
+      public int compressThreshold
+      {
+         get
+         {
+            return (int)_targetPowerLevel;
+         }
+         set
+         {
+            _Lock();
+            _compressMutex.WaitOne();
+            try
+            {
+               _targetPowerLevel = (double)value;
+               
+               if (_targetPowerLevel >= 32767.0)
+                  _targetPowerLevel = 32767.0;
+               
+               if (_targetPowerLevel < 1.0) // Uh, you WANT complete silence?
+                  _targetPowerLevel = 1.0;
+
+               _Trace( "targetPower:" + _targetPowerLevel );
+            }
+            finally
+            {
+               _compressMutex.ReleaseMutex();
+               _Unlock();
+            }
+         }
+      }
+
+      ///
+      /// Input level gate threshold (0-32767). Probably should be
+      /// less than the compress threshold. :)
+      ///
+      public int gateThreshold
+      {
+         get
+         {
+            return (int)_gateLevel;
+         }
+         set
+         {
+            _Lock();
+            _compressMutex.WaitOne();
+            try
+            {
+               _gateLevel = (double)value;
+               
+               if (_gateLevel >= 32767.0)
+                  _gateLevel = 32767.0;
+               
+               if (_gateLevel < 0.0)
+                  _gateLevel = 0.0;
+
+               _Trace( "gateLevel:" + _gateLevel );
+            }
+            finally
+            {
+               _compressMutex.ReleaseMutex();
+               _Unlock();
+            }
+         }
+      }
+
+      ///
+      /// Compress threshold as a 16-bit unsigned int. 
+      ///
+      public double compressRatio
+      {
+         get
+         {
+            return _compressRatio;
+         }
+         set
+         {
+            _Lock();
+            _compressMutex.WaitOne();
+            try
+            {
+               _compressRatio = value;
+               
+               if (_compressRatio > 1.0)
+                  _compressRatio = 1.0;
+               
+               if (_compressRatio < 0.0) // Uh, you WANT complete silence?
+                  _compressRatio = 0.0;
+
+               _Trace( "compressRatio:" + _compressRatio );
+            }
+            finally
+            {
+               _compressMutex.ReleaseMutex();
+               _Unlock();
+            }
+         }
+      }
+
+      ///
+      /// Compress threshold as a 16-bit unsigned int. 
+      ///
+      public int clipThreshold
+      {
+         get
+         {
+            return (int)_clipThreshold;
+         }
+         set
+         {
+            _Lock();
+            _compressMutex.WaitOne();
+            try
+            {
+               _clipThreshold = (double)value;
+               
+               if (_clipThreshold >= 32766.0)
+                  _clipThreshold = 32766.0;
+               
+               if (_clipThreshold < 1.0) // Uh, you WANT complete silence?
+                  _clipThreshold = 1.0;
+               
+               _clipLeftover = 32767.0 - _clipThreshold;
+
+               _Trace( "clipThreshold:" + _clipThreshold );
+            }
+            finally
+            {
+               _compressMutex.ReleaseMutex();
+               _Unlock();
+            }
+         }
+      }
 
       ///
       /// Calculate average power of this buffer, and update any 
@@ -1438,6 +1626,8 @@ namespace byteheaven.tamjb.Engine
       /// doesn't scale well. :)
       ///
       Mutex     _serializer = new Mutex();
+
+      Mutex     _compressMutex = new Mutex();
 
       ///
       /// How many finished-playing tracks to keep in the queue

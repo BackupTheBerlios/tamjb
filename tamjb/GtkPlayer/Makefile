@@ -5,6 +5,7 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 SRCS = MainWnd.cs \
         GtkPlayer.cs \
         ConfigWindow.cs \
+        MiscSettings.cs \
         MoodWindow.cs \
         PlayerSettings.cs
 
@@ -20,7 +21,7 @@ RESOURCES = -resource:tam.GtkPlayer.exe.glade
 
 all: tamjb.GtkPlayer.exe 
 
-tamjb.GtkPlayer.exe: $(SRCS) $(DEPLIBS) tam.GtkPlayer.exe.glade
+tamjb.GtkPlayer.exe: $(SRCS) $(DEPLIBS) tam.GtkPlayer.exe.glade Makefile
 	mcs $(DEBUGFLAGS) $(LIBPATH) $(PLAYER_REFS) $(RESOURCES) \
                 -out:$@ $(SRCS)
 
