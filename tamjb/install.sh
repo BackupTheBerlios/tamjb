@@ -20,11 +20,12 @@ install_files="Mp3Sharp.dll byteheaven.id3.dll esd-sharp.dll tamjb.SimpleMp3Play
 
 lib_dlls="tamjb.Engine.dll tamjb.Interfaces.dll"
 
-for dll in $install_dlls ; do
+for dll in $lib_dlls ; do
   echo "Registering ${dll}"
   gacutil -i bin/${dll} -check_refs || exit 1
 done
 
+install -d "${INSTALLDIR}" || exit 1
 for exe in $install_files ; do
   echo "Installing bin/${exe}"
   install "bin/${exe}" "${INSTALLDIR}/" || exit 1

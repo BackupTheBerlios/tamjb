@@ -28,7 +28,8 @@ RELEASE_TEXT_FILES = \
   scripts/tamjb.init \
   scripts/tamjb.conf \
   scripts/server_wrap.sh \
-  install.sh
+  install.sh \
+  gtktamjb
 
 RELEASE_BINARY_FILES = \
   thirdparty/esd-sharp.dll \

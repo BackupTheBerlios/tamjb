@@ -5,4 +5,6 @@
 
 installdir="/usr/local/lib/tamjb"
 
+# First cd to the install dir to increase the probability of
+# getting up-to-date dll's when dynamically loading. Then go.
 cd "$installdir" && mono -O=all ./tamjb.GtkPlayer.exe
