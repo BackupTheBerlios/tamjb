@@ -45,7 +45,7 @@ namespace byteheaven.tamjb.GtkPlayer
    ///
    public class MiscSettingsDialog
    {
-      static readonly double ATTACK_BASE = 0.38;
+      static readonly double ATTACK_BASE = 0.28;
       static readonly double DECAY_BASE = 0.23;
 
       ///
@@ -125,9 +125,9 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnAttackChanged]" );
 
-            // Attack ranges from 0.0002 to 1.0, where 1.0 is a infinitely fast
-            // attack, and 0.0002 is pretty slow. The scale value should
-            // range from 0-9 for this to work:
+            // Attack ranges from ~0.00001 to 1.0, where 1.0 is a infinitely 
+            // fast attack, and 0.00001 is pretty darn slow. The scale value 
+            // should range from 0-9 for this to work:
             double newVal = Math.Pow( ATTACK_BASE, (10 - _attackScale.Value) );
 
             if (_ChangeRatio(_backend.compressAttack, newVal) > 0.01)
