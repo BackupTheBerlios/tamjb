@@ -11,9 +11,10 @@ TODO
    Error reporting (eek!)
 
  - Fix memory leak
-  Leakage is greatly reduced with the use of postgresql and the 
-  latest changes to Mp3Sharp. However, the program still leaks slowly.
-  This seems to be related to System.Remoting.
+
+  The program is now very large (mono 1.0.4) and leaks memory
+  at a fantastic rate! The rate of leakage depends on the mono
+  version. What am I doing wrong?
 
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
@@ -25,6 +26,8 @@ TODO
 
  - Drop songs from future part of playlist if they are flagged as suck or
    something.
+
+ - Display the mp3 bitrate 
 
  - Add support for mono mp3 files
 
