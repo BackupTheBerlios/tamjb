@@ -79,12 +79,13 @@ namespace byteheaven.tamjb.GtkPlayer
          //
          Glade.XML glade = new Glade.XML( null,
                                           "tam.GtkPlayer.exe.glade",
-                                          null /* null means all */,
+                                          "_mainWindow",
                                           null );
 
          glade.Autoconnect( this );
+         _mainWindow = (Gtk.Window)glade.GetWidget( "_mainWindow" );
+         Debug.Assert( null != _mainWindow );
 
-         _configWindow.TransientFor = _mainWindow;
          try
          {
             _settings = PlayerSettings.Fetch();
@@ -101,13 +102,15 @@ namespace byteheaven.tamjb.GtkPlayer
 
          _SetUpControls();
 
-         // Load application icon here if possible
+         // Load application icon here if possible, save for later use
+         // in dialogs.
 //          Gdk.Pixbuf icon = new Gdk.Pixbuf( Assembly.GetExecutingAssembly(), 
 //                                            "appicon.png" );
 //
 //          Debug.Assert( null != icon );
-//          _mainWidnow.Icon = icon;
+//          _mainWindow.Icon = icon;
 //          _configWindow.Icon = icon;
+//          _whoAreYouWindow.Icon = icon;
 
 
          // Background processing callback
@@ -221,7 +224,7 @@ namespace byteheaven.tamjb.GtkPlayer
             {
                // Try now: throws on failure.
                Debug.Assert( null != _settings, "settings object missing" );
-               _Status( "Checking...", 2 );
+               _Status( "Connecting...", 2 );
                _backend = _ConnectToEngine( _settings.serverName,
                                             _settings.serverPort );
                _Status( "Done", 4 );
@@ -395,10 +398,13 @@ namespace byteheaven.tamjb.GtkPlayer
                            out double suckPercent,
                            out double moodPercent )
       {
-         if (null == _backend)
+         // If we're not connected OR we don't know who we are, just
+         // don't worry about it.
+         if (null == _backend ||
+             null == _credentials || null == _mood)
          {
             suckPercent = 0.0;
-            moodPercent = 0.0;
+            moodPercent = 100.0;
             return;
          }
 
@@ -456,11 +462,11 @@ namespace byteheaven.tamjb.GtkPlayer
                                          _FixTitle(info) );
                _trackListStore.SetValue( iter, 
                                          (int)TrackListOffset.SUCK, 
-                                         suckLevel.ToString( "f1" ) );
+                                         suckLevel.ToString( "f0" ) );
 
                _trackListStore.SetValue( iter, 
                                          (int)TrackListOffset.MOOD,
-                                         moodLevel.ToString( "f1" ) );
+                                         moodLevel.ToString( "f0" ) );
 
                _trackListStore.SetValue( iter, 
                                          (int)TrackListOffset.TRACK_INFO,
@@ -773,8 +779,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
             _Status( serverUrl + " - Connected", 10 );
 
-            _credentials = engine.GetDefaultCredentials();
-            _mood = engine.GetDefaultMood();
+            engine.GetCurrentUserAndMood( out _credentials, out _mood );
             return engine;
          }
          catch ( System.Net.WebException snw )
@@ -800,11 +805,26 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_ConfigBtnClick]" );
 
-            // Show the semi-modal config window
-            _configHostnameEntry.Text = _settings.serverName;
-            _configPortEntry.Text = _settings.serverPort.ToString();
-            _configWindow.Show();
-            _configWindow.Present();
+            ConfigDialog config = 
+               new ConfigDialog( _mainWindow,
+                                 _settings.serverName,
+                                 _settings.serverPort.ToString() );
+
+            config.Run();
+            if (config.isOk)
+            {
+               _settings.serverName = config.serverName;
+               _settings.serverPort = config.serverPort;
+
+               // (re)connect to the player
+               _backend = null;
+               _backend = _ConnectToEngine( _settings.serverName,
+                                            _settings.serverPort );
+               
+               // If we got here, nothing threw an exception. Wow!
+               // Save for future generations!
+               _settings.Store();
+            }
          }
          catch (Exception e)
          {
@@ -813,42 +833,102 @@ namespace byteheaven.tamjb.GtkPlayer
       }
 
       ///
-      /// User has approved the new configuration--save it?
+      /// Show the "who the heck are you"? Dialog
       ///
-      void _OnConfigOk( object sender, EventArgs eventArgs )
+      void _UserBtnClick( object sender, EventArgs args )
       {
          try
          {
-            _Trace( "[_OnConfigOk]" );
+            _Trace( "[_UserBtnClick]" );
 
-            bool convertOk = false;
-            int port = 0;
-            try
+            MoodDialog moodWin = 
+               new MoodDialog( _mainWindow,
+                               _backend,
+                               _credentials,
+                               _mood,
+                               MoodDialog.DefaultField.USER );
+
+            moodWin.Run();
+            if (moodWin.isOk)
             {
-               port = Convert.ToInt32( _configPortEntry.Text );
-               convertOk = true;
+               // get new/existing user's credentials from backend
+               _credentials = _backend.GetUser( moodWin.userName );
+               if (null == _credentials)
+                  _credentials = _backend.CreateUser( moodWin.userName );
+
+               _backend.RenewLogon( _credentials );
+
+               if ("" == moodWin.moodName)
+               {
+                  _mood = null;
+               }
+               else
+               {
+                  // Find the mood that matches this name
+                  _mood = _backend.GetMood( _credentials, 
+                                            moodWin.moodName );
+
+                  if (null == _mood)
+                  {
+                     _mood = _backend.CreateMood( _credentials, 
+                                                  moodWin.moodName );
+                  }
+
+                  _backend.SetMood( _credentials, _mood );
+               }
             }
-            catch (Exception e)
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      ///
+      /// Show the "who the heck are you" dialog but with mood selected
+      ///
+      void _MoodBtnClick( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_MoodBtnClick]" );
+
+            MoodDialog moodWin = 
+               new MoodDialog( _mainWindow,
+                               _backend,
+                               _credentials,
+                               _mood,
+                               MoodDialog.DefaultField.MOOD );
+
+            moodWin.Run();
+            if (moodWin.isOk)
             {
-               // I think we should prevent all invalid entry rather
-               // than catching it here after the fact.
-               _Status( "Invalid port - " + e.Message, 30 );
-               return;
+               // get new/existing user's credentials from backend
+               _credentials = _backend.GetUser( moodWin.userName );
+               if (null == _credentials)
+                  _credentials = _backend.CreateUser( moodWin.userName );
+
+               _backend.RenewLogon( _credentials );
+
+               if ("" == moodWin.moodName)
+               {
+                  _mood = null;
+               }
+               else
+               {
+                  // Find the mood that matches this name
+                  _mood = _backend.GetMood( _credentials, 
+                                            moodWin.moodName );
+
+                  if (null == _mood)
+                  {
+                     _mood = _backend.CreateMood( _credentials, 
+                                                  moodWin.moodName );
+                  }
+
+                  _backend.SetMood( _credentials, _mood );
+               }
             }
-
-            // If we got here, the controls validated
-            _settings.serverName = _configHostnameEntry.Text;
-            _settings.serverPort = port;
-            _configWindow.Hide();
-
-            // (re)connect to the player
-            _backend = null;
-            _backend = _ConnectToEngine( _settings.serverName,
-                                         _settings.serverPort );
-
-            // If we got here, nothing threw an exception. Wow!
-            // Save for future generations!
-            _settings.Store();
          }
          catch (Exception e)
          {
@@ -856,16 +936,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
       
-      ///
-      /// Changed your mind, did you?
-      ///
-      void _OnConfigCancel( object sender, EventArgs eventArgs )
-      {
-         _Trace( "[_OnConfigCancel]" );
-         _configWindow.Hide();
-      }
-
-
+      
       void _OnLockToggled( object sender, EventArgs args )
       {
          /// \todo Have the appropriate toggles share 1 function.
@@ -952,8 +1023,15 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          _Trace( "[_UpdateTrackInfoButtonState]" );
 
-         _userBtn.Label = "User: " + _credentials.name;
-         _moodBtn.Label = "Mood: " + _mood.name;
+         if (null == _credentials)
+            _userBtn.Label = "(nobody)";
+         else
+            _userBtn.Label = _credentials.name;
+
+         if (null == _mood)
+            _moodBtn.Label = "(neutral)";
+         else
+            _moodBtn.Label = _mood.name;
 
          if (null == _selectedTrackInfo)
          {
@@ -971,11 +1049,6 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _Trace( string msg )
-      {
-         Trace.WriteLine( msg, "GtkPlayer" );
-      }
-
       void _Status( string msg, int timeout )
       {
          _Trace( "Status: " + msg ); // to console also
@@ -983,6 +1056,11 @@ namespace byteheaven.tamjb.GtkPlayer
          _statusBar.Pop( _statusId );
          _statusBar.Push( _statusId, msg );
          _statusBarPopTimeout = timeout / 2; // 2 second poll interval
+      }
+
+      void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "GtkPlayer" );
       }
 
       // Configuration
@@ -1065,19 +1143,8 @@ namespace byteheaven.tamjb.GtkPlayer
       [Glade.Widget]
       Statusbar _statusBar;
 
-      // Configuration windows
-      [Glade.Widget]
-      Entry  _configHostnameEntry;
-
-      [Glade.Widget]
-      Entry  _configPortEntry;
-
       // Application windows
-      [Glade.Widget]
       Window _mainWindow;
-
-      [Glade.Widget]
-      Window _configWindow;
 
 
       int _statusBarPopTimeout = 0;

@@ -53,19 +53,47 @@ namespace byteheaven.tamjb.Interfaces
    ///
    public interface IEngine
    {
-      /// This is for the server only, not the client
+      ICredentials GetUser( string name );
+
+      IMood GetMood( ICredentials cred, string name );
+
       ///
-      // void Poll();
+      /// Return an array of user names that can be used to log in
+      ///
+      ICredentials [] GetUserList();
+
+      ///
+      /// Return the list of available moods
+      ///
+      IMood [] GetMoodList( ICredentials cred );
+
+      ///
+      /// Create new user, returns new user's credentials.
+      ///
+      /// \throw exception if already exists, etc.
+      ///
+      ICredentials CreateUser( string name );
+
+      ///
+      /// Create and return a new mood for this user
+      ///
+      IMood CreateMood( ICredentials cred, string name );
+
+      ///
+      /// Initialize or renew a logon using existing credentials
+      ///
+      void RenewLogon( ICredentials cred );
+
+      ///
+      /// Set current mood for a logged-on user
+      ///
+      void SetMood( ICredentials cred, IMood mood );
 
       /// 
-      /// If you don't want to log in, you can always be Mr/Ms. Guest.
+      /// Figure out who is currently in control,a nd what they think
       ///
-      ICredentials GetDefaultCredentials();
-
-      ///
-      /// The default mood. When you don't know how you feel!
-      ///
-      IMood GetDefaultMood();
+      void GetCurrentUserAndMood( out ICredentials cred,
+                                  out IMood mood );
 
       ///
       /// Get a snapshot of the engine state. 

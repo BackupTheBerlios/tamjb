@@ -178,8 +178,8 @@ namespace byteheaven.tamjb.Engine
             SimpleMp3Player.Player.OnReadBuffer +=
                new ReadBufferHandler( _TrackReadCallback );
 
-            _controllingUser = GetDefaultCredentials();
-            _controllingMood = GetDefaultMood();
+            _controllingUser = null;
+            _controllingMood = null;
          }
          catch (Npgsql.NpgsqlException ne)
          {
@@ -196,42 +196,22 @@ namespace byteheaven.tamjb.Engine
       }
 
       //
-      // foo
+      // Get the current mood. May return null for either or both
       //
-      public ICredentials GetDefaultCredentials()
+      public void GetCurrentUserAndMood( out ICredentials cred,
+                                         out IMood mood )
       {
          _Lock();
          try
          {
-            // Return built-in user mr. guest
-            Credentials cred;
-            _database.GetUser( "guest", out cred );
-            return cred;
+            cred = _controllingUser;
+            mood = _controllingMood;
          }
          finally
          {
             _Unlock();
          }
       }
-
-      ///
-      /// The default mood. When you don't know how you feel!
-      ///
-      public IMood GetDefaultMood()
-      {
-         _Lock();
-         try
-         {
-            Mood mood;
-            _database.GetMood( "unknown", out mood );
-            return mood;
-         }
-         finally
-         {
-            _Unlock();
-         }
-      }
-
 
       ///
       /// \todo Does state get copied both ways in spite of this
@@ -902,8 +882,8 @@ namespace byteheaven.tamjb.Engine
 
       // Sample value for start of soft clipping. Leftover must
       // be 32767 - CLIP_THRESHOLD.
-      static readonly double CLIP_THRESHOLD = 16000.0;
-      static readonly double CLIP_LEFTOVER =  16767.0;
+      static readonly double CLIP_THRESHOLD = 18000.0;
+      static readonly double CLIP_LEFTOVER =  14767.0;
 
       ///
       /// Calculate average power of this buffer, and update any 
@@ -1196,6 +1176,167 @@ namespace byteheaven.tamjb.Engine
                _shouldBePlaying = true;
             }
             ++ _changeCount;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      ///
+      /// Return the list of available moods (as IMood)
+      ///
+      public IMood [] GetMoodList( ICredentials cred )
+      {
+         _Lock();
+         try
+         {
+            ArrayList moodList = _database.GetMoodList( cred );
+            return (IMood[])moodList.ToArray(typeof(IMood));
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      public ICredentials [] GetUserList()
+      {
+         _Lock();
+         try
+         {
+            ArrayList credList = _database.GetUserList();
+            return (ICredentials[])credList.ToArray(typeof(ICredentials));
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      public ICredentials CreateUser( string name )
+      {
+         _Lock();
+         try
+         {
+            _database.CreateUser( name );
+            ICredentials cred;
+            if (!_database.GetUser( name, out cred ))
+            {
+               throw new ApplicationException( 
+                  "Internal error, could not retrieve just-created user" );
+            }
+
+            return cred;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      ///
+      /// Create and return a new mood for this user
+      ///
+      public IMood CreateMood( ICredentials cred, string name )
+      {
+         _Lock();
+         try
+         {
+            _database.CreateMood( cred, name );
+            IMood mood;
+
+            if (!_database.GetMood( cred, name, out mood ))
+            {
+               throw new ApplicationException( 
+                  "Internal error, could not retrieve just-created mood" );
+            }
+            return mood;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      public void RenewLogon( ICredentials cred )
+      {
+         _Lock();
+         try
+         {
+            if (null == cred)
+            {
+               throw new ApplicationException( "no credentials" );
+            }
+
+            // TODO: see if this user is in the database.
+            ++_changeCount;
+            _controllingUser = cred;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      public void SetMood( ICredentials cred, IMood mood )
+      {
+         _Lock();
+         try
+         {
+            if (null == cred || null == mood)
+               throw new ApplicationException( "bad parameter" );
+
+            if (_controllingUser.id != cred.id)
+               throw new ApplicationException( "You are not in control" );
+
+            // TODO: see if this user/mood is in the database
+
+            ++_changeCount;
+            _controllingMood = mood;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      ///
+      /// Get an existing mood by name for a given user
+      ///
+      public IMood GetMood( ICredentials cred, string name )
+      {
+         _Lock();
+         try
+         {
+            if (null == cred)
+               return null;
+
+            IMood mood;
+            if (!_database.GetMood( cred, name, out mood ))
+               return null;
+
+            return mood;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      ///
+      /// Get the credentials for this user
+      ///
+      public ICredentials GetUser( string name )
+      {
+         _Lock();
+         try
+         {
+            ICredentials cred;
+            if (!_database.GetUser( name, out cred ))
+               return null;
+
+            return cred;
          }
          finally
          {

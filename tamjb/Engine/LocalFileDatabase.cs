@@ -95,27 +95,12 @@ namespace byteheaven.tamjb.Engine
       ///
       void _CreateInitialData()
       {
-         // The default user: guest
-         string query =
-            "INSERT INTO users (\n" + 
-            "  name\n" +
-            " ) VALUES (\n" +
-            "  'guest'\n" +
-            " )";
+         CreateUser( "guest" );
 
-         _ExecuteNonQuery( query );
+         ICredentials guest;
+         GetUser( "guest", out guest );
 
-         // The default mood: unknown
-         query =
-            "INSERT INTO mood (\n" + 
-            "  user_id,\n" +
-            "  name\n" +
-            " ) VALUES (\n" +
-            "  0,\n" +          // link to default user
-            "  'unknown'\n" +
-            " )";
-
-         _ExecuteNonQuery( query );
+         CreateMood( guest, "unknown" );
       }
 
       ///
@@ -288,16 +273,46 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Retrieve a user's info by name.
+      /// Create a user with this name. Doesn't give you the ID
+      /// or anything, so there!
       ///
-      public void GetUser( string name,
-                           out Credentials creds )
+      public void CreateUser( string name )
       {
-         string query = 
-            "SELECT id\n" +
-            + " FROM users"
-            + " WHERE name = '" + _StripEvil(name) + "'";
-            ;
+         // The default user: guest
+         string query =
+            "INSERT INTO users (\n" + 
+            "  name\n" +
+            " ) VALUES (\n" +
+            "  '" + _StripEvil(name) + "'\n" +
+            " )";
+
+         _ExecuteNonQuery( query );
+      }
+
+      public void CreateMood( ICredentials cred,
+                              string name )
+      {
+         // The default mood: unknown
+         string query =
+            "INSERT INTO mood (\n" + 
+            "  user_id,\n" +
+            "  name\n" +
+            " ) VALUES (\n" +
+            "  " + cred.id + ",\n" +
+            "  '" + _StripEvil(name) + "'\n" +
+            " )";
+
+         _ExecuteNonQuery( query );
+      }
+
+      ///
+      /// Get the list of users in the database
+      ///
+      /// \return ArrayList full of ICredentials objects
+      ///
+      public ArrayList GetUserList()
+      {
+         string query = "SELECT id, name FROM users";
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -309,16 +324,15 @@ namespace byteheaven.tamjb.Engine
             cmd.CommandText = query;
             reader = cmd.ExecuteReader();
 
-            PlayableData returnData;
-            if (!reader.Read())
+            ArrayList returnList = new ArrayList();
+            while (reader.Read())
             {
-               // Nothing returned. This is bad!
-               throw new Exception( "User name not found" );
+               uint id = (uint)reader.GetInt32(0); 
+               string name = reader.GetString(1);
+               returnList.Add( new Credentials( name, id ) );
             }
 
-            uint id = (uint)reader.GetInt32(0); 
-            creds = new Credentials( name, id );
-            return;
+            return returnList;
          }
          catch (Exception e)
          {
@@ -350,12 +364,18 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Retrieve a user's info by name.
       ///
-      public void GetMood( string name,
-                           out Mood mood )
+      /// \param name user's name
+      /// \param creds Returned as a new user information struct or 
+      ///   null if not found. (Check return value)
+      ///
+      /// \return true on success, false if user does not exist
+      ///
+      public bool GetUser( string name,
+                           out ICredentials creds )
       {
          string query = 
             "SELECT id\n" +
-            + " FROM mood"
+            + " FROM users"
             + " WHERE name = '" + _StripEvil(name) + "'";
             ;
 
@@ -372,13 +392,138 @@ namespace byteheaven.tamjb.Engine
             PlayableData returnData;
             if (!reader.Read())
             {
-               // Nothing returned. This is bad!
-               throw new Exception( "User name not found" );
+               creds = null;
+               return false;
+            }
+
+            uint id = (uint)reader.GetInt32(0); 
+            creds = new Credentials( name, id );
+            return true;        // found user, return true!
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      ///
+      /// Get all moods for this user.
+      ///
+      /// \return ArrayList full of IMood objects
+      ///
+      public ArrayList GetMoodList( ICredentials cred )
+      {
+         string query = 
+            "SELECT id, name\n" +
+            + " FROM mood\n"
+            + " WHERE user_id = " + cred.id;
+            ;
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+            reader = cmd.ExecuteReader();
+
+            ArrayList returnList = new ArrayList();
+            while (reader.Read())
+            {
+               uint id = (uint)reader.GetInt32(0); 
+               string name = reader.GetString(1);
+               returnList.Add( new Mood( name, id ) );
+            }
+
+            return returnList;
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      ///
+      /// Retrieve a user's mood info by name--name is unique to a 
+      /// specific user, although the id is globally unique.
+      ///
+      /// \return true on success, false if this mood is not found
+      ///   
+      public bool GetMood( ICredentials credentials,
+                           string name,
+                           out IMood mood )
+      {
+         string query = 
+            "SELECT id\n" +
+            + " FROM mood\n"
+            + " WHERE name = '" + _StripEvil(name) + "'\n"
+            + " AND user_id = " + credentials.id
+            ;
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+            reader = cmd.ExecuteReader();
+
+            PlayableData returnData;
+            if (!reader.Read()) // no data found?
+            {
+               mood = null;
+               return false;
             }
 
             uint id = (uint)reader.GetInt32(0); 
             mood = new Mood( name, id );
-            return;
+            return true;        // data found, yay
          }
          catch (Exception e)
          {
