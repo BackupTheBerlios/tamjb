@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# $Id$
+
+# binary/source package info
+PACKAGE_DIR=tamjb-snapshot
+PACKAGE_TAG=SNAPSHOT_12_05_2004
+LIBDIR="../lib"
+
+mkdir $PACKAGE_DIR
+mkdir $PACKAGE_DIR/lib
+
+# Copy things that I'm distributing in source form and providing
+# patches+links to the original source (presumably built elsewhere)
+cp $LIBDIR/esd-sharp.dll $PACKAGE_DIR/lib/. || exit 1
+cp $LIBDIR/Mp3Sharp.dll $PACKAGE_DIR/lib/. || exit 1
+cp $LIBDIR/mp3IdkonvertUtil.dll $PACKAGE_DIR/lib/. || exit 1
+
+# Get and build tamjb
+( cd $PACKAGE_DIR && cvs get -r $PACKAGE_TAG tamjb ) || exit 1
+( cd $PACKAGE_DIR/tamjb && make  ) || exit 1
+
+# I don't think I can distribute this, as it's closed-source
+rm $PACKAGE_DIR/lib/mp3IdkonvertUtil.dll
+
+# Zip it up
+zip -r $PACKAGE_DIR.zip $PACKAGE_DIR
+
+

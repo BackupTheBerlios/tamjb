@@ -45,9 +45,6 @@ DEPLIBS = $(LIBDIR)/tam.LocalFileDatabase.dll \
 
 BINARY_TARGETS = $(LIBDIR)/tam.Engine.dll
 
-# Where to put a binary package
-PACKAGE_DIR=tamjb-snapshot
-
 
 all: dll_subdirs $(BINARY_TARGETS) exe_subdirs doc
 
@@ -69,20 +66,6 @@ $(LIBDIR)/tam.Engine.dll: $(ENGINE_SRCS)
                 -out:$@ $(ENGINE_SRCS)
 
 doc: .build_docs
-
-#
-# Build a zip of the dll's. This is lame, but it's what you get for
-# now. Really needs packages for various linux distros and win32.
-#
-package: all
-	mkdir $(PACKAGE_DIR)
-	cp README $(PACKAGE_DIR)/.
-	cp COPYING $(PACKAGE_DIR)/.
-	cp $(LIBDIR)/tam.*.dll $(PACKAGE_DIR)/.
-	cp $(LIBDIR)/esd-sharp.dll $(PACKAGE_DIR)/.
-	cp $(LIBDIR)/Mp3Sharp.dll $(PACKAGE_DIR)/.
-	zip -r $(PACKAGE_DIR).zip $(PACKAGE_DIR)
-
 
 .build_docs: $(DEPLIBS) $(BINARY_TARGETS)
 	doxygen ./doxygen.conf
