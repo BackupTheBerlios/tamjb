@@ -235,12 +235,12 @@ namespace byteheaven.id3
             if (frameHeader.size > 1000000) // like, 1 million bytes? Right.
             {
                // skip frame
-               _Trace( "Note: this '"
-                       + frameHeader.frameId
-                       + "' frame is unusually large: "
-                       + frameHeader.size );
+//                _Trace( "Note: this '"
+//                        + frameHeader.frameId
+//                        + "' frame is unusually large: "
+//                        + frameHeader.size );
 
-               _Trace( " (skipping frame)" );
+//                _Trace( " (skipping frame)" );
                _reader.Skip( frameHeader.size );
                continue;        // **NEXT FRAME**
             }

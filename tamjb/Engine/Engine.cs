@@ -822,7 +822,11 @@ namespace byteheaven.tamjb.Engine
       {
          if (original > CLIP_THRESHOLD) // Soft-clip 
          {
-            Console.WriteLine( "CLIP-R" );
+            if (original > 32767 || original < -32767)
+            {
+               // Fascinating, soft clipping saved us from an awful noise!
+               Console.WriteLine( "Saved By The CLIP: " + original );
+            }
 
             if (original > 0)
             {
@@ -846,15 +850,17 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Target power level for compression/expansion.
       /// 
-      /// Something approximating 9dB of headroom
+      /// Hot-mastered albums have an average power level with
+      /// like -3dB from the absolute max level. Oh well, might 
+      /// as well match that.
       ///
-      static readonly double TARGET_POWER_LEVEL = 7000.0;
+      static readonly double TARGET_POWER_LEVEL = 16000.0;
 
       ///
       /// Level below which we stop compressing and start
       /// expanding (if possible)
       ///
-      static readonly double GATE_LEVEL = 350.0;
+      static readonly double GATE_LEVEL = 1000.0;
 
       /// 
       /// Compression ratio where for n:1 compression, 
@@ -867,23 +873,23 @@ namespace byteheaven.tamjb.Engine
       /// 0.5 = 2:1
       /// 0.0 = no compression 
       ///
-      static readonly double RATIO = 0.875;
+      static readonly double RATIO = 0.833;
 
       //
       // Attack time really should be more than a 10 milliseconds to 
       // avoid distortion on kick drums, unless the release time is 
       // really long and you want to use it as a limiter, etc.
       //
-      static readonly double ATTACK_RATIO_NEW = 0.0004;
-      static readonly double ATTACK_RATIO_OLD = 0.9996;
+      static readonly double ATTACK_RATIO_NEW = 0.001;
+      static readonly double ATTACK_RATIO_OLD = 0.999;
 
-      static readonly double DECAY_RATIO_NEW = 0.000001;
-      static readonly double DECAY_RATIO_OLD = 0.999999;
+      static readonly double DECAY_RATIO_NEW = 0.00000035;
+      static readonly double DECAY_RATIO_OLD = 0.99999965;
 
       // Sample value for start of soft clipping. Leftover must
       // be 32767 - CLIP_THRESHOLD.
       static readonly double CLIP_THRESHOLD = 17000.0;
-      static readonly double CLIP_LEFTOVER =  15768.0;
+      static readonly double CLIP_LEFTOVER =  15767.0;
 
       ///
       /// Calculate average power of this buffer, and update any 
