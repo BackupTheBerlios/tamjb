@@ -811,7 +811,7 @@ namespace tam.SimpleMp3Player
       ///
       static void _AudioThread()
       {
-         Trace.WriteLine( "AUD> hello" );
+         Trace.WriteLine( "hello", "AUD" );
          
          while (true)
          {
@@ -821,21 +821,31 @@ namespace tam.SimpleMp3Player
             
             if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, false ))
             {
-               Trace.WriteLine( "AUD> Timed out waiting for the audio mutex" );
+               Trace.WriteLine( "Timed out waiting for the audio mutex",
+                                "AUD" );
                continue;  // keep trying
             }
 
             try
             {
-               int toWrite = buffer.validBytes;
                int written = 0;
-               while (toWrite > 0)
+               while (written < buffer.validBytes)
                {
-                  written = _estream.Write( buffer.mp3Buffer, 
-                                            written, 
-                                            toWrite );
+                  // Note that this function writes length-offset bytes,
+                  // so always pass the entire size of the buffer:
+                  int actual = _estream.Write( buffer.mp3Buffer,
+                                               written, 
+                                               buffer.validBytes - written );
 
-                  toWrite -= written;
+                  if (actual <= 0)
+                  {
+                     Trace.WriteLine( "Warning: EsdSharp.Write returned <= 0, ("
+                                      + actual + ")", 
+                                      "AUD" );
+                     break;
+                  }
+
+                  written += actual;
                }
             }
             finally
