@@ -199,6 +199,8 @@ namespace byteheaven.tamjb.GtkPlayer
 
       void _OnMp3BtnClick( object sender, EventArgs args )
       {
+         // The GTK widget is not well suited to selecting directories
+         // right now. I'll do the best I can for the moment:
          FileSelection dlg = new FileSelection( "Enter Database Path" );
          dlg.Filename = _mp3RootDirEntry.Text;
          dlg.SelectionEntry.Text = ".";
