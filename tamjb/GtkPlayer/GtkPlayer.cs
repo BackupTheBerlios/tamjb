@@ -69,7 +69,9 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( "Could not load settings, using defaults: " + e.Message );
+            _Status( "Could not load settings, using defaults: " + e.Message,
+                     15 );
+
             _settings = new PlayerSettings();
             _settings.serverName = "localhost";
             _settings.serverPort = 5432;
@@ -171,25 +173,42 @@ namespace tam.GtkPlayer
       ///
       bool _PollingCallback()
       {
+         _UpdateNow();
+
+         if (_statusBarPopTimeout > 0)
+         {
+            -- _statusBarPopTimeout;
+            if (_statusBarPopTimeout == 0)
+               _statusBar.Pop( _statusId );
+         }
+
+         return true; // keep calling
+      }
+
+      ///
+      /// Called from the PollingCallback, and also when we just changed
+      /// the attributes of a track (so we KNOW we need an update)
+      ///
+      void _UpdateNow()
+      {
          try
          {
             if (null == _backend)
             {
                // Try now: throws on failure.
                Debug.Assert( null != _settings, "settings object missing" );
+               _Status( "Checking...", 2 );
                _backend = _ConnectToEngine( _settings.serverName,
                                             _settings.serverPort );
+               _Status( "Done", 4 );
             }
 
             // State changed?
             if (_backend.CheckState(ref _engineState) || _pendingUpdate )
-               _UpdateNowPlayingInfo();
-
-            if (_statusBarPopTimeout > 0)
             {
-               -- _statusBarPopTimeout;
-               if (_statusBarPopTimeout == 0)
-                  _statusBar.Pop( _statusId );
+               _Status( "Updating...", 30 );
+               _UpdateNowPlayingInfo();
+               _Status( "Done", 4 );
             }
          }
          catch (Exception e)
@@ -198,11 +217,14 @@ namespace tam.GtkPlayer
             /// \todo The GUI needs a status window with some sort of
             ////  "lost connection" indicator...
             ///
-            _Trace( "Could not update displayed track info: " 
-                    + e.Message );
-         }
 
-         return true; // keep calling
+            // dump stack trace
+            _Trace( "Could not update displayed track info: " 
+                    + e.ToString() );
+
+            _Status( "Could not update displayed track info: " 
+                     + e.Message, 20 );
+         }
       }
       
       ///
@@ -220,6 +242,7 @@ namespace tam.GtkPlayer
 
          if (null == trackInfo) // not playing after all
          {
+            _Status( "Server is stopped", 30 );
             _titleDisplay.Buffer.Text = "(stopped)";
             _artistDisplay.Buffer.Text = "";
          }
@@ -373,7 +396,7 @@ namespace tam.GtkPlayer
             if (title.Length > TITLE_MAX_WIDTH)
             {
                title = "..." 
-                  + title.Substring( title.Length - TITLE_MAX_WIDTH - 4 );
+                  + title.Substring( title.Length - (TITLE_MAX_WIDTH - 4) );
             }
             
             return title;
@@ -478,7 +501,7 @@ namespace tam.GtkPlayer
       {
          try
          {
-            _Trace( "Sucks" );
+            _Trace( "[_SuckBtnClick]" );
 
             if (_engineState.currentTrackIndex >= 0)
             {
@@ -579,13 +602,13 @@ namespace tam.GtkPlayer
             string serverUrl = 
                "tcp://" + serverName + ":" + serverPort + "/Engine";
 
-            _Trace( serverUrl + " - Trying to connect" );
+            _Status( serverUrl + " - Trying...", 10 );
 
             // Retrieve a reference to the remote object
             IEngine engine = (IEngine) Activator.GetObject( typeof(IEngine), 
                                                             serverUrl );
 
-            _Trace( serverUrl + " - Connected" );
+            _Status( serverUrl + " - Connected", 10 );
             return engine;
          }
          catch ( System.Net.WebException snw )
@@ -594,6 +617,8 @@ namespace tam.GtkPlayer
             // that advanced error msg dialog I want?
             string msg = "Couldn't connect to the server '" 
                + serverName + ":" + serverPort + "'";
+
+            _Status( msg, 10 );
 
             // For now just rethrow. (Ick!)
             throw new ApplicationException( msg, snw );
@@ -669,15 +694,13 @@ namespace tam.GtkPlayer
 
       void _SetPendingUpdate()
       {
-         // TODO: disable lots of buttons here?
-         if (!_pendingUpdate)
-         {
-            _pendingUpdate = true;
-            _titleDisplay.Buffer.Text = "";
-            _artistDisplay.Buffer.Text = "";
-            _albumDisplay.Buffer.Text = "";
-            _pathDisplay.Buffer.Text = "";
-         }
+         _pendingUpdate = true;
+         _titleDisplay.Buffer.Text = "";
+         _artistDisplay.Buffer.Text = "";
+         _albumDisplay.Buffer.Text = "";
+         _pathDisplay.Buffer.Text = "";
+
+         _UpdateNow();
       }
 
       ///
@@ -719,9 +742,15 @@ namespace tam.GtkPlayer
       void _Trace( string msg )
       {
          Trace.WriteLine( msg, "GtkPlayer" );
+      }
+
+      void _Status( string msg, int timeout )
+      {
+         _Trace( "Status: " + msg ); // to console also
+
          _statusBar.Pop( _statusId );
          _statusBar.Push( _statusId, msg );
-         _statusBarPopTimeout = 5;    // 10 seconds
+         _statusBarPopTimeout = timeout / 2; // 2 second poll interval
       }
 
       // Configuration
