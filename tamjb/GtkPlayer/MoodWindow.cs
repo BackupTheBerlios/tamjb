@@ -86,8 +86,8 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       public MoodDialog( Gtk.Window        parent,
                          IEngine           backend,
-                         ICredentials      cred,
-                         IMood             mood,
+                         Credentials      cred,
+                         Mood             mood,
                          DefaultField      defaultField )
       {
          Debug.Assert( null != backend );
@@ -110,10 +110,10 @@ namespace byteheaven.tamjb.GtkPlayer
 
          // Set up the available users list.
 
-         ICredentials [] credList = backend.GetUserList();
+         Credentials [] credList = backend.GetUserList();
          string [] credNameList = new string[ credList.Length ];
          for (int i = 0; i < credList.Length; i++)
-            credNameList[i] = ((ICredentials)credList[i]).name;
+            credNameList[i] = ((Credentials)credList[i]).name;
 
          _userCombo.PopdownStrings = credNameList;
 
@@ -152,12 +152,12 @@ namespace byteheaven.tamjb.GtkPlayer
 
       ///
       /// Update the options in the mood list pulldown
-      void _SetMoodList( ICredentials cred )
+      void _SetMoodList( Credentials cred )
       {
-         IMood [] moodList = _backend.GetMoodList( cred );
+         Mood [] moodList = _backend.GetMoodList( cred );
          string [] moodNameList = new string[ moodList.Length ];
          for (int i = 0; i < moodList.Length; i++)
-            moodNameList[i] = ((IMood)moodList[i]).name;
+            moodNameList[i] = ((Mood)moodList[i]).name;
 
          _moodCombo.PopdownStrings = moodNameList;
 
@@ -284,7 +284,7 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          // Show only the valid moods for this user!
          string user = _userCombo.Entry.Text;
-         ICredentials cred = _backend.GetUser( user );
+         Credentials cred = _backend.GetUser( user );
          if (null == cred)
          {
             _userDelBtn.Sensitive = false;
@@ -307,10 +307,10 @@ namespace byteheaven.tamjb.GtkPlayer
          
          if ("" != moodName)
          {
-            ICredentials cred = _backend.GetUser( userName );
+            Credentials cred = _backend.GetUser( userName );
             if (null != cred)
             {
-               IMood mood = _backend.GetMood( cred, moodName );
+               Mood mood = _backend.GetMood( cred, moodName );
                if (null != mood)
                {
                   _moodDelBtn.Sensitive = true;

@@ -4,6 +4,7 @@
 TARGET = tamjb.Engine.dll
 
 SOURCES = AssemblyInfo.cs \
+        Backend.cs \
         Engine.cs \
         Compressor.cs \
         LocalFileDatabase.cs
@@ -40,7 +41,7 @@ REFS = -r System.Data \
 
 all: $(TARGET)
 
-$(TARGET): $(SOURCES) $(REF_LIBS) Makefile
+$(TARGET): $(DEPLIBS) $(SOURCES) $(REF_LIBS) Makefile
 	mcs $(DBFLAGS) $(DEBUGFLAGS) $(LIBPATH) $(REFS) $(SOURCES) \
                 -target:library -out:$@
 

@@ -15,9 +15,7 @@ INTERFACE_SRCS = AssemblyInfo.cs \
         PlayableData.cs \
         IEngine.cs \
         IPlaylistCriterion.cs \
-        ITrackInfo.cs \
-        ICredentials.cs \
-        IMood.cs
+        ITrackInfo.cs
 
 # 
 # The interfaces (IEngine et al)

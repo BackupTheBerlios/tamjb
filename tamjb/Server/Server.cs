@@ -226,19 +226,22 @@ namespace byteheaven.tamjb.Server
             // be constructed correctly. There's GOTTA be a better way
             // to do this.
 
-            Engine.connectionString = _connectionString;
-            Engine.desiredQueueSize = QUEUE_MIN_SIZE;
+            Backend.Init( QUEUE_MIN_SIZE, _connectionString );
+            Backend.theBackend.bufferSize = bufferSize;
+            Backend.theBackend.bufferCount = bufferCount;
+            Backend.theBackend.bufferPreload = bufferCount;
+            Backend.theBackend.Poll();
 
             // Register as an available service for the tam Engine.
             _CreateChannel( _port );
 
-            // Every incoming message is serviced by the same object, which
-            // should be in memory always. I hope.
+            // The Engine object is a singlecall that references the
+            // statically created Backend object: Backend.theBackend.
 
             RemotingConfiguration.
                RegisterWellKnownServiceType( typeof(Engine), 
                                              "Engine", 
-                                             WellKnownObjectMode.Singleton ); 
+                                             WellKnownObjectMode.SingleCall ); 
 
             // Force creation of the SAO by creating a local client on
             // the server that polls the server to make it enqueue files.
@@ -258,16 +261,6 @@ namespace byteheaven.tamjb.Server
             // Drop priority of the scanner thread. I guess.
             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
 
-            Engine engine = 
-               (Engine) Activator.GetObject( typeof(Engine), 
-                                             serverUrl );
-
-            engine.bufferSize = bufferSize;
-            engine.bufferCount = bufferCount;
-            engine.bufferPreload = bufferCount;
-            engine.Poll();
-            engine = null;      // Let it go out of scope
-
             DateTime startTime = DateTime.Now;
             while (true)
             {
@@ -277,10 +270,6 @@ namespace byteheaven.tamjb.Server
                   Trace.WriteLine( "Exiting." );
                   return 0;
                }
-
-               engine = 
-                  (Engine) Activator.GetObject( typeof(Engine), 
-                                                serverUrl );
 
                // Continually scan all configured dirs for new mp3's
                try
@@ -304,7 +293,7 @@ namespace byteheaven.tamjb.Server
                         
                         Debug.Assert( scanner != null, "logic error" );
                         
-                        if (scanner.DoNextFile(5, engine) 
+                        if (scanner.DoNextFile(5, Backend.theBackend) 
                             == ScanStatus.FINISHED)
                         {
                            Trace.WriteLine( "Scan Finished" );
@@ -330,15 +319,14 @@ namespace byteheaven.tamjb.Server
                
                try
                {
-                  engine.Poll(); // keep the engine working
+                  Backend.theBackend.Poll(); // keep the engine working
                }
                catch (Exception e)
                {
                   Console.WriteLine( "Poll Failed: " + e.ToString() );
                }
 
-               engine = null;   // Release reference here!
-               Thread.Sleep( 3000 );   // wait a while
+               Thread.Sleep( 1000 );   // wait a while
             }
          }
          catch (Exception outerEx)

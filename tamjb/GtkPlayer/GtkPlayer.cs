@@ -234,8 +234,10 @@ namespace byteheaven.tamjb.GtkPlayer
             if (_backend.CheckState(ref _engineState) || _pendingUpdate )
             {
                _Status( "Updating...", 30 );
-               _backend.GetCurrentUserAndMood( out _credentials, out _mood );
+               _backend.GetCurrentUserAndMood( ref _credentials, ref _mood );
                _UpdateNowPlayingInfo();
+               _pendingUpdate = false;
+         
                _Status( "Done", 4 );
             }
          }
@@ -264,15 +266,11 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          _Trace( "[_UpdateNowPlayingInfo]" );
 
-         if (null != _engineState)
+         if (!_engineState.isPlaying)
          {
-            if (_engineState.currentTrackIndex < 0)
-            {
-               _Status( "Server is stopped", 30 );
-            }
+            _Status( "Server is stopped", 30 );
          }
-         _pendingUpdate = false;
-         
+
          _UpdateTrackListView();
          _UpdateTransportButtonState();
       }
@@ -285,9 +283,6 @@ namespace byteheaven.tamjb.GtkPlayer
       void _UpdateTrackInfoDisplay()
       {
          _Trace( "[_UpdateTrackInfoDisplay]" );
-
-         if (null == _engineState) // Hrmm
-            return;
 
          // Get selected track
          TreeModel model;
@@ -330,9 +325,6 @@ namespace byteheaven.tamjb.GtkPlayer
       void _SelectCurrentTrack()
       {
          _Trace( "[_SelectCurrentTrack]" );
-
-         if (null == _engineState) // Hrmm
-            return;
 
          // First make sure the list's selected track is the
          // current track
@@ -424,9 +416,6 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       void _UpdateTrackListView()
       {
-         if (null == _engineState) // huh
-            return;
-
          int i = _engineState.currentTrackIndex - HISTORY_SIZE;
          int row = 0;
          if (i < 0)
@@ -667,9 +656,6 @@ namespace byteheaven.tamjb.GtkPlayer
          _Trace( "[_NextBtnClick]" );
          try
          {
-            if (null == _engineState)
-               return;
-
             if (null == _selectedTrackInfo) 
             {
                _Trace( "  No track selected" );
@@ -695,8 +681,7 @@ namespace byteheaven.tamjb.GtkPlayer
          try
          {
             
-            if ((null == _engineState) ||
-                (_engineState.currentTrackIndex <= 0))
+            if (_engineState.currentTrackIndex <= 0)
             {
                return;
             }
@@ -727,9 +712,6 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnStopBtnClicked]" );
 
-            if (null == _engineState)
-               return;
-
             _backend.StopPlaying(); // Please stop! Please stop!
          }
          catch (Exception e)
@@ -746,9 +728,6 @@ namespace byteheaven.tamjb.GtkPlayer
          try
          {
             _Trace( "[_OnPlayBtnClicked]" );
-
-            if (null == _engineState)
-               return;
 
             _backend.StartPlaying(); // (if not already started)
          }
@@ -780,7 +759,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
             _Status( serverUrl + " - Connected", 10 );
 
-            engine.GetCurrentUserAndMood( out _credentials, out _mood );
+            engine.GetCurrentUserAndMood( ref _credentials, ref _mood );
             return engine;
          }
          catch ( System.Net.WebException snw )
@@ -1018,7 +997,7 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          _Trace( "[_UpdateTransportButtonState]" );
 
-         bool isConnected = (null != _engineState);
+         bool isConnected = (null != _backend);
 
          _nextBtn.Sensitive = isConnected;
          _prevBtn.Sensitive = isConnected;
@@ -1094,7 +1073,7 @@ namespace byteheaven.tamjb.GtkPlayer
       // Engine remote connection
 
       IEngine _backend = null;
-      IEngineState _engineState = null;
+      EngineState _engineState = new EngineState();
 
       // State for the list/tree widgets
 
@@ -1103,8 +1082,8 @@ namespace byteheaven.tamjb.GtkPlayer
       // State for the configurable attributes. I guess.
 
       // For now, the user credentials is a uint placeholder. Temporary.
-      ICredentials _credentials = null;
-      IMood        _mood = null;
+      Credentials _credentials = null;
+      Mood        _mood = null;
 
       // Holds basic info about the current track.
       ITrackInfo   _selectedTrackInfo = null;

@@ -98,7 +98,7 @@ namespace byteheaven.tamjb.Engine
       {
          CreateUser( "guest" );
 
-         ICredentials guest;
+         Credentials guest;
          GetUser( "guest", out guest );
 
          CreateMood( guest, "unknown" );
@@ -487,7 +487,7 @@ namespace byteheaven.tamjb.Engine
          _ExecuteNonQuery( query );
       }
 
-      public void CreateMood( ICredentials cred,
+      public void CreateMood( Credentials cred,
                               string name )
       {
          // The default mood: unknown
@@ -506,7 +506,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Get the list of users in the database
       ///
-      /// \return ArrayList full of ICredentials objects
+      /// \return ArrayList full of Credentials objects
       ///
       public ArrayList GetUserList()
       {
@@ -569,7 +569,7 @@ namespace byteheaven.tamjb.Engine
       /// \return true on success, false if user does not exist
       ///
       public bool GetUser( string name,
-                           out ICredentials creds )
+                           out Credentials creds )
       {
          string query = 
             "SELECT id\n" +
@@ -628,9 +628,9 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Get all moods for this user.
       ///
-      /// \return ArrayList full of IMood objects
+      /// \return ArrayList full of Mood objects
       ///
-      public ArrayList GetMoodList( ICredentials cred )
+      public ArrayList GetMoodList( Credentials cred )
       {
          string query = 
             "SELECT id, name\n" +
@@ -691,9 +691,9 @@ namespace byteheaven.tamjb.Engine
       ///
       /// \return true on success, false if this mood is not found
       ///   
-      public bool GetMood( ICredentials credentials,
+      public bool GetMood( Credentials credentials,
                            string name,
-                           out IMood mood )
+                           out Mood mood )
       {
          string query = 
             "SELECT id\n" +
@@ -927,8 +927,8 @@ namespace byteheaven.tamjb.Engine
       /// \return Total number of tracks in this playlist. If 0, the
       ///   output string track will be empty.
       ///
-      public uint PickRandom( ICredentials cred,
-                              IMood mood,
+      public uint PickRandom( Credentials cred,
+                              Mood mood,
                               int suckThreshold,
                               int moodThreshold,
                               out uint   key )
@@ -1048,8 +1048,8 @@ namespace byteheaven.tamjb.Engine
          throw new ApplicationException( "not reached" );
      }
 
-      string _BuildFullQuery( ICredentials cred,
-                              IMood mood,
+      string _BuildFullQuery( Credentials cred,
+                              Mood mood,
                               int suckThreshold,
                               int moodThreshold )
       {
@@ -1076,7 +1076,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Build a subquery that selects based on suck
       ///
-      string _BuildPartialQuerySuck( ICredentials cred,
+      string _BuildPartialQuerySuck( Credentials cred,
                                      int suckThreshold )
       {
          string query = 
@@ -1097,7 +1097,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Build a subquery that selects based on mood
       ///
-      string _BuildPartialQueryMood( IMood mood,
+      string _BuildPartialQueryMood( Mood mood,
                                      int moodThreshold )
       {
          // Find all the songs that don't suck too much. Note the 

@@ -24,24 +24,33 @@
 //
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace byteheaven.tamjb.Engine
+namespace byteheaven.tamjb.Interfaces
 {
    using System;
    using System.Collections;
-
-   using byteheaven.tamjb.Interfaces;
 
    ///
    /// Information about the state of the jukebox backend sent
    /// over the Remoting connection.
    ///
    [Serializable]
-   public class EngineState : IEngineState
+   public class EngineState 
    {
       bool      _isPlaying;
       int       _currentTrackIndex;
       ArrayList _playQueue; // What's coming up, and what we've played.
       long      _changeCount;
+
+      ///
+      /// Default constructor 
+      ///
+      public EngineState()
+      {
+         _isPlaying = false;
+         _currentTrackIndex = -1;
+         _playQueue = new ArrayList();
+         _changeCount = -1;
+      }
 
       public EngineState( bool isPlaying,
                           int  currentTrackIndex,
@@ -54,11 +63,26 @@ namespace byteheaven.tamjb.Engine
          _changeCount = changeCount;
       }
 
+      public ArrayList playQueue
+      {
+         ///
+         /// set-only, so the engine can update the current queue
+         ///
+         set
+         {
+            _playQueue = value;
+         }
+      }
+
       public long changeCount
       {
          get
          {
             return _changeCount;
+         }
+         set
+         {
+            _changeCount = value;
          }
       }
 
@@ -68,6 +92,10 @@ namespace byteheaven.tamjb.Engine
          {
             return _isPlaying;
          }
+         set
+         {
+            _isPlaying = value;
+         }
       }
 
       public int currentTrackIndex
@@ -75,6 +103,10 @@ namespace byteheaven.tamjb.Engine
          get
          {
             return _currentTrackIndex;
+         }
+         set
+         {
+            _currentTrackIndex = value;
          }
       }
 

@@ -24,20 +24,23 @@
 //
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace byteheaven.tamjb.Engine
+namespace byteheaven.tamjb.Interfaces
 {
    using System;
    using byteheaven.tamjb.Interfaces;
 
    [Serializable]
    public class Mood
-      : IMood
    {
       public string name 
       { 
          get
          {
             return _name;
+         }
+         set
+         {
+            _name = value;
          }
       }
 
@@ -46,6 +49,10 @@ namespace byteheaven.tamjb.Engine
          get
          {
             return _id;
+         }
+         set
+         {
+            _id = value;
          }
       }
 

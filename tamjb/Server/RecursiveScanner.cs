@@ -32,6 +32,7 @@ namespace byteheaven.tamjb.Server
    using System.IO;
 
    using byteheaven.id3;
+   using byteheaven.tamjb.Interfaces;
    using byteheaven.tamjb.Engine;
 
    enum ScanStatus
@@ -112,7 +113,7 @@ namespace byteheaven.tamjb.Server
          _scanner =  new SubdirScanner( _rootDir );
       }
 
-      public ScanStatus DoNextFile( Engine engine )
+      public ScanStatus DoNextFile( Backend engine )
       {
          return this.DoNextFile( 1, engine );
       }
@@ -125,7 +126,7 @@ namespace byteheaven.tamjb.Server
       ///
       /// \return FINISHED if no more subdirs have files
       ///
-      public ScanStatus DoNextFile( int nFiles, Engine engine )
+      public ScanStatus DoNextFile( int nFiles, Backend engine )
       {
          // You must be "this old" to be inserted:
          TimeSpan minAge = new TimeSpan( 0, 0, 15 /* seonds */ );
@@ -161,7 +162,7 @@ namespace byteheaven.tamjb.Server
       /// \todo Create a pluggable interface to extract the file info
       ///   from various file types, not just mp3
       ///
-      void _UpdateMP3FileInfo( string path, Engine engine )
+      void _UpdateMP3FileInfo( string path, Backend engine )
       {
          // Get ID3 tags from the file
 

@@ -24,10 +24,9 @@
 //
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace byteheaven.tamjb.Engine
+namespace byteheaven.tamjb.Interfaces
 {
    using System;
-   using byteheaven.tamjb.Interfaces;
 
    ///
    /// Information about the state of a local,
