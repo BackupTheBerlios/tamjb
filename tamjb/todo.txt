@@ -1,18 +1,23 @@
 
 TODO
  - Fix memory leak
-  No leak when playing
-  Leak when loading new song (handle/buffer leak in Player?)
-  Leak when remoting calls occur (possible database resource leak?)
+  Leakage is greatly reduced with the use of postgresql and the 
+  latest changes to Mp3Sharp. However, the program still leaks slowly.
+  This seems to be related to System.Remoting.
 
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
 
+ - Save the current logged in user in the database
+
  - Implement delete/copy user/mood
 
- - Add user controls for the compression and limiting
+ - Add support for mono mp3 files
 
  - Calculate average song volume and store for later level adjustment
+
+ - Allow the program to run standalone, not as a client server program, 
+  for the simple case where one person is listening.
 
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc.
@@ -24,8 +29,20 @@ TODO
 
 
 DONE
-  Major performance enhancement from improvements to Mp3Sharp's
-  buffering.
+  A branch of Mp3Sharp is now located (temporarily) in the tamjb cvs
+  repository.
+
+  Mono files no longer play back at double speed, but now they play back
+  only in the left channel. I _guess_ this is an improvement!
+
+  Memory leakage greatly reduced.
+
+  Changed the default suck/mood values back to 20%/80%
+
+  Add user controls for the compression and limiting. Settings are stored
+  in the database so you don't have to reset them on every reboot.
+
+  Cut CPU usage by more than half, by rewriting Mp3Sharp's buffering.
 
  - Sat Jul 17 15:39:12 EDT 2004
 

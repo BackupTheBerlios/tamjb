@@ -45,14 +45,17 @@ Track Attribute Manager - Jukebox
 
    Should compile and/or run fine with Microsoft(TM)'s runtime, except 
    for the esd dependency. With the Gtk# binaries, the gui frontend will
-   run with a mono backend on a remote server.
+   run with a mono backend on a remote server. GTK Binaries built on linux
+   will not run on windows using the Mono 1.0 windows installer, because 
+   of some problem with the Glade libraries (requires libxml-2 which is not
+   found). If someone fixes this I would love to hear about it.
 
 
  - Gtk, gtk-sharp
 
    gtk-sharp is required to compile the Gtk frontend program. Unless 
-   you're planning to write a frontend using some other GUI (which should 
-   be VERY easy), you need this
+   you're planning to write a frontend using some other GUI, you need 
+   this.
 
    Known good configuration:
 
@@ -63,14 +66,15 @@ Track Attribute Manager - Jukebox
 
  - SQLite OR PostgreSQL
 
-   SQLite support has been temporarily discontinued because of lack for
-   named parameters. With a bit of hacking, just about any SQL database 
-   should work though.
-
    Known good configuration:
 
      Gentoo: sqlite-2.8.11
      Gentoo: postgresql-7.4.3
+
+   SQLite:
+     The process leaks memory like crazy when using the SQLite 
+     provider. I am reasonably sure that all database handles are
+     properly closed and Disposed, so it's not that! 
 
    PostgreSQL hints:
      Create the postgresql installation in the "normal way".
@@ -110,10 +114,10 @@ Track Attribute Manager - Jukebox
    with GStreamer (Gst#), but it does work quite nicely.
 
    Update: I have asked about licensing, and the author is considering
-   choosing a license. I suppose this is progress of a sort.
+   choosing a license. Which is nice!
 
 
- - Mp3Sharp (What, MORE third-party managed code?)
+ - Mp3Sharp - Managed code MP3
 
    Mp3Sharp Rules!
 
@@ -126,12 +130,6 @@ Track Attribute Manager - Jukebox
 
      http://www.mle.ie/~rob/mp3sharp/
 
-   The supplied DLL seems to work, but for some reason the code sometimes
-   goes into an infinite loop looking for sync at end-of-file. To fix this
-   problem and add some debugging messages, apply this patch:
-
-     patches/mp3sharp-rev.9mar04-eof_endless_loop.patch
-
    This code is GPL'ed. Which is good.
 
    The source download includes an Mp3Sharp.dll binary which works fine,
@@ -140,34 +138,29 @@ Track Attribute Manager - Jukebox
 
 * Compiling
 
-  1) I assume you've already unpacked tamjb in this directory.
+  1) Unpack mp3sharp and tamjb into the same directory (or retrieve from
+  cvs).
 
-  2a) If you want to use binaries, copy or link Mp3Sharp.dll and 
-     esd-sharp into the thirdparty/ subdirectory. 
+  2a) If you want to use binaries, copy or link esd-sharp into 
+  the thirdparty/ subdirectory. 
 
-  2b) If you want to compile esd-sharp and mp3sharp, unpack them adjacent
-     to the tamjb directory.
+  2b) If you want to compile esd-sharp, unpack the sources alongside
+  mp3sharp ant tamjb.
    
   3) Create a link from your strong-name key to assykey.snk, or simply
   create it there. Assemblies built by you will not be the same as
   assemblies built by anyone else, but that's the whole point, isn't
   it?
 
-  4) type make (The makefiles are gnumake specific...)
-
-  5) Release packages may be built using the build_package script. This
-  will probably work best as ( cd .. && tamjb/build_package ), because 
-  otherwise it won't be able to find mp3sharp and esd-sharp. For now.
+  4) cd into tamjb, and type make
 
 * Running (Part 2)
 
  Environment
-  Put the required assemblies in your MONO_PATH, or install them into the 
-  Global Assembly Cache.
 
   Linux:
     You may manually install the binaries and set MONO_PATH, or use
-    install.sh to register all dll's (using gacutil). 
+    install.sh to register all dll's in the GAC. 
 
     If you are fortunate, someone has written a package for your distro,
     and you don't even need to think about installation. :)
@@ -187,7 +180,7 @@ Track Attribute Manager - Jukebox
     tam.Server.exe --connectString "<your connect string>"  --create
         
   with SQLite:     
-    tam.Server.exe --dbUrl <url> --create
+    tam.Server.exe --dbUrl file://path/to/file.db --create
 
 
  Start the Server:
