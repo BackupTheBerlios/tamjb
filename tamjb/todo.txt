@@ -24,6 +24,12 @@ TODO
 
  There are a lot of incomplete features.
 
+ Strong signing:
+   CVS should include a public key for delay-sign, and the build should
+   automatically flag the assemblies as unchecked. Then there should be
+   a separate sign-dll's script for building releases. This would effectively
+   make signing optional, because you could simply run unchecked dll's.
+
 DONE
 
  
