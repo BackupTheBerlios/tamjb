@@ -491,10 +491,10 @@ namespace tam.GtkPlayer
          if (newValue > 10000.0)
             newValue = 10000.0;
                   
-         _SetPendingUpdate();
-
          // Flag the previously playing track as suck
          _backend.SetAttribute( attributeKey, trackKey, (uint)newValue );
+
+         _SetPendingUpdate(); // Call after updating backend
       }
 
       void _SuckBtnClick( object sender, EventArgs args )
@@ -511,11 +511,12 @@ namespace tam.GtkPlayer
                uint suckTrackKey = _engineState.currentTrack.key;
 
                // Stop playing this track NOW
-               _SetPendingUpdate();
                _backend.GotoNextFile(); // this takes a while
 
                // Flag the previously playing track as suck
                _backend.DecreaseAttributeZenoStyle( DOESNTSUCK, suckTrackKey );
+
+               _SetPendingUpdate(); // update state to match backend
             }
          }
          catch (Exception e)
@@ -543,12 +544,13 @@ namespace tam.GtkPlayer
             ITrackInfo info = _engineState.currentTrack;
                
             // Send the player to the next file first.
-            _SetPendingUpdate();
             _backend.GotoNextFile();
 
             // Now that it's no longer playing, update the track.
             _backend.DecreaseAttributeZenoStyle( _appropriateKey, 
                                                  info.key );
+
+            _SetPendingUpdate(); // update to match backend
          }
          catch (Exception e)
          {
@@ -560,8 +562,8 @@ namespace tam.GtkPlayer
       {
          try
          {
-            _SetPendingUpdate();
             _backend.GotoNextFile();
+            _SetPendingUpdate();
          }
          catch (Exception e)
          {
@@ -578,9 +580,9 @@ namespace tam.GtkPlayer
          {
             if (_engineState.currentTrackIndex > 0)
             {
-               _SetPendingUpdate(); // Track is changing...
                _backend.GotoPrevFile();
                _UpdateButtonState();
+               _SetPendingUpdate(); // Track is changing...
             }
          }
          catch (Exception e)
