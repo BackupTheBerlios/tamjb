@@ -1,38 +1,79 @@
 
 TODO
- - Standalone operation:
+ - Build against mono/gtk-sharp/glade-sharp 1.1.5
 
-   File browse dialogs
+ - Drop songs from future part of playlist if they are flagged as suck or
+  something. Perhaps rework the way songs are chosen to be more visually
+  interesting?
 
-   Test database for existance. Ask/create if does not exist.
+ - Port to firebird database, because it is an embedded database
+   that supports transactions and named parameters (unlike sqlite).
+   The performance will probably be better with postgres if you
+   have a server that gets millions of hits, but then probably not.
+   Anyway, there is only one client of a given database instance,
+   the engine. 
 
-   Make client mode a command-line option
+ - Add track browser dialogs, so that you can adjust song suck on blocks
+  of songs, perhaps selecting by artist, etc.
 
-   Error reporting (eek!)
+ - Test database for existance. Ask/create if does not exist.
+
+ - Make client mode a command-line option, or else create separate 
+  client/server standalone binaries at build time. I'd like to see
+  the Makefile create both versions every time you build, so you'll 
+  know if you've broken something in one of the builds.
+
+ - Enhanced error reporting. The new file recursive scanner has no way 
+  to report files with problems. On my system, I commonly see
+
+   - Files with no id3v2 info
+   - Files with unparseable id3 fields that cause exceptions
+   - Files with funny characters in the info, that cause postgres to
+     throw an exception. (It shouldn't do this--I would expect the
+     Parameter data types to automatically escape parameters. Perhaps
+     they don't? Investigate.)
+
+  Needs some sort of system to collect scan errors for optional viewing,
+  because you don't want to crash or give up just because some mp3 file
+  is corrupt!
 
  - Compressor presets
 
-   The damn thing is very technical. This is good, if you're me, but probably
-   bad if you're not. :) Must add presets so I can share my favorite settings
-   with the two other people in the world that use this program.
+  The damn thing is very technical. This is good, if you're me, but probably
+  bad if you're not. :) Must add presets so I can share my favorite settings
+  with the two other people in the world that use this program.
 
  - Fix memory leak
 
-   Much of the memory bloat and leakage seems to have gone away with
-   a build against mono 1.1.4. Perhaps it isn't the tamjb code after
-   all. Supposedly 1.1.5 fixes the "growing heap" problem...
+  Much of the memory bloat and leakage seems to have gone away with
+  a build against mono 1.1.4. Perhaps it isn't the tamjb code after
+  all. Supposedly 1.1.5 fixes the "growing heap" problem...
 
  - Move all engine state into the database, and convert remoting 
-  interfaces to use one-shot objects.
+  interfaces to use one-shot objects. Should improve scalability, and
+  more importantly should make it easier to make a web front end.
+
+ - Make a web front end, so the server can sit entirely in an apache
+  instance and be accessed remotely.
+
+ - Make a System.Windows.Forms GUI, or figure how to deploy the Gtk# 
+  runtimes without recompiling. I do NOT want to have to compile
+  separate binaries for windows, that is not acceptable.
 
  - Implement delete/copy of user/mood
 
- - Drop songs from future part of playlist if they are flagged as suck or
-   something.
-
  - Display the mp3 bitrate 
 
- - Add support for monophonic mp3 files
+ - Add some sort of graphic display of compression ratios and levels.
+  This really won't help you accomplish anything, but for some reason
+  visual feedback is important. One of those psychology things, I guess.
+
+ - Add support for monophonic mp3 files. (Proper support, that is. They
+  play fine as long as you don't mind that they only play through the
+  left channel right now.)
+
+ - Add proper support for playing back files encoded at rates other
+  than 44.1.
 
  - Add support for ogg/vorbis, WAV, and losslessly-compressed files
 
@@ -54,6 +95,12 @@ TODO
   NOT a bug. But, there should be a flag in the database so that when an 
   untagged file is found, it will be added with a provisional tag 
   (truncated filename?) and rescanned periodically.
+
+ - Consider how to share suck info over the internet with other 
+  players. I'd like to have a serverless P2P setup for sharing
+  recommendations. Perhaps an abstract info sharing layer could be
+  designed so that it could be layerd on a client-server system
+  OR gnutalla-2 OR freenet/entropy or whatever you can find.
 
 
 DONE
