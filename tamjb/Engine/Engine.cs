@@ -37,7 +37,6 @@ namespace byteheaven.tamjb.Engine
    using System.Runtime.Remoting.Lifetime; // for ILease
 
    using byteheaven.tamjb.Interfaces;
-   using byteheaven.tamjb.SimpleMp3Player;
 
    ///
    /// A singlecall interface to the actual player back end.

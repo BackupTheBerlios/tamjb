@@ -12,7 +12,12 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE -define:THROW_ON_SYNC_LOSS
 
 # Note: LayerIIDecoder.cs won't compile with mcs 0.29.99
 
-SOURCES= Mp3Stream.cs\
+# Mp3Stream has changed enough that I am maintaining it as a local
+# package unless it gets merged in. Mp3Sharp still needs patches.
+
+SOURCES_LOCAL = AssemblyInfo.cs
+
+SOURCES_EXTERN = Mp3Stream.cs \
  converter/RiffFile.cs\
  converter/WaveFile.cs\
  converter/WaveFileObuffer.cs\
@@ -51,8 +56,8 @@ REFERENCES = -r System \
         -r System.Data \
         -r System.Management
 
-SOURCES_REAL = $(addprefix $(MP3SHARPDIR)/, $(SOURCES)) \
-        AssemblyInfo.cs
+SOURCES_REAL = $(addprefix $(MP3SHARPDIR)/, $(SOURCES_EXTERN)) \
+        $(SOURCES_LOCAL)
 
 all: $(TARGET)
 

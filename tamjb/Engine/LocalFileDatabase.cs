@@ -920,8 +920,8 @@ namespace byteheaven.tamjb.Engine
 
       // This allows single-tics ("'") because they are filtered separately
       // by tickRegex. (this is far from inclusive, I know I know...)
-      Regex _invalidCharRegex = 
-         new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
+//       static Regex _invalidCharRegex = 
+//          new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
 
       // Regex _tickRegex = new Regex( "'" );
 
@@ -938,13 +938,15 @@ namespace byteheaven.tamjb.Engine
       ///
       string _StripEvil( string impureString )
       {
+         // Note: regex seems to cause massive resource leak
+
          // string firstResult = _invalidCharRegex.Replace( impureString, " " );
          // string secondResult = _tickRegex.Replace( firstResult, "''" );
 
          // First escape any escape characters in thestring
-         string pure = _invalidCharRegex.Replace( impureString, " " );
+         // string pure = _invalidCharRegex.Replace( impureString, " " );
 
-         pure = pure.Replace( "\\", "\\\\" );
+         string pure = impureString.Replace( "\\", "\\\\" );
 
          // Second, escape any single ticks
          pure = pure.Replace( "'", "''" ); 

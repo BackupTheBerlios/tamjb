@@ -328,7 +328,10 @@ namespace byteheaven.tamjb.Server
                   Console.WriteLine( "Poll Failed: " + e.ToString() );
                }
 
-               Thread.Sleep( 1000 );   // wait a while
+               Thread.Sleep( 2000 );   // wait a while
+//                Console.WriteLine( "Memory: {0}", GC.GetTotalMemory(true) );
+//                GC.Collect();
+//                Console.WriteLine( "Aftah:  {0}", GC.GetTotalMemory(true) );
             }
          }
          catch (Exception outerEx)
