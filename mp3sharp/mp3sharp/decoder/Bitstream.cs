@@ -522,8 +522,7 @@ namespace javazoom.jl.decoder
 				while (len > 0)
 				{
 					int bytesread = source.Read(b, offs, len);
-					if (bytesread == - 1 
-                                            || bytesread == 0) // t/DD -- .NET returns 0 at end-of-stream!
+					if (bytesread <= 0) // t/DD -- .NET returns 0 at end-of-stream!
 					{
                                                 // t/DD: this really SHOULD throw an exception here...
                                                 throw newBitstreamException(javazoom.jl.decoder.BitstreamErrors_Fields.STREAM_EOF, null);
@@ -560,7 +559,7 @@ namespace javazoom.jl.decoder
 				{
 					int bytesread = source.Read(b, offs, len);
 //					for (int i = 0; i < len; i++) b[i] = (sbyte)Temp[i];
-					if (bytesread == - 1 || bytesread == 0)
+					if (bytesread <= 0)
 					{
 						break;
 					}
