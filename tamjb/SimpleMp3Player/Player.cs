@@ -460,7 +460,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                switch (_state)
                {
                case State.STOP:
-                  Trace.WriteLine( "STOP", "MP3" );
+                  Trace.WriteLine( "  State.STOP", "MP3" );
 
                   // In case we were playing or whatever, be sure files and
                   // streams are closed:
@@ -501,7 +501,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                   break;
                   
                case State.PLAY_FILE_REQUEST:
-                  Trace.WriteLine( "PLAY_FILE_REQUEST", "MP3" );
+                  Trace.WriteLine( "  State.PLAY_FILE_REQUEST", "MP3" );
                   
                   if (_bufferSizeChanged ||  null == _estream)
                   {
@@ -544,7 +544,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                   break;
                   
                case State.PLAYING:
-                  // Trace.WriteLine( "MP3> PLAYING", "MP3" );
+                  Trace.WriteLine( "  State.PLAYING", "MP3" );
                   Debug.Assert( null != _estream, 
                                 "not created in PLAY_FILE_REQUEST?" );
                   
@@ -613,7 +613,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                   break;
                   
                case State.SHUTDOWN_REQUEST:
-                  Trace.WriteLine( "SHUTDOWN_REQUEST", "MP3" );
+                  Trace.WriteLine( "  State.SHUTDOWN_REQUEST", "MP3" );
                   _configMutex.ReleaseMutex();
                   // Handle cleanup in the "finally" block
                   return;
@@ -633,13 +633,26 @@ namespace byteheaven.tamjb.SimpleMp3Player
             {
                // Try to get the audio thread mutex, but eventually give up
                // so we can clean up regardless.
-               _audioThreadMutex.WaitOne( (int)_bufferSize / 10, false );
-
-               ///
-               /// \todo Shut down audioThread properly (Join it) instead 
-               ///    of calling Abort().
-               ///
-               audioThread.Abort(); 
+               if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, false ))
+               {
+                  // Couldn't get mutex. This is bad.
+                  audioThread.Abort(); // Just kill the thread.
+               }
+               else
+               {
+                  try
+                  {
+                     ///
+                     /// \todo Shut down audioThread properly (Join it) 
+                     /// instead of calling Abort().
+                     ///
+                     audioThread.Abort(); 
+                  }
+                  finally
+                  {
+                     _audioThreadMutex.ReleaseMutex();
+                  }
+               }
             }
 
             if (null != _estream)
@@ -967,6 +980,8 @@ namespace byteheaven.tamjb.SimpleMp3Player
                {
                   Trace.WriteLine( "Timed out waiting for the audio mutex",
                                    "AUD" );
+
+                  Thread.Sleep( 10 ); // Throttle things a bit
                }
                else 
                {

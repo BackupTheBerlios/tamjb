@@ -147,6 +147,8 @@ namespace byteheaven.tamjb.Engine
          cmd.CommandText = query;
          int affected = cmd.ExecuteNonQuery();
          cmd.Dispose();
+
+         dbcon.Close();
          dbcon.Dispose();
       }
 
@@ -219,6 +221,7 @@ namespace byteheaven.tamjb.Engine
          cmd.ExecuteNonQuery();
          cmd.Dispose();
 
+         dbcon.Close();
          dbcon.Dispose();
       }
 
@@ -285,13 +288,19 @@ namespace byteheaven.tamjb.Engine
          finally
          {
             if (null != reader)
+            {
                reader.Close();
+               reader.Dispose();
+            }
 
             if (null != cmd)
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
       }
 
@@ -345,7 +354,10 @@ namespace byteheaven.tamjb.Engine
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
       }
 
@@ -440,13 +452,19 @@ namespace byteheaven.tamjb.Engine
          finally
          {
             if (null != reader)
+            {
                reader.Close();
+               reader.Dispose();
+            }
 
             if (null != cmd)
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
 
          return count;
@@ -490,7 +508,10 @@ namespace byteheaven.tamjb.Engine
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
       }
 
@@ -619,13 +640,19 @@ namespace byteheaven.tamjb.Engine
          finally
          {
             if (null != reader)
+            {
                reader.Close();
+               reader.Dispose();
+            }
 
             if (null != cmd)
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
 
          return value;
@@ -684,7 +711,10 @@ namespace byteheaven.tamjb.Engine
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
 
          return false;
@@ -728,7 +758,10 @@ namespace byteheaven.tamjb.Engine
                cmd.Dispose();
 
             if (null != dbcon)
+            {
+               dbcon.Close();
                dbcon.Dispose();
+            }
          }
       }
 
