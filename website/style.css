@@ -3,9 +3,11 @@ body {
   color: #ffffff;
 }
 
-div.centerme 
+div.header
 {
-  text-align: center
+  text-align: center;
+  margin-bottom: 0.7em;
+  border-bottom: thin white solid;
 }
 
 div.little_paragraph
@@ -36,3 +38,11 @@ a:hover    {
   font-weight: bolder;
   color: #ffffff; 
 }
+
+div.footer
+{
+  margin-top: 0.6em;
+  border-top: thin white solid;
+  text-align: center;
+}
+
