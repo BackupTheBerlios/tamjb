@@ -45,23 +45,25 @@ using byteheaven.tamjb.SimpleMp3Player;
             }
             
             string file = args[0];
-         
-            Player.bufferSize = 44100 * 1;
-            Player.buffersInQueue = 20;
-            Player.buffersToPreload = 3;
 
-            Player.OnTrackFinished +=
+            Player player = new Player();
+         
+            player.bufferSize = 44100 * 1;
+            player.buffersInQueue = 20;
+            player.buffersToPreload = 3;
+
+            player.OnTrackFinished +=
                new TrackFinishedHandler( _TrackFinished );
 
-            Player.PlayFile( file, 1 );
+            player.PlayFile( file, 1 );
 
-            while (Player.isPlaying)
+            while (player.isPlaying)
             {
                // Wait for the file to finish playing?
                Thread.Sleep( 5000 );
             }
 
-            Player.ShutDown();
+            player.ShutDown();
             Console.WriteLine( "Done..." );
          }
          catch (Exception e)

@@ -46,6 +46,10 @@ namespace byteheaven.tamjb.GtkPlayer
       /// Server port (defaults to, uh, what?)
       public int    serverPort;
 
+      public string databaseFile;
+
+      public string mp3RootDir;
+
       //
       // OK, the location of this changed to ~/.local/share. What is
       // going to be the ultimate base location huh? 
@@ -66,7 +70,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
       public void SaveToFile( string name )
       {
-         FileStream    stream = null;
+         FileStream stream = null;
          try
          {
             XmlSerializer serializer = new XmlSerializer( this.GetType() );
@@ -100,7 +104,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          finally
          {
-            if(stream != null)
+            if (stream != null)
                stream.Close();
          }
       }

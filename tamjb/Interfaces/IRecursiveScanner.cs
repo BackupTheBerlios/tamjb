@@ -45,6 +45,6 @@ namespace byteheaven.tamjb.Interfaces
    ///
    public interface IRecursiveScanner
    {
-      ScanStatus DoNextFile( IBackend engine );
+      ScanStatus DoNextFile( int nFiles, IBackend engine );
    }
 }

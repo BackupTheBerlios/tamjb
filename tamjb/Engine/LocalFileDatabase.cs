@@ -1532,17 +1532,25 @@ namespace byteheaven.tamjb.Engine
          // Perhaps the one incredibly asinine thing about .NET: you have
          // to hardcode the type of database you are connecting to. Could
          // this be an intentional mistake? Hah.
+         try
+         {
 #if USE_SQLITE
-         IDbConnection dbcon = new SqliteConnection( _connectionString );
+            IDbConnection dbcon = new SqliteConnection( _connectionString );
 #elif USE_POSTGRESQL
-         IDbConnection dbcon = new NpgsqlConnection( _connectionString );
+            IDbConnection dbcon = new NpgsqlConnection( _connectionString );
 #elif USE_MYSQL
-         IDbConnection dbcon = new MySqlConnection( _connectionString );
+            IDbConnection dbcon = new MySqlConnection( _connectionString );
 #else
 #error No database type found
 #endif
-         dbcon.Open();
-         return dbcon;
+            dbcon.Open();
+            return dbcon;
+         }
+         catch (Exception e)
+         {
+            throw new ApplicationException( 
+               "Problem connecting to database: " + _connectionString, e );
+         }
       }
 
       void _Trace( string msg )

@@ -28,9 +28,17 @@
 
 namespace byteheaven.tamjb.Interfaces
 {
+   ///
+   /// Super secret internal interfaces to the backend that are
+   /// exposed to local users of hte dll. Hmmm.
+   ///
    public interface IBackend
    {
       bool EntryExists( string fullPath );
       void Add( PlayableData newData );
+      void Poll();
+
+      // Kills all player threads and such so the program can exit
+      void ShutDown();
    }
 }

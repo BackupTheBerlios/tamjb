@@ -8,7 +8,8 @@ TODO
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
 
- - Save the current logged in user in the database
+ - Save the current logged in user in the database (should remember who was
+  the last user. Really.
 
  - Implement delete/copy user/mood
 

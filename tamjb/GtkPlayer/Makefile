@@ -5,6 +5,7 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 SRCS = Main.cs \
         GtkPlayer.cs \
         ConfigWindow.cs \
+        LocalConfigWindow.cs \
         MiscSettings.cs \
         MoodWindow.cs \
         PlayerSettings.cs

@@ -87,7 +87,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
    public class Player
    {
       readonly static int AUDIO_TIMEOUT = 10000; // milliseconds?
-      static Player()
+      public Player()
       {
          // Do nothing?
       }
@@ -98,7 +98,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// This size is in samples for all channels (whether stereo or whatever).
       ///
-      public static uint bufferSize 
+      public uint bufferSize 
       {
          get 
          {
@@ -111,7 +111,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          }
       }
 
-      public static bool isPlaying
+      public bool isPlaying
       {
          get
          {
@@ -119,7 +119,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          }
       }
 
-      public static string currentTrack
+      public string currentTrack
       {
          get
          {
@@ -131,7 +131,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          }
       }
 
-      public static int playQueueSize
+      public int playQueueSize
       {
          get
          {
@@ -140,7 +140,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          }
       }
 
-      public static uint currentTrackIndex
+      public uint currentTrackIndex
       {
          get
          {
@@ -154,8 +154,8 @@ namespace byteheaven.tamjb.SimpleMp3Player
 
       // Lots of buffers are good for my crappy laptop. This is a jukebox 
       // not a soft synth, right?
-      static uint _buffersInQueue = 20;
-      public static uint buffersInQueue
+      uint _buffersInQueue = 20;
+      public uint buffersInQueue
       {
          set
          {
@@ -173,8 +173,8 @@ namespace byteheaven.tamjb.SimpleMp3Player
       }
 
       /// If this is greater than buffersInQueue, audio will not happen
-      static uint _buffersToPreload = 5;
-      public static uint buffersToPreload
+      uint _buffersToPreload = 5;
+      public uint buffersToPreload
       {
          set
          {
@@ -195,7 +195,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// audio streamer threads. Call before program exit if you
       /// want the program to exit. :)
       ///
-      public static void ShutDown()
+      public void ShutDown()
       {
          _KillReaderThread();
          _esd = null;
@@ -204,7 +204,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// Stops playback, etc.
       ///
-      public static void Stop()
+      public void Stop()
       {
          _configMutex.WaitOne();
          try
@@ -224,7 +224,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// \todo Implement crossfades and other goodies
       ///
-      public static void PlayFile( string path, uint index )
+      public void PlayFile( string path, uint index )
       {
          Debug.Assert( null != path ); // just plain bad parameter
          Trace.WriteLine( "PlayFile", "Player" );
@@ -260,7 +260,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// in the play queue. If no files are in the queue, playback
       /// should stop. (But you never know!)
       ///
-      static public void GotoNextFile()
+      public void GotoNextFile()
       {
          Trace.WriteLine( "GotoNextFile", "Player" );
 
@@ -296,7 +296,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// finishes. Clears out anything else in the queue but
       /// does not end the current playing track.
       ///
-      public static void SetNextFile( string path, uint index )
+      public void SetNextFile( string path, uint index )
       {
          Debug.Assert( null != path, "just plain bad parameter" );
          Trace.WriteLine( "SetNextFile", "Player" );
@@ -334,7 +334,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// Add a file to the queue of files to be played.
       ///
-      public static void EnqueueFile( string path, uint index )
+      public void EnqueueFile( string path, uint index )
       {
          Debug.Assert( null != path ); // just plain bad parameter
          Trace.WriteLine( "EnqueueFile", "Player" );
@@ -368,14 +368,14 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// \todo Add an OnError handler to this object?
       ///
 
-      public static event TrackFinishedHandler OnTrackFinished;
-      public static event TrackStartingHandler OnTrackPlayed;
-      public static event ReadBufferHandler    OnReadBuffer;
+      public event TrackFinishedHandler OnTrackFinished;
+      public event TrackStartingHandler OnTrackPlayed;
+      public event ReadBufferHandler    OnReadBuffer;
 
       ///
       /// Launch the mp3 reader thread if it is not running
       ///
-      static void _StartReaderThread( )
+      void _StartReaderThread( )
       {
          if (null == _esd)
             _esd = new Esd();
@@ -403,7 +403,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// Stop the reader thread if it is running. Etc.
       ///
-      static void _KillReaderThread()
+      void _KillReaderThread()
       {
          if (null != _mp3ReaderThread && _mp3ReaderThread.IsAlive)
          {
@@ -437,7 +437,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// \todo This needs exception handling.
       ///
-      static void _Mp3ReaderThread()
+      void _Mp3ReaderThread()
       {
          Trace.WriteLine( "Hello", "MP3" );
 
@@ -675,7 +675,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// A helper for the PLAY_FILE_REQUEST state change that creates
       /// our esound stream object, and sets an appropriate buffer size
       ///
-      static bool _StartUpEstream()
+      bool _StartUpEstream()
       {
          Trace.WriteLine( "[_StartUpEstream]", "MP3" );
 
@@ -729,7 +729,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// A helper for the STOP state that destroys our esound stream
       ///
-      static void _ShutDownEstream()
+      void _ShutDownEstream()
       {
          Trace.WriteLine( "[_ShutDownEstream]", "MP3" );
 
@@ -744,7 +744,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// A helper for the PLAY_FILE_REQUEST state change
       ///
-      static void _CreateMp3Buffers()
+      void _CreateMp3Buffers()
       {
          Trace.WriteLine( "[_CreateMp3Buffers]", "MP3" );
 
@@ -775,7 +775,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// Starts playing the next file, or returns false if the queue
       /// is empty (or other errors occur)
       ///
-      static bool _InternalStartNextFile()
+      bool _InternalStartNextFile()
       {
          while (true)
          {
@@ -859,7 +859,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// _Mp3ReaderThread helper function
       ///
-      static Buffer _WaitForAndPopFreeBuffer()
+      Buffer _WaitForAndPopFreeBuffer()
       {
          if (! _freeBuffersEvent.WaitOne(0, false)) // Out of buffers to play?
          {
@@ -886,7 +886,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// _Mp3ReaderThread helper function
       ///
-      static Buffer _WaitForAndPopMp3Buffer()
+      Buffer _WaitForAndPopMp3Buffer()
       {
          // Trace.WriteLine( "_WaitForMp3" );
 
@@ -931,7 +931,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          // not reached
       }
 
-      static void _PushFreeBuffer( Buffer buffer )
+      void _PushFreeBuffer( Buffer buffer )
       {
          _freeQueueMutex.WaitOne();
 
@@ -941,7 +941,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          _freeQueueMutex.ReleaseMutex();
       }
 
-      static void _PushMp3Buffer( Buffer buffer )
+      void _PushMp3Buffer( Buffer buffer )
       {
          _mp3QueueMutex.WaitOne();
 
@@ -965,7 +965,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// This thread tirelessly pushes audio data to the audio reader.
       ///
-      static void _AudioThread()
+      void _AudioThread()
       {
          try
          {
@@ -1038,14 +1038,14 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// Our connection to the esd
       ///
-      static Esd            _esd = null;
+      Esd            _esd = null;
 
       ///
       /// The audio device that is currently receiving output
       ///
-      static EsdStream      _estream;
+      EsdStream      _estream;
 
-      static uint           _bufferSize = 44100; // bytes, not samples.
+      uint           _bufferSize = 44100; // bytes, not samples.
 
       ///
       /// Size of read chunk (to allow for backing up, etc)
@@ -1054,20 +1054,20 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// This is for the Mp3Stream class, obviously.
       ///
-      static int            _mp3ChunkSize = 4096;
+      int            _mp3ChunkSize = 4096;
 
       ///
       /// Queue of file names to be played (strings)
       ///
-      static Queue          _playFilesQueue = new Queue();
+      Queue          _playFilesQueue = new Queue();
 
       // Name of currently playing track
-      static TrackInfo      _playingTrack = new TrackInfo( "", 0 );
+      TrackInfo      _playingTrack = new TrackInfo( "", 0 );
 
       ///
       /// Mp3 stream reader object
       ///
-      static Mp3Stream      _mp3Stream;
+      Mp3Stream      _mp3Stream;
 
       ///
       /// Buffer for reading from the mp3 file. 16-bit audio.
@@ -1089,25 +1089,25 @@ namespace byteheaven.tamjb.SimpleMp3Player
 
       // If this is true, buffers will be destroyed and recreated at the
       // next PLAY_FILE_REQUEST
-      static bool _bufferSizeChanged = true;
+      bool _bufferSizeChanged = true;
 
       //
       // Queues and all the things needed to make 'em thread safe. Er.
       // 
-      static Queue            _mp3BufferQueue = new Queue();
-      static Queue            _freeBufferQueue = new Queue();
+      Queue            _mp3BufferQueue = new Queue();
+      Queue            _freeBufferQueue = new Queue();
 
-      static ManualResetEvent _mp3BuffersEvent = new ManualResetEvent( false );
-      static ManualResetEvent _freeBuffersEvent = new ManualResetEvent( false );
+      ManualResetEvent _mp3BuffersEvent = new ManualResetEvent( false );
+      ManualResetEvent _freeBuffersEvent = new ManualResetEvent( false );
 
-      static Mutex            _mp3QueueMutex = new Mutex();
-      static Mutex            _freeQueueMutex = new Mutex();
+      Mutex            _mp3QueueMutex = new Mutex();
+      Mutex            _freeQueueMutex = new Mutex();
 
       // And my favorite. Ugh!
-      static ManualResetEvent _underflowEvent = new ManualResetEvent( true );
+      ManualResetEvent _underflowEvent = new ManualResetEvent( true );
 
 
-      static Thread         _mp3ReaderThread;
+      Thread         _mp3ReaderThread;
 
       enum State : int
       {
@@ -1121,20 +1121,20 @@ namespace byteheaven.tamjb.SimpleMp3Player
       ///
       /// Playback engine state. May be changed by whoever owns the _configMutex
       ///
-      static State _state = State.STOP;
+      State _state = State.STOP;
 
       ///
       /// State and so on may change while the parent process holds the _configMutex
       ///
-      static Mutex            _configMutex = new Mutex();
+      Mutex            _configMutex = new Mutex();
 
-      static Mutex            _audioThreadMutex = new Mutex();
+      Mutex            _audioThreadMutex = new Mutex();
 
       ///
       /// The MP3Reader thread will wait on this when there is nothing to
       /// play. (state = STOP)
       ///
-      static ManualResetEvent _fileToPlayEvent = new ManualResetEvent( false );
+      ManualResetEvent _fileToPlayEvent = new ManualResetEvent( false );
 
    }
 }

@@ -253,7 +253,7 @@ namespace byteheaven.tamjb.Server
             // Retrieve a reference to the "remote" engine. The backend
             // can reference the actual Engine class, not just its interface.
             // string serverUrl = "http://localhost:" + _port + "/Engine";
-            string serverUrl = "http://localhost:" + _port + "/Engine";
+
             Trace.WriteLine( "tam.Server started on port " + _port );
 
             RecursiveScanner scanner = null;;
@@ -342,10 +342,6 @@ namespace byteheaven.tamjb.Server
          }
          finally
          {
-            // Ensure this is stopped, regardless, or the app may not
-            // really exit (does this need to be static?)
-
-            SimpleMp3Player.Player.ShutDown();
          }
 
          return 3; // Should not be reached

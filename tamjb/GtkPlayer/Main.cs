@@ -49,26 +49,36 @@ namespace byteheaven.tamjb.GtkPlayer
       [MTAThread]
       static void Main( string [] args )
       {
+         _runLocal = true;
+
          try
          {
             // Spit all trace output to stdout if desired
             Trace.Listeners.Add( new TextWriterTraceListener(Console.Out) );
             Trace.AutoFlush = true;
+            
+            // Set up remoting services if we are using a remote server
+            if (! _runLocal)
+            {
+               // Create a channel for communicating w/ the remote object
+               // Should not have to explicitly state BinaryClient, should I?
 
-            // Create a channel for communicating w/ the remote object
-            // Should not have to explicitly state BinaryClient, should I?
+               ListDictionary properties = new ListDictionary();
+               HttpChannel channel = 
+                  new HttpChannel(properties,
+                                  new BinaryClientFormatterSinkProvider(),
+                                  new BinaryServerFormatterSinkProvider());
 
-            ListDictionary properties = new ListDictionary();
-            HttpChannel channel = 
-               new HttpChannel(properties,
-                               new BinaryClientFormatterSinkProvider(),
-                               new BinaryServerFormatterSinkProvider());
+               ChannelServices.RegisterChannel( channel );
 
-            ChannelServices.RegisterChannel( channel );
-
-            // Yeah, we support Tcp too.
-            TcpChannel tcpChannel = new TcpChannel();
-            ChannelServices.RegisterChannel( tcpChannel );
+               // Yeah, we support Tcp too.
+               TcpChannel tcpChannel = new TcpChannel();
+               ChannelServices.RegisterChannel( tcpChannel );
+            }
+            else                // running locally
+            {
+               ; // nothing to do...
+            }
             
             Application.Init ();
 
@@ -79,22 +89,30 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch ( Exception e )
          {
-            // help, this is ugly! Wrap anything we expect in a more
-            // useful error message wiht the exception available as detail?
-            string msg = "Unexpected Exception: " + e.ToString();
+            // help, this is ugly! Ideas?
 
-            MessageDialog md = 
-               new MessageDialog( null, 
-                                  DialogFlags.Modal,
-                                  MessageType.Error,
-                                  ButtonsType.Close, 
-                                  msg );
+            Console.WriteLine( "Unexpected Exception: {0}", e.ToString() );
+
+            // This doesn't work right. Apparently since the application
+            // is not running, the OK button won't work either. :(
+//             MessageDialog md = 
+//                new MessageDialog( null, 
+//                                   DialogFlags.Modal,
+//                                   MessageType.Error,
+//                                   ButtonsType.Close, 
+//                                   msg );
      
-            int result = md.Run ();
+//             int result = md.Run ();
          }
          Trace.WriteLine( "exiting" );
 
          // If any stray threads are around, deal with it here.
+         if (_runLocal)
+            _backendInterface.ShutDown();
+
+         _scanner = null;
+         _backendProxy = null;
+         _backendInterface = null;
       }
 
       public static IEngine backend
@@ -105,7 +123,9 @@ namespace byteheaven.tamjb.GtkPlayer
             {
                if (_runLocal)
                {
-                  _backendProxy = _CreateLocalEngine();
+                  object backend = _CreateLocalEngine();
+                  _backendProxy = (IEngine)backend;
+                  _backendInterface = (IBackend)backend;
                }
                else
                {
@@ -118,6 +138,14 @@ namespace byteheaven.tamjb.GtkPlayer
             }
 
             return _backendProxy;
+         }
+      }
+
+      public static bool isStandalone
+      {
+         get
+         {
+            return _runLocal;
          }
       }
 
@@ -137,46 +165,128 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
+
+      public static string mp3RootDir
+      {
+         get
+         {
+            return _mp3RootDir;
+         }
+         set
+         {
+            _mp3RootDir = value;
+            _scanner = null;    // force starting over in new dir
+         }
+      }
+
+      // This probably should just be exposed as the "path"
+      // URI=file://path/to/file.db
+      public static string connectionString
+      {
+         get
+         {
+            return _connectionString;
+         }
+         set
+         {
+            _connectionString = value;
+            _backendProxy = null; // force reload of backend
+         }
+      }
+
       ///
-      /// Create a backend and scanner locally instead of remotely
+      /// Create a backend locally
       ///
-      /// \todo Store engine parameters in the database (and then 
-      ///   perhaps move this function etc into the GUI part of the player.)
-      ///
-      static IEngine _CreateLocalEngine()
+      static object _CreateLocalEngine()
       {
          // Assembly id3 = Assembly.LoadWithPartialName( "byteheaven.id3" );
          Assembly engineAssembly = 
             Assembly.LoadWithPartialName( "tamjb.Engine" );
          
          Type type = Type.GetType( 
-            "byteheaven.tamjb.Engine.RecursiveScanner,tamjb.Engine" );
-         object [] args = new object[1];
-         args[0] = "/";
-         IRecursiveScanner scanner = 
-            (IRecursiveScanner)Activator.CreateInstance( type, args );
-
-         type = Type.GetType( 
             "byteheaven.tamjb.Engine.Backend,tamjb.Engine" );
-         args = new object[2];
+         object [] args = new object[2];
          args[0] = (int)5; //QUEUE_MIN_SIZE;
-         args[1] = "foo"; // _connectionString;
-         _backendProxy = (IEngine)Activator.CreateInstance( type, args );
-         
-         return _backendProxy;
+         args[1] = _connectionString;
+         return Activator.CreateInstance( type, args );
       }
 
+      ///
+      /// Create an instance of recursivescanner (using late binding)
+      ///
+      static IRecursiveScanner _CreateRecursiveScanner( string dir )
+      {
+         Assembly engineAssembly = 
+            Assembly.LoadWithPartialName( "tamjb.Engine" );
+
+         Type type = Type.GetType( 
+            "byteheaven.tamjb.Engine.RecursiveScanner,tamjb.Engine" );
+
+         object [] args = new object[1];
+         args[0] = dir;
+
+         return (IRecursiveScanner)Activator.CreateInstance( type, args );
+      }
+      
+      
+      ///
+      /// If we are running locally, poll this periodically to scan
+      /// for new files in the mp3 dir(s), and do other background
+      /// processing in the Engine. About once per second should do it.
+      ///
+      public static void ScanForFiles()
+      {
+         if (null == _backendInterface)
+            return;
+
+         // Don't bother if no mp3 dirs are configured
+         if (null != _mp3RootDir)
+         {
+            if (null == _scanner)
+            {
+               string nextDir = _mp3RootDir;
+               Trace.WriteLine( "Now scanning: " + nextDir );
+               
+               _scanner = _CreateRecursiveScanner( nextDir );
+            }
+                  
+            Debug.Assert( _scanner != null, "logic error" );
+            
+            if (_scanner.DoNextFile(5, _backendInterface) 
+                == ScanStatus.FINISHED)
+            {
+               Trace.WriteLine( "Scan Finished" );
+               _scanner = null;
+            }
+         }
+      }
+
+      ///
+      /// Don't call this if you are running as a client to a remote
+      /// engine, because it will simply throw an exception.
+      ///
+      public static void PollBackend()
+      {
+         _backendInterface.Poll();
+      }
 
       ///
       /// Proxy object that references the server back end. If the
       /// settings change, set this to null, and the accessor will know
       /// to reconnect.
       ///
-      static bool     _runLocal = false; // don't use remoting
-      static IEngine  _backendProxy = null;
-      static string   _serverUrl = "";
+      static bool      _runLocal = true; // don't use remoting?
+      static IEngine   _backendProxy = null;
+      static string    _serverUrl = "";
 
+      //
+      // Variables used when we are running locally
+      static IBackend          _backendInterface = null;
+      static IRecursiveScanner _scanner = null;
+      static int               _scanRetryCountdown = 0;
 
-
+      // Things that are configurable when running locally
+      static string            _mp3RootDir = null;
+      static string            _connectionString = "(unknown)";
    }
 }

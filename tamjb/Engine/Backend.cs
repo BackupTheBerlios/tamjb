@@ -90,11 +90,11 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return SimpleMp3Player.Player.bufferSize;
+            return _player.bufferSize;
          }
          set
          {
-            SimpleMp3Player.Player.bufferSize = value;
+            _player.bufferSize = value;
          }
       }
 
@@ -107,11 +107,11 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return SimpleMp3Player.Player.buffersInQueue;
+            return _player.buffersInQueue;
          }
          set
          {
-            SimpleMp3Player.Player.buffersInQueue = value;
+            _player.buffersInQueue = value;
          }
       }
 
@@ -124,11 +124,11 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return SimpleMp3Player.Player.buffersToPreload;
+            return _player.buffersToPreload;
          }
          set
          {
-            SimpleMp3Player.Player.buffersToPreload = value;;
+            _player.buffersToPreload = value;;
          }
       }
 
@@ -180,18 +180,19 @@ namespace byteheaven.tamjb.Engine
             //    ConfigurationSettings.AppSettings ["BufferSize"];
                         
             // Set up default buffering for the audio engine
-            SimpleMp3Player.Player.bufferSize = 44100 / 8 ;
-            SimpleMp3Player.Player.buffersInQueue = 40;
-            SimpleMp3Player.Player.buffersToPreload = 20;
+            _player = new Player();
+            _player.bufferSize = 44100 / 8 ;
+            _player.buffersInQueue = 40;
+            _player.buffersToPreload = 20;
 
             // Set up callbacks
-            SimpleMp3Player.Player.OnTrackFinished +=
+            _player.OnTrackFinished +=
                new TrackFinishedHandler( _TrackFinishedCallback );
 
-            SimpleMp3Player.Player.OnTrackPlayed +=
+            _player.OnTrackPlayed +=
                new TrackStartingHandler( _TrackStartingCallback );
             
-            SimpleMp3Player.Player.OnReadBuffer +=
+            _player.OnReadBuffer +=
                new ReadBufferHandler( _TrackReadCallback );
 
          }
@@ -211,10 +212,20 @@ namespace byteheaven.tamjb.Engine
       ~Backend()
       {
          _Trace( "[~Backend]" );
+
+         // Ensure this is stopped, or the app may not
+         // really exit
+         ShutDown();
+
          // System.Runtime.Remoting.RemotingServices.Disconnect(this);
          _database = null;
-
       }
+
+      public void ShutDown()
+      {
+         _player.ShutDown();
+      }
+
 
       //
       // Get the current mood. May return null for either or both
@@ -294,7 +305,7 @@ namespace byteheaven.tamjb.Engine
                EnqueueRandomSong();
 
             // If playback has stopped, restart it now.
-            if (_shouldBePlaying && ( ! Player.isPlaying ))
+            if (_shouldBePlaying && ( ! _player.isPlaying ))
             {
                _Trace( "Hey, we are not playing. Restarting.." );
                GotoNext();
@@ -652,7 +663,7 @@ namespace byteheaven.tamjb.Engine
          if (null != nextFile)
          {
             _Trace( "  NEXT = " + nextFile.title );
-            Player.PlayFile( nextFile.filePath, nextFile.key );
+            _player.PlayFile( nextFile.filePath, nextFile.key );
             _shouldBePlaying = true;
          }
       }
@@ -685,7 +696,7 @@ namespace byteheaven.tamjb.Engine
          _Trace( "  PREV = " + prevFile.title );
          if (null != prevFile)
          {
-            Player.PlayFile( prevFile.filePath, prevFile.key );
+            _player.PlayFile( prevFile.filePath, prevFile.key );
             _shouldBePlaying = true;
          }
       }
@@ -721,7 +732,7 @@ namespace byteheaven.tamjb.Engine
             if (null != nextInfo)
             {
                // Tell the player to play this track next
-               Player.SetNextFile( nextInfo.filePath, nextInfo.key );
+               _player.SetNextFile( nextInfo.filePath, nextInfo.key );
             }
          }
       }
@@ -1261,7 +1272,7 @@ namespace byteheaven.tamjb.Engine
          try
          {
             _shouldBePlaying = false;
-            Player.Stop();
+            _player.Stop();
             ++ _changeCount;
          }
          finally
@@ -1281,7 +1292,7 @@ namespace byteheaven.tamjb.Engine
             PlayableData file = _PlaylistGetCurrent();
             if (null != file)
             {
-               Player.PlayFile( file.filePath, file.key );
+               _player.PlayFile( file.filePath, file.key );
                _shouldBePlaying = true;
             }
             ++ _changeCount;
@@ -1477,6 +1488,11 @@ namespace byteheaven.tamjb.Engine
       {
          _serializer.ReleaseMutex();
       }
+      
+      ///
+      /// The Mp3 Playback Engine
+      ///
+      SimpleMp3Player.Player _player;
 
       ///
       /// Desired number of tracks in the play queue. (Static config)

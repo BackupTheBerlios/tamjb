@@ -92,13 +92,18 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Status( "Could not load settings, using defaults: " + e.Message,
-                     15 );
+            _Status( "Note: Could not load settings, using defaults: " + e.Message,
+                     35 );
 
             _settings = new PlayerSettings();
             _settings.serverName = "localhost";
             _settings.serverPort = 6543;
          }
+
+         PlayerApp.connectionString = 
+            "URI=file:/" + _settings.databaseFile;
+
+         PlayerApp.mp3RootDir = _settings.mp3RootDir;
 
          PlayerApp.serverUrl =
             "tcp://" + _settings.serverName + ":" 
@@ -135,8 +140,7 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             try
             {
-               IEngine backendProxy = PlayerApp.backend;
-               return backendProxy;
+               return PlayerApp.backend;
             }
             catch ( System.Net.WebException snw )
             {
@@ -146,7 +150,7 @@ namespace byteheaven.tamjb.GtkPlayer
                   + _settings.serverName + ":" 
                   + _settings.serverPort + "'";
                
-               _Status( msg, 10 );
+               _Status( msg, 30 );
                
                // For now just rethrow.
                throw new ApplicationException( msg, snw );
@@ -239,6 +243,31 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          _UpdateNow();
 
+         if (PlayerApp.isStandalone) // not using a remote server?
+         {
+            try
+            {
+               PlayerApp.PollBackend(); // keep the engine working
+            }
+            catch (Exception e)
+            {
+               // dump stack trace
+               _Trace( "Problem during Poll(): " + e.ToString() );
+               _Status( e.Message, 60 );
+            }
+
+            try
+            {
+               PlayerApp.ScanForFiles();
+            }
+            catch (Exception e)
+            {
+               // dump stack trace
+               _Trace( "Problem scanning for files: " + e.ToString() );
+               _Status( "Problem scanning for files", 60 );
+            }
+         }
+
          if (_statusBarPopTimeout > 0)
          {
             -- _statusBarPopTimeout;
@@ -295,7 +324,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
          if (!_engineState.isPlaying)
          {
-            _Status( "Server is stopped", 30 );
+            _Status( "Server is stopped", 60 );
          }
 
          _UpdateTrackListView();
@@ -773,27 +802,51 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_ConfigBtnClick]" );
 
-            ConfigDialog config = 
-               new ConfigDialog( _mainWindow,
-                                 _settings.serverName,
-                                 _settings.serverPort.ToString() );
-
-            config.Run();
-            if (config.isOk)
+            if (PlayerApp.isStandalone)
             {
-               _settings.serverName = config.serverName;
-               _settings.serverPort = config.serverPort;
+               LocalConfigDialog config = 
+                  new LocalConfigDialog( _mainWindow,
+                                         _settings.databaseFile,
+                                         _settings.mp3RootDir );
+               config.Run();
+               if (config.isOk)
+               {
+                  _settings.databaseFile = config.database;
+                  _settings.mp3RootDir = config.mp3RootDir;
 
-               //
-               // Set the new server url
-               //
-               PlayerApp.serverUrl =
-                  "tcp://" + _settings.serverName + ":" 
-                  + _settings.serverPort + "/Engine";
+                  // Connection string for sqlite
+                  PlayerApp.connectionString = 
+                     "URI=file:/" + config.database;
+
+                  PlayerApp.mp3RootDir = config.mp3RootDir;
+
+                  _settings.Store();
+               }
+            }
+            else
+            {
+               ConfigDialog config = 
+                  new ConfigDialog( _mainWindow,
+                                    _settings.serverName,
+                                    _settings.serverPort.ToString() );
+
+               config.Run();
+               if (config.isOk)
+               {
+                  _settings.serverName = config.serverName;
+                  _settings.serverPort = config.serverPort;
                   
-               // If we got here, nothing threw an exception. Wow!
-               // Save for future generations!
-               _settings.Store();
+                  //
+                  // Set the new server url
+                  //
+                  PlayerApp.serverUrl =
+                     "tcp://" + _settings.serverName + ":" 
+                     + _settings.serverPort + "/Engine";
+                  
+                  // If we got here, nothing threw an exception. Wow!
+                  // Save for future generations!
+                  _settings.Store();
+               }
             }
          }
          catch (Exception e)
