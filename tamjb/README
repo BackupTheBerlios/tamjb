@@ -14,7 +14,7 @@ Track Attribute Manager - Jukebox
   And await instructions.
 
 
-* Compiling
+* Requirements For Compilation
 
  Initial project development is being done on a Gentoo 1.4 system with
  linux kernel 2.6.x. The server should run on any unix-based platform 
@@ -107,7 +107,25 @@ Track Attribute Manager - Jukebox
 
    You can also download my patched Mp3Sharp.dll binary, and compile the
    rest of the code yourself.
+
+
+* Compiling
+
+  1) I assume you've already unpacked tamjb in this directory.
+
+  2a) If you want to use binaries, copy or link Mp3Sharp.dll and 
+     esd-sharp into the thirdparty/ subdirectory. 
+
+  2b) If you want to compile esd-sharp and mp3sharp, unpack them adjacent
+     to the tamjb directory.
    
+  3) Create a link from your strong-name key to assykey.snk, or simply
+  create it there. Assemblies built by you will not be the same as
+  assemblies built by anyone else, but that's the whole point, isn't
+  it?
+
+  4) type make (The makefiles are gnumake specific...)
+
 
 * Running (Part 2)
 
