@@ -868,7 +868,7 @@ namespace byteheaven.tamjb.Engine
       /// like -3dB from the absolute max level. Oh well, might 
       /// as well match that.
       ///
-      static readonly double TARGET_POWER_LEVEL = 14000.0;
+      static readonly double TARGET_POWER_LEVEL = 16000.0;
 
       ///
       /// Level below which we stop compressing and start
@@ -902,8 +902,8 @@ namespace byteheaven.tamjb.Engine
 
       // Sample value for start of soft clipping. Leftover must
       // be 32767 - CLIP_THRESHOLD.
-      static readonly double CLIP_THRESHOLD = 17000.0;
-      static readonly double CLIP_LEFTOVER =  15767.0;
+      static readonly double CLIP_THRESHOLD = 16000.0;
+      static readonly double CLIP_LEFTOVER =  16767.0;
 
       ///
       /// Calculate average power of this buffer, and update any 
