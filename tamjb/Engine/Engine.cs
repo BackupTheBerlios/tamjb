@@ -39,7 +39,10 @@ namespace byteheaven.tamjb.Engine
    using byteheaven.tamjb.Interfaces;
 
    ///
-   /// A singlecall interface to the actual player back end.
+   /// A singlecall interface to the player back end. This is not
+   /// the actual backend, which is Backend.
+   ///
+   /// \see Backend
    ///
    public class Engine 
       : MarshalByRefObject, IEngine

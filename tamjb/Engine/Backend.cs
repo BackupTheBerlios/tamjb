@@ -195,6 +195,17 @@ namespace byteheaven.tamjb.Engine
             _player.OnReadBuffer +=
                new ReadBufferHandler( _TrackReadCallback );
 
+            // Start playing as the default user, if there is one:
+            try
+            {
+               _database.GetController( out _controllingUser,
+                                        out _controllingMood );
+            }
+            catch
+            {
+               _controllingUser = null;
+               _controllingMood = null;
+            }
          }
 #if USE_POSTGRESQL
          catch (Npgsql.NpgsqlException ne)
@@ -1402,6 +1413,8 @@ namespace byteheaven.tamjb.Engine
             // TODO: see if this user is in the database.
             ++_changeCount;
             _controllingUser = (Credentials)cred;
+
+            _database.StoreController( _controllingUser, new Mood() );
          }
          finally
          {
@@ -1424,6 +1437,9 @@ namespace byteheaven.tamjb.Engine
 
             ++_changeCount;
             _controllingMood = (Mood)mood;
+
+            _database.StoreController( _controllingUser, 
+                                       _controllingMood );
          }
          finally
          {

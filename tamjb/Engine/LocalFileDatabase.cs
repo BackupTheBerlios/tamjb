@@ -1,9 +1,6 @@
 /// \file
 /// $Id$
 ///
-/// A database of information about "playable files". Currently
-/// this is only mp3 files, but, well...why constrain yourself?
-///
 
 // Copyright (C) 2004 Tom Surace.
 //
@@ -54,6 +51,13 @@ namespace byteheaven.tamjb.Engine
 {
    ///
    /// The database class wraps all accesses to our local file database.
+   ///
+   /// The local file database contains
+   /// information about "playable files". Currently
+   /// this is only mp3 files, but, well...why constrain yourself?
+   ///
+   /// This also contains state information used to restore default
+   /// settings when the server is stopped and restarted, and so on.
    ///
    public class StatusDatabase
    {
@@ -315,13 +319,19 @@ namespace byteheaven.tamjb.Engine
          _ExecuteNonQuery( query );
       }
 
-      public void StoreController( string user, string mood )
+      ///
+      /// Store the current controlling user and mood.
+      ///
+      public void StoreController( Credentials cred, Mood mood )
       {
+         Debug.Assert( null != cred, "controlling user is required" );
+         Debug.Assert( null != mood, "mood is required" );
+
 #if USE_SQLITE
          string query = 
             "UPDATE settings "
-            + " SET control_user = '" + _StripEvil( user ) + "',"
-            + "   control_mood = '" + _StripEvil( mood ) + "'"
+            + " SET control_user = '" + _StripEvil( cred.name ) + "',"
+            + "   control_mood = '" + _StripEvil( mood.name ) + "'"
             ;
 #elif USE_POSTGRESQL
          string query = 
@@ -346,12 +356,12 @@ namespace byteheaven.tamjb.Engine
 #elif USE_POSTGRESQL
             IDbDataParameter param = 
                new NpgsqlParameter( "user", DbType.String );
-            param.Value = user;
+            param.Value = cred.name;
             cmd.Parameters.Add( param );
             
             param = 
                new NpgsqlParameter( "mood", DbType.String );
-            param.Value = mood;
+            param.Value = mood.name;
             cmd.Parameters.Add( param );
 #else
 #error I am very lazy, please code this up
@@ -381,6 +391,69 @@ namespace byteheaven.tamjb.Engine
 
          throw new ApplicationException( "not reached" );
       }
+
+      ///
+      /// Retrieve the controlling user/mood from the database.
+      /// After a restart, this allows you to continue as the same
+      /// person. :)
+      ///
+      /// controller and mood will be null if no current user is
+      /// configured. On the other hand, if the controlling user
+      /// or mood does not exist, this will throw an exception.
+      ///
+      public void GetController( out Credentials controller,
+                                 out Mood mood )
+      {
+         string query = "SELECT control_user, control_mood FROM settings";
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         controller = null;     // Default: failure
+         mood = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+            reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+            {
+               // Query returned nothing?
+               return; // controller and mood are null. That's OK.
+            }
+            string userName = reader.GetString(0);
+            string moodName = reader.GetString(1);
+
+            GetUser( userName, out controller );
+            GetMood( controller, moodName, out mood );
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+      }
+
 
       ///
       ///
@@ -958,6 +1031,7 @@ namespace byteheaven.tamjb.Engine
       /// selects one song at random based on the supplied playlist
       /// limitations:
       ///
+      /// \param rng The random number generator to use
       /// \param cred Current user (may be null for no filter)
       /// \param mood That person's mood (may be null for no filter)
       /// \param suckThreshold

@@ -77,6 +77,6 @@ exe_subdirs:
 
 doc: .build_docs
 
-.build_docs: $(DEPLIBS) $(BINARY_TARGETS)
+.build_docs: $(DEPLIBS) $(RELEASE_BINARY_FILES) doxygen.conf
 	doxygen ./doxygen.conf
 	touch .build_docs
