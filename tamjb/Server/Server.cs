@@ -331,9 +331,8 @@ namespace byteheaven.tamjb.Server
                Thread.Sleep( 2000 );   // wait a while
 
                // HACK for memory leak watching. WTF is going on?
-               GC.Collect();
-               Console.WriteLine( "Memory: {0}", GC.GetTotalMemory(true) );
-//                Console.WriteLine( "Aftah:  {0}", GC.GetTotalMemory(true) );
+//                GC.Collect();
+//                Console.WriteLine( "Memory: {0}", GC.GetTotalMemory(true) );
             }
          }
          catch (Exception outerEx)
