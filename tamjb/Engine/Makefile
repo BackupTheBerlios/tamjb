@@ -11,6 +11,23 @@ SOURCES = AssemblyInfo.cs \
         Engine.cs \
         EngineState.cs
 
+#
+# Choose your database
+#
+
+# -- SQLite
+# DBFLAGS = -define:USE_SQLITE
+# DBREFS = -r Mono.Data.SqliteClient 
+
+# -- MySql (4.1 or better for nested queries)
+# DBFLAGS = -define:USE_MYSQL
+# DBREFS = -r ByteFX.Data
+
+# -- PostgreSQL
+DBFLAGS = -define:USE_POSTGRESQL
+DBREFS = -r Npgsql
+
+
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 # libs for dependency checking during dev:
@@ -21,12 +38,13 @@ DEPLIBS = ../thirdparty/Mp3Sharp.dll \
 
 
 REFS = -r System.Data \
-        -r Mono.Data.SqliteClient \
+        $(DBREFS) \
         $(addprefix -r:, $(DEPLIBS))
 
 all: $(TARGET)
 
 $(TARGET): $(SOURCES) $(REF_LIBS) Makefile
-	mcs $(DEBUGFLAGS) $(LIBPATH) $(REFS) $(SOURCES) -target:library -out:$@
+	mcs $(DBFLAGS) $(DEBUGFLAGS) $(LIBPATH) $(REFS) $(SOURCES) \
+                -target:library -out:$@
 
 

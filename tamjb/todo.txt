@@ -1,5 +1,10 @@
 
 TODO
+ - Move all engine state into the database, and convert remoting 
+  interfaces to use one-shot objects.
+
+ - Redesign interface & database to 
+
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc.
 

@@ -67,13 +67,15 @@ namespace byteheaven.tamjb.Server
       static void _Usage()
       {
          Console.WriteLine( "usage: " );
-         Console.WriteLine( " --dbUrl <file:/path/to.db>" );
-         Console.WriteLine( " --create (create empty database and exit)" );
-         Console.WriteLine( " --port <port>" );
-         Console.WriteLine( " --logFile <logFile>" );
-         Console.WriteLine( " --dir <mp3_root_dir> (multiple dirs allowed)" );
-         Console.WriteLine( " --bufferSize" );
          Console.WriteLine( " --bufferCount" );
+         Console.WriteLine( " --bufferSize" );
+         Console.WriteLine( " --create (create empty database and exit)" );
+         Console.WriteLine( " --dbUrl <file:/path/to.db> (or use connectionString)" );
+         Console.WriteLine( " --connectionString Server=<host>;Database=<db>;User ID=<id>;Password=<pass>" );
+         Console.WriteLine( " --dir <mp3_root_dir> (multiple dirs allowed)" );
+         Console.WriteLine( " --lifeSpan <maxlife-in-minutes>" );
+         Console.WriteLine( " --logFile <logFile>" );
+         Console.WriteLine( " --port <port>" );
          Console.WriteLine( " --trace" );
       }
 
@@ -116,11 +118,13 @@ namespace byteheaven.tamjb.Server
 
          // defaults
          string logFile = "-";
-         string dbUrl = null;
+         string connectionString = null;
          bool doTrace = false;
          bool createDatabase = false;
          uint bufferSize = 44100 / 4;
          uint bufferCount = 30;
+         bool isImmortal = true;
+         TimeSpan maxLife = new TimeSpan( 0, 0, 0 );
          _port = 0;
 
          for (int i = 0; i < args.Length; i++)
@@ -142,7 +146,11 @@ namespace byteheaven.tamjb.Server
                break;
 
             case "--dbUrl":
-               dbUrl = args[++i];
+               connectionString = "URI=" + args[++i];
+               break;
+
+            case "--connectionString":
+               connectionString = args[++i];
                break;
 
             case "--dir":
@@ -161,6 +169,12 @@ namespace byteheaven.tamjb.Server
                bufferCount = Convert.ToUInt32( args[++i] );
                break;
 
+            case "--lifeSpan":
+               int lifeSpan = Convert.ToInt32( args[++i] );
+               maxLife = new TimeSpan( 0, lifeSpan, 0 );
+               isImmortal = false;
+               break;
+
             default:
                Console.WriteLine( "Unknown argument: {0}", arg );
                _Usage();
@@ -168,16 +182,16 @@ namespace byteheaven.tamjb.Server
             }
          }
 
-         if (null == dbUrl)
+         if (null == connectionString)
          {
-            Console.WriteLine( "--dbUrl required" );
+            Console.WriteLine( "--dbUrl or --connectionString required" );
             _Usage();
             return 2;
          }
 
          if (createDatabase)
          {
-            _CreateDatabase( dbUrl );
+            _CreateDatabase( connectionString );
             return 0;
          }
 
@@ -206,7 +220,7 @@ namespace byteheaven.tamjb.Server
                Trace.AutoFlush = true;
             }
 
-            _connectionString = "URI=" + dbUrl;
+            _connectionString = connectionString;
 
             // Configure the database engine so the global engine will
             // be constructed correctly. There's GOTTA be a better way
@@ -244,16 +258,29 @@ namespace byteheaven.tamjb.Server
             // Drop priority of the scanner thread. I guess.
             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
 
+            Engine engine = 
+               (Engine) Activator.GetObject( typeof(Engine), 
+                                             serverUrl );
+
+            engine.bufferSize = bufferSize;
+            engine.bufferCount = bufferCount;
+            engine.bufferPreload = bufferCount;
+            engine.Poll();
+            engine = null;      // Let it go out of scope
+
+            DateTime startTime = DateTime.Now;
             while (true)
             {
-               Engine engine = 
+               if ((!isImmortal) && ((DateTime.Now - startTime) > maxLife))
+               {
+                  Trace.WriteLine( "Reached my lifeSpan. \"Wake up, time to die.\"" );
+                  Trace.WriteLine( "Exiting." );
+                  return 0;
+               }
+
+               engine = 
                   (Engine) Activator.GetObject( typeof(Engine), 
                                                 serverUrl );
-
-               engine.bufferSize = bufferSize;
-               engine.bufferCount = bufferCount;
-               engine.bufferPreload = bufferCount;
-               
 
                // Continually scan all configured dirs for new mp3's
                try
@@ -272,12 +299,13 @@ namespace byteheaven.tamjb.Server
                            string nextDir = (string)_mp3RootDirs[scannerIndex];
                            Trace.WriteLine( "Now scanning: " + nextDir );
                            
-                           scanner = new RecursiveScanner( nextDir, engine );
+                           scanner = new RecursiveScanner( nextDir );
                         }
                         
                         Debug.Assert( scanner != null, "logic error" );
                         
-                        if (scanner.DoNextFile(5) == ScanStatus.FINISHED)
+                        if (scanner.DoNextFile(5, engine) 
+                            == ScanStatus.FINISHED)
                         {
                            Trace.WriteLine( "Scan Finished" );
                            
@@ -309,23 +337,22 @@ namespace byteheaven.tamjb.Server
                   Console.WriteLine( "Poll Failed: " + e.ToString() );
                }
 
-               Thread.Sleep( 1000 );   // wait a while
+               engine = null;   // Release reference here!
+               Thread.Sleep( 3000 );   // wait a while
             }
          }
          finally
          {
             // Ensure this is stopped, regardless, or the app may not
             // really exit (does this need to be static?)
+
             SimpleMp3Player.Player.ShutDown();
          }
-
-         // Unreachable?
-         // return 3;
       }
 
-      static void _CreateDatabase( string dburl )
+      static void _CreateDatabase( string connectionString )
       {
-         StatusDatabase db = new StatusDatabase( "URI=" + dburl );
+         StatusDatabase db = new StatusDatabase( connectionString );
          db.CreateTablesIfNecessary();
       }
 

@@ -33,10 +33,15 @@ namespace byteheaven.tamjb.Engine
    using System.Data;
    using System.Diagnostics;
    using System.Runtime.Remoting;
+   using System.Runtime.Remoting.Lifetime; // for ILease
    using System.Threading;
 
    using byteheaven.tamjb.Interfaces;
    using byteheaven.tamjb.SimpleMp3Player;
+
+#if USE_POSTGRESQL
+   using Npgsql;
+#endif
 
    /// 
    /// Attribute tables in the database
@@ -145,7 +150,7 @@ namespace byteheaven.tamjb.Engine
       /// 
       public Engine( )
       {
-         _Trace( "Engine" );
+         _Trace( "[Engine]" );
 
          if (null == _connectionString)
             throw new ApplicationException( "Engine is not properly initialized by the server" );
@@ -181,9 +186,10 @@ namespace byteheaven.tamjb.Engine
       
       ~Engine()
       {
-         _Trace( "~Engine" );
+         _Trace( "[~Engine]" );
          _fileSelector = null;
          _database = null;
+
       }
 
       ///
@@ -230,7 +236,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public void Poll()
       {
-         // _Trace( "Poll" );
+         // _Trace( "[Poll]" );
          _Lock();
          try
          {
@@ -285,7 +291,7 @@ namespace byteheaven.tamjb.Engine
       public void IncreaseAttributeZenoStyle( uint attributeKey,
                                               uint trackKey )
       {
-         _Trace( "IncreaseAttributeZenoStyle" );
+         _Trace( "[IncreaseAttributeZenoStyle]" );
 
          _Lock();
          try
@@ -323,7 +329,7 @@ namespace byteheaven.tamjb.Engine
       public void DecreaseAttributeZenoStyle( uint attributeKey,
                                               uint trackKey )
       {
-         _Trace( "DecreaseAttributeZenoStyle" );
+         _Trace( "[DecreaseAttributeZenoStyle]" );
 
          _Lock();
 
@@ -493,7 +499,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public IPlaylistCriterion GetCriterion( uint index )
       {
-         _Trace( "GetCriterion" );
+         _Trace( "[GetCriterion]" );
 
          _Lock();
          try
@@ -642,7 +648,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public void GotoPrevFile()
       {
-         _Trace( "GotoPrevFile" );
+         _Trace( "[GotoPrevFile]" );
 
          _Lock();
          try
@@ -809,24 +815,24 @@ namespace byteheaven.tamjb.Engine
             offset += 4;
          }
 
-         ++ _spew;
-         if (_spew > 25)
-         {
-            _spew = 0;
-            _Trace( "POWER: " + _decayingAveragePower
-                    + ", SCALE: " + correction);
-         }
+//          ++ _spew;
+//          if (_spew > 25)
+//          {
+//             _spew = 0;
+//             _Trace( "POWER: " + _decayingAveragePower
+//                     + ", SCALE: " + correction);
+//          }
       }
 
       double _SoftClip( double original )
       {
          if (original > CLIP_THRESHOLD) // Soft-clip 
          {
-            if (original > 32767 || original < -32767)
-            {
-               // Fascinating, soft clipping saved us from an awful noise!
-               Console.WriteLine( "Saved By The CLIP: " + original );
-            }
+//             if (original > 32767 || original < -32767)
+//             {
+//                // Fascinating, soft clipping saved us from an awful noise!
+//                Console.WriteLine( "CLIP: " + original );
+//             }
 
             if (original > 0)
             {
@@ -1112,11 +1118,15 @@ namespace byteheaven.tamjb.Engine
       ///
       public bool EntryExists( string fullPath )
       {
-         // _Trace( "EntryExists" );
+         // _Trace( "[EntryExists]" );
          _Lock();
          try
          {
             return _database.Mp3FileEntryExists( fullPath );
+         }
+         catch (Npgsql.NpgsqlException ne) // These damn things don't Reflect properly
+         {
+            throw new ApplicationException( ne.ToString() );
          }
          finally
          {
@@ -1133,6 +1143,10 @@ namespace byteheaven.tamjb.Engine
          try
          {
             _database.Add( newData );
+         }
+         catch (Npgsql.NpgsqlException ne) // These damn things don't Reflect properly
+         {
+            throw new ApplicationException( ne.ToString() );
          }
          finally
          {
@@ -1187,7 +1201,21 @@ namespace byteheaven.tamjb.Engine
       /// 
       public override object InitializeLifetimeService()
       {
-         return null;
+         return null; // never delete server
+
+         // Shorten lease here for testing. This is for debugging
+         // only, comment out in real code. :)
+//          Console.WriteLine( "WARNING: shortening lease for testing" );
+//          ILease lease = (ILease)base.InitializeLifetimeService();
+
+//          if (lease.CurrentState == LeaseState.Initial)
+//          {
+//             lease.InitialLeaseTime = TimeSpan.FromSeconds(25);
+//             lease.SponsorshipTimeout = TimeSpan.FromSeconds(26);
+//             lease.RenewOnCallTime = TimeSpan.FromSeconds(0);
+//          }
+
+//          return lease;
       }
 
       void _Trace( string msg )
@@ -1312,7 +1340,10 @@ namespace byteheaven.tamjb.Engine
       //
       double _decayingAveragePower = (float)32767.0;
 
-      long _spew = 0;
+      ///
+      /// Total number of songs played
+      ///
+      int _songCount = 0;
 
    }
 } // tam namespace

@@ -97,11 +97,8 @@ namespace byteheaven.tamjb.Server
          "Anime", "JPop", "Synthpop"
       };
 
-      public RecursiveScanner( string rootDir, Engine engine )
+      public RecursiveScanner( string rootDir )
       {
-         Debug.Assert( engine != null, "bad parameter" );
-
-         _engine = engine;
          _rootDir = rootDir;
 
          Rewind();
@@ -115,9 +112,9 @@ namespace byteheaven.tamjb.Server
          _scanner =  new SubdirScanner( _rootDir );
       }
 
-      public ScanStatus DoNextFile()
+      public ScanStatus DoNextFile( Engine engine )
       {
-         return this.DoNextFile( 1 );
+         return this.DoNextFile( 1, engine );
       }
 
       ///
@@ -128,7 +125,7 @@ namespace byteheaven.tamjb.Server
       ///
       /// \return FINISHED if no more subdirs have files
       ///
-      public ScanStatus DoNextFile( int nFiles )
+      public ScanStatus DoNextFile( int nFiles, Engine engine )
       {
          // You must be "this old" to be inserted:
          TimeSpan minAge = new TimeSpan( 0, 0, 15 /* seonds */ );
@@ -150,7 +147,7 @@ namespace byteheaven.tamjb.Server
             }
             else if (next.ToLower().EndsWith( "mp3"))
             {
-               _UpdateMP3FileInfo( next );
+               _UpdateMP3FileInfo( next, engine );
             }
          }
 
@@ -164,7 +161,7 @@ namespace byteheaven.tamjb.Server
       /// \todo Create a pluggable interface to extract the file info
       ///   from various file types, not just mp3
       ///
-      void _UpdateMP3FileInfo( string path )
+      void _UpdateMP3FileInfo( string path, Engine engine )
       {
          // Get ID3 tags from the file
 
@@ -191,7 +188,7 @@ namespace byteheaven.tamjb.Server
          if (null == genre)
             genre = "unknown";
 
-         if (! _engine.EntryExists( path )) 
+         if (! engine.EntryExists( path )) 
          {
             _Trace( "adding '" + path + "'" );
 
@@ -216,7 +213,7 @@ namespace byteheaven.tamjb.Server
             data.track = tag.trackIndex;
             data.genre = genre;
             data.lengthInSeconds = 0; // unknown, ID3 tag doesn't know
-            _engine.Add( data );
+            engine.Add( data );
          }
       }
 
@@ -226,7 +223,6 @@ namespace byteheaven.tamjb.Server
       }
 
       string         _rootDir;
-      Engine         _engine;
       SubdirScanner  _scanner;
    }
 
