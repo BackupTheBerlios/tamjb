@@ -45,12 +45,6 @@ namespace tam.GtkPlayer
    ///
    /// Gtk# frontend to TamJB
    ///
-   /// \todo Add code to monitor the status of the Mp3Player threads
-   ///   and restart or pop up dialogs or whatever on failure. Etc.
-   ///
-   /// \todo make sure try/catch blocks are around all Gtk event handling
-   ///   callbacks, and make a nice diagnostic dialog to go with.
-   ///
    public class MainWnd : Window
    {
       // Some constants
@@ -69,6 +63,10 @@ namespace tam.GtkPlayer
       {
          try
          {
+            // Spit all trace output to stdout if desired
+            Trace.Listeners.Add( new TextWriterTraceListener(Console.Out) );
+            Trace.AutoFlush = true;
+
             // Create a channel for communicating w/ the remote object
             // Should not have to explicitly state BinaryClient, should I?
 
@@ -107,7 +105,7 @@ namespace tam.GtkPlayer
      
             int result = md.Run ();
          }
-         Trace.WriteLine( "Main> bye" );
+         _Trace( "bye" );
 
          // If any stray threads are around, deal with it here.
       }
@@ -301,9 +299,9 @@ namespace tam.GtkPlayer
          _playlistSel = new Combo();
          _playlistSel.Entry.IsEditable = false;
          _listOptions = new string[] { "(all files)",
-                                       "Tom",
-                                       "Renee",
-                                       "Games" };
+                                       "One",
+                                       "Two",
+                                       "Three" };
 
          // Note: interface may change
          _playlistSel.SetPopdownStrings( _listOptions );
@@ -370,9 +368,9 @@ namespace tam.GtkPlayer
 
       ~MainWnd()
       {
-         // Save settings?
+         _Trace( "~MainWnd" );
+
          _settings.Store();
-         Trace.WriteLine( "MainWnd> bye" );
       }
 
       // Gtk.ToggledHandler not implemented...at this time.
@@ -384,7 +382,7 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Trace.WriteLine( "SuckChanged" );
+            _Trace( "SuckChanged" );
             
             _OnSliderChanged( _suckSlider,
                               ref _suckValue,
@@ -393,23 +391,30 @@ namespace tam.GtkPlayer
          }
          catch (Exception ex)
          {
-            Trace.WriteLine( ex.ToString() );
+            _Trace( ex.ToString() );
          }
       }
 
       void _OnAppropriateSliderChanged( object sender, EventArgs e )
       {
+         _Trace( "[_OnAppropriateSliderChanged]" );
          try
          {
-            Trace.WriteLine( "AppropriateChanged" );
-            _OnSliderChanged( _appropriateSlider,
-                              ref _appropriateValue,
-                              (uint)_runningPlaylistKey,
-                              false ); // not inverted
+            if (!_isAppropriateActive)
+            {
+               _Trace( "Slider changed, but attribute is not active!" );
+            }
+            else
+            {
+               _OnSliderChanged( _appropriateSlider,
+                                 ref _appropriateValue,
+                                 (uint)_appropriateKey,
+                                 false ); // not inverted
+            }
          }
          catch (Exception ex)
          {
-            Trace.WriteLine( ex.ToString() );
+            _Trace( ex.ToString() );
          }
       }
 
@@ -468,7 +473,7 @@ namespace tam.GtkPlayer
             /// \todo Should we go to an "establishing connection" 
             ///   interface here (and allow reconfiguration)?
             ///
-            Trace.WriteLine( "Could not update displayed track info: " 
+            _Trace( "Could not update displayed track info: " 
                                + e.ToString() );
          }
 
@@ -481,41 +486,46 @@ namespace tam.GtkPlayer
          {
             string selection = _playlistSel.Entry.Text;
 
+            bool activateCriterion = false;
+            switch (selection)
+            {
+            case "One":
+               activateCriterion = true;
+               _appropriateKey = 1;
+               break;
+
+            case "Two":
+               activateCriterion = true;
+               _appropriateKey = 2;
+               break;
+ 
+            case "Three":
+               activateCriterion = true;
+               _appropriateKey = 3;
+               break;
+            }
+
             // Suck always active for now
             _backend.ActivateCriterion( 0 );
 
-            /// \todo Make playlist gui allow for arbitrary number
-            ///   of simultaneous criteria.
-
-            _backend.DeactivateCriterion( 1 );
-            _backend.DeactivateCriterion( 2 );
-            _backend.DeactivateCriterion( 3 );
-            if (selection == "(all files)")
+            // Deactivate all others that are not selected. This is lame,
+            // but I don't have time to do the interface for it right
+            // now. :)
+            for (uint attribute = 1; attribute < 4; attribute++ )
             {
-               _backend.DeactivateCriterion( 1 );
-               _runningPlaylistKey = 0;
-            }
-            else if (selection == "Tom")
-            {
-               _backend.ActivateCriterion( 1 );
-               _runningPlaylistKey = 1;
-            }
-            else if (selection == "Renee")
-            {
-               _backend.ActivateCriterion( 2 );
-               _runningPlaylistKey = 2;
-            }
-            else if (selection == "Games")
-            {
-               _backend.ActivateCriterion( 3 );
-               _runningPlaylistKey = 3;
+               // Active the "appropriate" attribute, deactivate all
+               // others. (Ick. Why three?)
+               if (activateCriterion && (attribute == _appropriateKey))
+                  _backend.ActivateCriterion( attribute );
+               else
+                  _backend.DeactivateCriterion( attribute );
             }
 
             _UpdateButtonState();
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
@@ -526,7 +536,7 @@ namespace tam.GtkPlayer
       ///
       void _UpdateNowPlayingInfo()
       {
-         Trace.WriteLine( "_UpdateNowPlayingInfo" );
+         _Trace( "_UpdateNowPlayingInfo" );
 
          ITrackInfo trackInfo = null;
          if (null != _engineState)
@@ -552,10 +562,31 @@ namespace tam.GtkPlayer
             _suckSlider.Value = suckPercent;
             _suckValue = suckPercent;
 
-            if ( _runningPlaylistKey != 0 )
+            //
+            // Should we dynamically build buttons here? Or hide/unhide
+            // some prebuild controls?
+            //
+            _isAppropriateActive = false;
+            _isSuckActive = false;
+            foreach (uint key in _engineState.activeCriteria)
+            {
+               switch (key)
+               {
+               case 0:          // suck. Always suck
+                  _isSuckActive = true;
+                  break;
+                  
+               default:         // Misc other attributes
+                  _isAppropriateActive = true;
+                  _appropriateKey = key;
+                  break;
+               }
+            }
+
+            if ( _isAppropriateActive )
             {
                double appropriateLevel = 
-                  (double)_backend.GetAttribute( (uint)_runningPlaylistKey,
+                  (double)_backend.GetAttribute( (uint)_appropriateKey,
                                                  trackInfo.key );
 
                appropriateLevel /= 100.0;
@@ -668,7 +699,7 @@ namespace tam.GtkPlayer
       /// on the current state.
       void _UpdateButtonState()
       {
-         // Trace.WriteLine( "_UpdateButtonState" );
+         // _Trace( "_UpdateButtonState" );
 
          // Implement me! :)
          // check _nowPlaying, _currentTrackKey, and _pendingUpdate etc
@@ -685,17 +716,12 @@ namespace tam.GtkPlayer
          else
          {
             _playlistSel.Sensitive = true;
-            _suckBtn.Sensitive = true;
-            _suckSlider.Sensitive = true;
 
-            if (_runningPlaylistKey > 0)
-            {
-               _appropriateSlider.Sensitive = true;
-            }
-            else
-            {
-               _appropriateSlider.Sensitive = false;
-            }
+            _suckSlider.Sensitive = _isSuckActive;
+            _suckBtn.Sensitive = _isSuckActive;
+
+            _appropriateSlider.Sensitive = _isAppropriateActive;
+            // _inappropriateBtn = _isAppropriateActive;
 
             if (_engineState.currentTrackIndex <= 0)
                _prevBtn.Sensitive = false;
@@ -720,11 +746,16 @@ namespace tam.GtkPlayer
       ///
       void _WrongBtnClick( object sender, EventArgs args )
       {
+         _Trace( "_WrongBtnClick" );
+
          try
          {
-            // Bail out if this is 0-- it means no playlist is loaded
-            if (_runningPlaylistKey == 0)
+            // No "appropriate button" should be active?
+            if (! _isAppropriateActive)
+            {
+               _Trace( "Click while not active?" );
                return;
+            }
 
             ITrackInfo info = _engineState.currentTrack;
                
@@ -733,39 +764,42 @@ namespace tam.GtkPlayer
             _backend.GotoNextFile();
 
             // Now that it's no longer playing, update the track.
-            _backend.DecreaseAttributeZenoStyle( _runningPlaylistKey, 
+            _backend.DecreaseAttributeZenoStyle( _appropriateKey, 
                                                  info.key );
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
       ///
-      /// Called when the user things this song is wrong for the playlist.
+      /// Called when the user things this song is right for the playlist.
+      /// Easily confused with the right mouse button. Hmm.
       ///
       void _RightBtnClick( object sender, EventArgs args )
       {
+         _Trace( "_RightBtnClick" );
+
          try
          {
-            // Bail out if this is 0-- it means no playlist is loaded
-            if (_runningPlaylistKey == 0)
+            if (! _isAppropriateActive)
+            {
+               _Trace( "Click while not active?" );
                return;
+            }
 
-            Trace.WriteLine( "MainWnd: Right! (" + 
-                               _runningPlaylistKey +
-                               ")" );
+            _Trace( "Appropriate (" + _appropriateKey + ")" );
 
             ITrackInfo info = _engineState.currentTrack;
-            _backend.IncreaseAttributeZenoStyle( _runningPlaylistKey, 
+            _backend.IncreaseAttributeZenoStyle( _appropriateKey, 
                                                  info.key );
          
             _UpdateNowPlayingInfo(); // update the display, etc.
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
@@ -773,7 +807,7 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Trace.WriteLine( "MainWnd: Sucks" );
+            _Trace( "MainWnd: Sucks" );
 
             if (_engineState.currentTrackIndex >= 0)
             {
@@ -792,7 +826,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
@@ -805,7 +839,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
@@ -825,7 +859,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
@@ -836,11 +870,11 @@ namespace tam.GtkPlayer
       {
          try
          {
-            Trace.WriteLine( "MainWnd: Config" );
+            _Trace( "MainWnd: Config" );
 
             if ((int)ResponseType.Ok == _configDlg.Run())
             {
-               Trace.WriteLine( "OK" );
+               _Trace( "OK" );
 
                // (re)connect to the player
                _backend = null;
@@ -850,7 +884,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
-            Trace.WriteLine( e.ToString() );
+            _Trace( e.ToString() );
          }
       }
 
@@ -859,7 +893,7 @@ namespace tam.GtkPlayer
       ///
       void _DeleteHandler( object sender, DeleteEventArgs delArgs )
       {
-         Trace.WriteLine( "MainWnd: Closed By Request" );
+         _Trace( "MainWnd: Closed By Request" );
          Application.Quit();
       }
 
@@ -871,7 +905,7 @@ namespace tam.GtkPlayer
             string serverUrl = 
                "http://" + serverName + ":" + serverPort + "/Engine";
 
-            Trace.WriteLine( serverUrl );
+            _Trace( serverUrl );
 
             // Retrieve a reference to the remote object
             IEngine engine = (IEngine) Activator.GetObject( typeof(IEngine), 
@@ -891,6 +925,10 @@ namespace tam.GtkPlayer
          }
       } 
 
+      static void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "MainWnd" );
+      }
 
 
       //
@@ -902,7 +940,6 @@ namespace tam.GtkPlayer
       Scale  _suckSlider;
       double _suckValue;
       Scale  _appropriateSlider;
-      double _appropriateValue;
       Combo  _playlistSel;
       Button _suckBtn;
       Button _prevBtn;
@@ -932,10 +969,15 @@ namespace tam.GtkPlayer
       ConfigDlg      _configDlg;
 
       ///
-      /// While the SUCK playlist is always loaded, this playlist is
-      /// superimposed on it.
+      /// This is the attribute associated with the "appropriate" slider.
       /// 
-      uint _runningPlaylistKey = 0;  // default to 0 (suck) meaning disabled
+      /// Someday these will be in a list of active attributes. Probably.
+      ///
+      bool   _isAppropriateActive = false;
+      uint   _appropriateKey = 0;
+      double _appropriateValue;
+
+      bool   _isSuckActive = false;
 
       tam.IEngine _backend;
 

@@ -42,6 +42,11 @@ namespace tam
       ITrackInfo this [int index]{ get; }
       int Count{ get; }
 
+      ///
+      /// Retrieves the indexes of the currently active criteria
+      ///
+      uint [] activeCriteria{ get; }
+
       /// 
       /// This number indicates the index of the current
       /// playing track, and is passed to gotoNext/Prev/etc

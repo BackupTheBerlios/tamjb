@@ -151,7 +151,8 @@ namespace tam
                                      _playQueueCurrentTrack,
                                      _playQueue,
                                      _trackCounter,
-                                     _changeCount );
+                                     _changeCount,
+                                     activeCriteria );
             return true;
          }
          finally
@@ -298,11 +299,11 @@ namespace tam
                                 uint trackKey,
                                 uint level )
       {
-         _Trace( "SetAttribute" );
-
          try
          {
             _serializer.WaitOne();
+
+            ++_changeCount;
             _database.SetAttribute( attributeKey, trackKey, level );
          }
          finally
@@ -426,7 +427,6 @@ namespace tam
       public uint GetAttribute( uint playlistKey,
                                 uint trackKey )
       {
-         _Trace( "GetAttribute" );
          try
          {
             _serializer.WaitOne();
@@ -508,30 +508,64 @@ namespace tam
          }
       }
 
-      void SetPlaylist( uint index )
-      {
-         _Trace( "SetPlaylist( " + index + ")" );
-
-         // Import any new entries from the local-files tables to the
-         // attribute tables. This is only necessary if some external
-         // program has twiddled our database while we were out. 
-
-         // Is this the right place for this? I know 50% is the right
-         // default value...for now.
-
-         // Always use the suck metric
-         _database.ImportNewFiles( (uint)Tables.DOESNTSUCK, 8000 );
-         _criteria.Add( _criterion[0] );
-
-         if (index != 0)
+      ///
+      /// Get the currently active criteria indexes.
+      /// ome
+      uint [] activeCriteria
+      { 
+         get
          {
-            _database.ImportNewFiles( index, 8000 );
-            _criteria.Add( _criterion[index] );
-         }
+            _serializer.WaitOne();
+            try
+            {
+               // Build a list of the current criteria's keys.
+               // This is kind of lame. 
 
-         _fileSelector.SetCriteria( _criteria );
-         ++_changeCount;
+               // I want a way of
+               // authenticating users so that we can have per-user
+               // "Suck" values.
+
+               uint [] list = new uint[_criteria.Count];
+               int i = 0;
+               foreach (DictionaryEntry de in _criteria)
+               {
+                  PlaylistCriterion criterion = (PlaylistCriterion)de.Value;
+                  list[i] = criterion.attribKey;
+               }
+
+               return list;
+            }
+            finally
+            {
+               _serializer.ReleaseMutex();
+            }
+         }
       }
+
+//       void SetPlaylist( uint index )
+//       {
+//          _Trace( "SetPlaylist( " + index + ")" );
+
+//          // Import any new entries from the local-files tables to the
+//          // attribute tables. This is only necessary if some external
+//          // program has twiddled our database while we were out. 
+
+//          // Is this the right place for this? I know 50% is the right
+//          // default value...for now.
+
+//          // Always use the suck metric
+//          _database.ImportNewFiles( (uint)Tables.DOESNTSUCK, 8000 );
+//          _criteria.Add( _criterion[0] );
+
+//          if (index != 0)
+//          {
+//             _database.ImportNewFiles( index, 8000 );
+//             _criteria.Add( _criterion[index] );
+//          }
+
+//          _fileSelector.SetCriteria( _criteria );
+//          ++_changeCount;
+//       }
 
       ///
       /// Start playing the next file in the queue

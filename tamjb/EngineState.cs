@@ -39,18 +39,21 @@ namespace tam
       ArrayList _playQueue; // What's coming up, and what we've played.
       long      _trackCounter;
       long      _changeCount;
+      uint []   _activeCriteria;
 
       public EngineState( bool isPlaying,
                           int  currentTrackIndex,
                           ArrayList playQueue,
                           long trackCounter,
-                          long changeCount )
+                          long changeCount,
+                          uint [] activeCriteria )
       {
          _isPlaying = isPlaying;
          _currentTrackIndex = currentTrackIndex;
          _playQueue = playQueue; // should make a copy instead of ref?
          _trackCounter = trackCounter;
          _changeCount = changeCount;
+         _activeCriteria = activeCriteria;
       }
 
       public long changeCount
@@ -132,5 +135,14 @@ namespace tam
             return _trackCounter;
          }
       }
+
+      public uint [] activeCriteria
+      { 
+         get
+         {
+            return _activeCriteria;
+         }
+      }
+
    }
 }
