@@ -1,9 +1,37 @@
 /// \file
 /// $Id$
-/// Audio file streaming system. 
+///
+/// A class that streams an audio file to "the speakers". Not well
+/// thought out.
 ///
 /// The main reason for this wrapper is that the streaming
-/// interfaces available suck.
+/// interfaces available to c# are very platform-specific. I expect
+/// this to get better.
+///
+
+// Copyright (C) 2004 Tom Surace.
+//
+// This file is part of the Tam Jukebox project.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// Feel free to track down and contact ALL project contributors to
+// negotiate other terms. Bring a checkbook.
+//
+//   Tom Surace <tekhedd@byteheaven.net>
+
 
 namespace tam.SimpleMp3Player
 {

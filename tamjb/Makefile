@@ -1,4 +1,27 @@
 # $Id$
+#
+
+# This Makefile is part of the Tam Jukebox project too, OK?
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+# Feel free to track down and contact ALL project contributors to
+# negotiate other terms. Bring a checkbook.
+#
+#   Tom Surace <tekhedd@byteheaven.net>
+
 
 LIBDIR = ../lib
 
@@ -41,16 +64,6 @@ exe_subdirs:
 $(LIBDIR)/tam.Engine.dll: $(ENGINE_SRCS)
 	mcs $(DEBUGFLAGS) $(LIBPATH) $(REFS) -target:library \
                 -out:$@ $(ENGINE_SRCS)
-
-#
-# A command-line program, mainly for development and testing (obviously
-# the real file scanner will be a lib and linked into the main program
-# and stuff). Hmm.
-#
-
-FileScan.exe: FileScan.cs $(DEPLIBS)
-	mcs $(DEBUGFLAGS) $(LIBPATH) $(REFS) -out:$@ FileScan.cs 
-
 
 doc: .build_docs
 
