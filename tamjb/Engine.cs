@@ -110,10 +110,10 @@ namespace tam
          // string bufferSize = 
          //    ConfigurationSettings.AppSettings ["BufferSize"];
                         
-         // Set up the audio player engine
-         SimpleMp3Player.Player.bufferSize = 44100 / 4 ;
-         SimpleMp3Player.Player.buffersInQueue = 12;
-         SimpleMp3Player.Player.buffersToPreload = 12;
+         // Set up the audio player engine. Lots of tiny buffers is good.
+         SimpleMp3Player.Player.bufferSize = 44100 / 8 ;
+         SimpleMp3Player.Player.buffersInQueue = 40;
+         SimpleMp3Player.Player.buffersToPreload = 20;
 
          // Set up callback to be called when a track finishes
          // playing:

@@ -649,7 +649,7 @@ namespace tam.GtkPlayer
             // to be broken in this release (beta1) of mono
             //
             string serverUrl = 
-               "tcp://" + serverName + ":" + serverPort + "/Engine";
+               "http://" + serverName + ":" + serverPort + "/Engine";
 
             _Status( serverUrl + " - Trying...", 10 );
 

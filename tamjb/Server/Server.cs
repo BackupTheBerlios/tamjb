@@ -224,7 +224,7 @@ namespace tam.Server
             // Retrieve a reference to the "remote" engine. The backend
             // can reference the actual Engine class, not just its interface.
             // string serverUrl = "http://localhost:" + _port + "/Engine";
-            string serverUrl = "tcp://localhost:" + _port + "/Engine";
+            string serverUrl = "http://localhost:" + _port + "/Engine";
             Trace.WriteLine( "tam.Server started on port " + _port );
 
             RecursiveScanner scanner = null;;
@@ -325,19 +325,19 @@ namespace tam.Server
 
          // Could use Soap or Binary formatters if we wanted... 
          //  Will Binary work cross-platform? Soap is more reliable.
-//          HttpChannel channel = 
-//             new HttpChannel(properties,
-//                             new BinaryClientFormatterSinkProvider(),
-//                             new BinaryServerFormatterSinkProvider());
-// 
-//          ChannelServices.RegisterChannel( channel );
-
-         TcpChannel channel =
-            new TcpChannel( properties,
+         HttpChannel channel = 
+            new HttpChannel(properties,
                             new BinaryClientFormatterSinkProvider(),
                             new BinaryServerFormatterSinkProvider());
-                            
+
          ChannelServices.RegisterChannel( channel );
+
+//          TcpChannel channel =
+//             new TcpChannel( properties,
+//                             new BinaryClientFormatterSinkProvider(),
+//                             new BinaryServerFormatterSinkProvider());
+                         
+//          ChannelServices.RegisterChannel( channel );
       }   
    }
 }
