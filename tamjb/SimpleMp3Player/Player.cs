@@ -54,6 +54,13 @@ namespace byteheaven.tamjb.SimpleMp3Player
 
    public delegate void TrackStartingHandler( uint nextTrackId,
                                               string path );
+
+   ///
+   /// Called after each buffer is read, for processing or measurement.
+   /// Called before the buffer is played!
+   ///
+   public delegate void ReadBufferHandler( byte [] buffer,
+                                           int length );
    
    ///
    /// A struct to hold info about enqueued tracks
@@ -363,6 +370,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
 
       public static event TrackFinishedHandler OnTrackFinished;
       public static event TrackStartingHandler OnTrackPlayed;
+      public static event ReadBufferHandler    OnReadBuffer;
 
       ///
       /// Launch the mp3 reader thread if it is not running
@@ -555,6 +563,9 @@ namespace byteheaven.tamjb.SimpleMp3Player
                         _mp3Stream.Read( buffer.mp3Buffer,
                                          0, 
                                          buffer.mp3Buffer.Length );
+
+                     if (null != OnReadBuffer)
+                        OnReadBuffer( buffer.mp3Buffer, buffer.validBytes );
                   }
                   catch (Exception e)
                   {
@@ -781,7 +792,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                FileStream stream = new FileStream( _playingTrack.path, 
                                                    FileMode.Open );
 
-               // Note: there si a handy Mp3Stream(FileName) constructor,
+               // Note: there is a handy Mp3Stream(FileName) constructor,
                //   but if it throws an exception (say, file not found),
                //   the _mp3Stream class leaves around stray threads and
                //   the program won't exit! 
@@ -791,6 +802,9 @@ namespace byteheaven.tamjb.SimpleMp3Player
                   _mp3Stream.Close();
 
                _mp3Stream = new Mp3Stream( stream, _mp3ChunkSize );
+
+               if (null != OnTrackPlayed)
+                  OnTrackPlayed( _playingTrack.index, _playingTrack.path );
 
                return true;
             }

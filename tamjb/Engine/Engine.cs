@@ -84,7 +84,57 @@ namespace byteheaven.tamjb.Engine
             return _desiredQueueSize;
          }
       }
-            
+      
+      ///
+      /// sets the size in samples for all channels
+      ///
+      /// Takes effect when the next song starts.
+      ///
+      public uint bufferSize
+      {
+         get
+         {
+            return SimpleMp3Player.Player.bufferSize;
+         }
+         set
+         {
+            SimpleMp3Player.Player.bufferSize = value;
+         }
+      }
+
+      ///
+      /// how many audio buffers to have in queue
+      ///
+      /// Takes effect when playback is stopped/started
+      /// 
+      public uint bufferCount
+      {
+         get
+         {
+            return SimpleMp3Player.Player.buffersInQueue;
+         }
+         set
+         {
+            SimpleMp3Player.Player.buffersInQueue = value;
+         }
+      }
+
+      ///
+      /// how many bufers to load before starting playback
+      ///
+      /// Should be same or less than bufferCount
+      ///
+      public uint bufferPreload 
+      {
+         get
+         {
+            return SimpleMp3Player.Player.buffersToPreload;
+         }
+         set
+         {
+            SimpleMp3Player.Player.buffersToPreload = value;;
+         }
+      }
 
       ///
       /// Constructor with no parameters is required for remoting under
@@ -93,7 +143,7 @@ namespace byteheaven.tamjb.Engine
       /// \warning You must set the (static) connectionString property
       ///   before any attempt to construct an engine.
       /// 
-      public Engine()
+      public Engine( )
       {
          _Trace( "Engine" );
 
@@ -113,18 +163,20 @@ namespace byteheaven.tamjb.Engine
          // string bufferSize = 
          //    ConfigurationSettings.AppSettings ["BufferSize"];
                         
-         // Set up the audio player engine. Lots of tiny buffers is good.
+         // Set up default buffering for the audio engine
          SimpleMp3Player.Player.bufferSize = 44100 / 8 ;
          SimpleMp3Player.Player.buffersInQueue = 40;
          SimpleMp3Player.Player.buffersToPreload = 20;
 
-         // Set up callback to be called when a track finishes
-         // playing:
+         // Set up callbacks
          SimpleMp3Player.Player.OnTrackFinished +=
             new TrackFinishedHandler( _TrackFinishedCallback );
 
-//          SimpleMp3Player.Player.OnTrackPlayed +=
-//             new TrackStartingHandler( _TrackStartingCallback );
+         SimpleMp3Player.Player.OnTrackPlayed +=
+            new TrackStartingHandler( _TrackStartingCallback );
+
+         SimpleMp3Player.Player.OnReadBuffer +=
+            new ReadBufferHandler( _TrackReadCallback );
       }
       
       ~Engine()
@@ -619,6 +671,8 @@ namespace byteheaven.tamjb.Engine
       ///
       void _TrackFinishedCallback(  TrackFinishedInfo info )
       { 
+         ++ _changeCount;
+
          // Previous track could be nothing?
          if (null != info)
          {            
@@ -650,11 +704,215 @@ namespace byteheaven.tamjb.Engine
       ///
       /// \warning Called in the context of the reader thread!
       ///
-//       void _TrackStartingCallback( uint index, string path )
-//       {
-//          // This would be a good place to update our current-playing-track
-//          // indicator.
-//       }
+      void _TrackStartingCallback( uint index, string path )
+      {
+         // This would be a good place to update our current-playing-track
+         // indicator.
+         ++ _changeCount;
+      }
+
+      ///
+      /// Called for each buffer in every track.
+      ///
+      /// Here we can process the audio.
+      ///
+      void _TrackReadCallback( byte [] buffer, int length )
+      {
+         _Compress( buffer, length );
+      }
+
+      ///
+      /// Exponential-decay-styled compressor.
+      ///
+      void _Compress( byte [] buffer, 
+                      int length )
+      {
+         Debug.Assert( length % 4 == 0, 
+                       "I could have sworn this was 16 bit stereo" );
+
+         if (length < 4)
+            return;
+
+         /// 
+         /// \bug Should not be hardcoded 16-bit stereo
+         ///
+
+         // Assumes the buffer is 16-bit little-endian stereo.
+
+         int offset = 0;
+         double correction;
+         while (offset + 3 < length)
+         {
+            double magnitude;
+
+            // Approximate the average power of both channels by summing
+            // them (yes, phase differences are a problem but whatever)
+            // And exponentially decay or release the level:
+
+            double left = (((long)(sbyte)buffer[offset + 1] << 8) |
+                           ((long)buffer[offset] ));
+
+            // Fast attack, slow decay
+            magnitude = Math.Abs(left);
+            if (magnitude > _decayingAveragePower)
+            {
+               _decayingAveragePower = 
+                  ((_decayingAveragePower * ATTACK_RATIO_OLD) +
+                   (magnitude * ATTACK_RATIO_NEW));
+            }
+            else
+            {
+               _decayingAveragePower = 
+                  ((_decayingAveragePower * DECAY_RATIO_OLD) +
+                   (magnitude * DECAY_RATIO_NEW));
+            }
+
+            double right = (((long)(sbyte)buffer[offset + 3] << 8) |
+                            ((long)buffer[offset + 2] ));
+
+            magnitude = Math.Abs(right);
+            if (magnitude > _decayingAveragePower)
+            {
+               _decayingAveragePower = 
+                  ((_decayingAveragePower * ATTACK_RATIO_OLD) +
+                   (magnitude * ATTACK_RATIO_NEW));
+            }
+            else
+            {
+               _decayingAveragePower = 
+                  ((_decayingAveragePower * DECAY_RATIO_OLD) +
+                   (magnitude * DECAY_RATIO_NEW));
+            }
+
+            // How far off from the target power are we?
+            if (_decayingAveragePower < GATE_LEVEL)
+               correction = TARGET_POWER_LEVEL / GATE_LEVEL;
+            else
+               correction = TARGET_POWER_LEVEL / _decayingAveragePower;
+
+            // For inf:1 compression, use "offset", otherwise
+            // use this ratio to get other ratios:
+            // correction *= RATIO;
+
+            // Compress the values
+
+            long sample;
+            sample = (long)(left * correction);
+
+            buffer[offset]     = (byte)(sample & 0xff);
+            buffer[offset + 1] = (byte)(sample >> 8);
+
+            sample = (long)(right * correction);
+
+            buffer[offset + 2] = (byte)(sample & 0xff);
+            buffer[offset + 3] = (byte)(sample >> 8);
+
+            offset += 4;
+         }
+
+         ++ _spew;
+         if (_spew > 10)
+         {
+            _spew = 0;
+            _Trace( "POWER: " + _decayingAveragePower
+                    + ", SCALE: " + correction);
+         }
+      }
+
+      ///
+      /// Target power level for compression/expansion.
+      /// 
+      /// Something approximating 9dB of headroom
+      ///
+      static readonly double TARGET_POWER_LEVEL = 7000.0;
+
+      ///
+      /// Level below which we stop compressing and start
+      /// expanding (if possible)
+      ///
+      static readonly double GATE_LEVEL = 150.0;
+
+      /// 
+      /// Compression ratio where for n:1 compression, 
+      /// RATIO = (1 - 1/n).  or something.
+      ///
+      /// 1.0 = infinity:1
+      /// 0.875 = 8:1
+      /// 0.833 = 6:1
+      /// 0.75 = 4:1
+      /// 0.5 = 2:1
+      /// 0.0 = no compression 
+      ///
+      static readonly double RATIO = 0.875;
+
+      //
+      // Attack time really should be more than a 10 milliseconds to 
+      // avoid distortion on kick drums, unless the release time is 
+      // really long and you want to use it as a limiter, etc.
+      //
+      static readonly double ATTACK_RATIO_NEW = 0.0004;
+      static readonly double ATTACK_RATIO_OLD = 0.9996;
+
+      static readonly double DECAY_RATIO_NEW = 0.000001;
+      static readonly double DECAY_RATIO_OLD = 0.999999;
+
+      ///
+      /// Calculate average power of this buffer, and update any 
+      /// decaying means or whatever.
+      ///
+      void _UpdateAveragePower( byte [] buffer, 
+                                int length,
+                                bool compress )
+      {
+         Debug.Assert( length % 4 == 0, 
+                       "I could have sworn this was 16 bit stereo" );
+
+         if (length < 4)
+            return;
+
+         /// 
+         /// \bug Should not be hardcoded 16-bit stereo
+         ///
+
+         // Assumes the buffer is 16-bit little-endian stereo. Ew!
+
+         long sum = 0;
+         int offset = 0;
+         while (offset + 4 < length)
+         {
+            // Heck - truncate to 16-bit audio
+            long sample = (((long)(sbyte)buffer[offset + 1] << 8) |
+                           ((long)buffer[offset] ));
+            sum += sample * sample;
+
+            sample = (((long)(sbyte)buffer[offset + 3] << 8) |
+                      ((long)buffer[offset + 2] ));
+            sum += sample * sample;
+
+            offset += 4;
+         }
+
+         // Root mean square. I like an acronym that actually helps.
+         // Note this is the rms / (2^8). :)
+         double rms = Math.Sqrt( sum / (length / 2) );
+
+         ///
+         /// \bug
+         /// The decay rate will change with the sample rate and the
+         /// buffer size, so this ratio REALLY shouldn't be hardcoded.
+         ///
+         _decayingAveragePower = 
+            (_decayingAveragePower * 0.9) +
+            (rms * 0.1);
+
+         ++ _spew;
+         if (_spew > 10)
+         {
+            _spew = 0;
+            _Trace( "DECAY: " + _decayingAveragePower 
+                    + "RMS: " + rms );
+         }
+      }
 
       ///
       /// Get the current playing track's info
@@ -1010,6 +1268,16 @@ namespace byteheaven.tamjb.Engine
       StatusDatabase _database;
 
       PlaylistCriteria _criteria = new PlaylistCriteria();
+
+      //
+      // This is the average rms power of the current track decaying
+      // exponentially over time. Normalized to 16 bits.
+      //
+      // Initially maxed out to avoid clipping
+      //
+      double _decayingAveragePower = (float)32767.0;
+
+      long _spew = 0;
 
    }
 } // tam namespace

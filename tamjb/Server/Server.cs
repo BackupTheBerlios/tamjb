@@ -242,7 +242,7 @@ namespace byteheaven.tamjb.Server
             int scanRetryCountdown = 0;
 
             // Drop priority of the scanner thread. I guess.
-            Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
 
             while (true)
             {

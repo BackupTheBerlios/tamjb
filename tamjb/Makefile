@@ -25,7 +25,9 @@ RELEASE_TEXT_FILES = \
   CHANGELOG \
   README \
   todo.txt \
-  Server/tamjb.init \
+  scripts/tamjb.init \
+  scripts/tamjb.conf \
+  scripts/server_wrap.sh \
   install.sh
 
 RELEASE_BINARY_FILES = \
