@@ -14,9 +14,8 @@ SRCS = MainWnd.cs \
 PLAYER_REFS = -r System.Data \
         -r System.Runtime.Remoting \
         -r tam.Interfaces \
-        -r gtk-sharp \
-        -r glib-sharp \
-        -r glade-sharp
+        -pkg:gtk-sharp \
+        -pkg:glade-sharp
 
 RESOURCES = -resource:tam.GtkPlayer.exe.glade
 

@@ -74,7 +74,7 @@ namespace tam.GtkPlayer
       {
          switch (args.ResponseId)
          {
-         case (int)ResponseType.Ok:         // save
+         case ResponseType.Ok:         // save
             Trace.WriteLine( "ConfigDlg: Ok" );
             bool convertOk = false;
             int port = 0;
@@ -99,7 +99,7 @@ namespace tam.GtkPlayer
 
             break;
             
-         case (int)ResponseType.Cancel:
+         case ResponseType.Cancel:
             // Restore previous values to controls
             _serverName.Text = _settings.serverName;
             _serverPort.Text = _settings.serverPort.ToString();

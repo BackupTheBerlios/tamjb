@@ -427,7 +427,7 @@ namespace tam.SimpleMp3Player
          {
             ///
             /// \todo Should get the sample rate from the mp3 file's header 
-            ///    info etc etc. :/
+            ///    info instead of fixing it at 44100.
             ///
             
             Trace.WriteLine( "Starting esd", "MP3" );
@@ -439,6 +439,8 @@ namespace tam.SimpleMp3Player
                                         EsdChannels.Stereo,
                                         44100,
                                         EsdBits.Sixteen );
+
+            _estream.AllocWriteBuffer( (int)_bufferSize );
             
             audioThread = new Thread( new ThreadStart( _AudioThread ) );
             // audioThread.Priority = ThreadPriority.BelowNormal;
@@ -489,6 +491,12 @@ namespace tam.SimpleMp3Player
                         /// \todo Set sample rate here as well
                         ///
                         Trace.WriteLine( "creating buffers!", "MP3" );
+
+                        // esd#'s buffer must be as large or larger than 
+                        // our buffer
+                        _estream.FreeWriteBuffer();
+                        _estream.AllocWriteBuffer( (int)_bufferSize );
+
                         _CreateBuffers();
                         _underflowEvent.Set();
                         _bufferSizeChanged = false; // no longer
@@ -596,7 +604,10 @@ namespace tam.SimpleMp3Player
             }
 
             if (null != _estream)
+            {
+               _estream.FreeWriteBuffer();
                _estream.Close();
+            }
 
             Trace.WriteLine( "bye", "MP3" );
          }
@@ -619,7 +630,8 @@ namespace tam.SimpleMp3Player
          _freeBufferQueue.Clear();
          for (int i = 0; i < _buffersInQueue; i++)
          {
-            _freeBufferQueue.Enqueue( new Buffer( _bufferSize ) );
+            uint sizeInSamples = _bufferSize / 4;
+            _freeBufferQueue.Enqueue( new Buffer( sizeInSamples ) );
          }
 
          _freeBuffersEvent.Set(); // There are now buffers available!
@@ -817,53 +829,58 @@ namespace tam.SimpleMp3Player
       ///
       static void _AudioThread()
       {
-         Trace.WriteLine( "hello", "AUD" );
-         
-         while (true)
+         try
          {
-            // Wait for a buffer to be ready to play
-            
-            Buffer buffer = _WaitForAndPopMp3Buffer();
-            
-            if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, false ))
+            Trace.WriteLine( "hello", "AUD" );
+         
+            while (true)
             {
-               Trace.WriteLine( "Timed out waiting for the audio mutex",
-                                "AUD" );
-               continue;  // keep trying
-            }
-
-            try
-            {
-               int written = 0;
-               while (written < buffer.validBytes)
+               // Wait for a buffer to be ready to play
+            
+               Buffer buffer = _WaitForAndPopMp3Buffer();
+            
+               if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, false ))
                {
-                  // Note that this function writes length-offset bytes,
-                  // so always pass the entire size of the buffer:
-                  int actual = _estream.Write( buffer.mp3Buffer,
-                                               written, 
-                                               buffer.validBytes - written );
-
-                  if (actual <= 0)
-                  {
-                     Trace.WriteLine( "Warning: EsdSharp.Write returned <= 0, ("
-                                      + actual + ")", 
-                                      "AUD" );
-                     break;
-                  }
-
-                  written += actual;
+                  Trace.WriteLine( "Timed out waiting for the audio mutex",
+                                   "AUD" );
+                  continue;  // keep trying
                }
-            }
-            finally
-            {
-               _audioThreadMutex.ReleaseMutex();
-            }
 
-            // done! Well, probably. esd is strange.
-            _PushFreeBuffer( buffer ); 
+               try
+               {
+                  int written = 0;
+                  while (written < buffer.validBytes)
+                  {
+                     int actual = _estream.Write( buffer.mp3Buffer,
+                                                  written, 
+                                                  buffer.validBytes - written );
+
+                     if (actual <= 0)
+                     {
+                        Trace.WriteLine( "Warning: EsdSharp.Write returned <= 0, ("
+                                         + actual + ")", 
+                                         "AUD" );
+                        break;
+                     }
+
+                     written += actual;
+                  }
+               }
+               finally
+               {
+                  _audioThreadMutex.ReleaseMutex();
+               }
+
+               // done! Well, probably. esd is strange.
+               _PushFreeBuffer( buffer ); 
+            }
          }
-
-         // Not reached
+         catch (Exception ex)
+         {
+            // Not reached?
+            Trace.WriteLine( "Warning: exiting", "AUD" );
+            Trace.WriteLine( ex.ToString(), "AUD" );
+         }
       }
 
       ///
