@@ -119,17 +119,17 @@ Track Attribute Manager - Jukebox
     use gacutil -i to install each assembly, or set MONO_PATH.
 
   Windows:
-    drag the dll's to the %SERVER_ROOT%/Assembly dir, and they will
-    be automatically installed (this is really cool, btw). 
-
-    (usually c:\windows\assembly)
+    drag the dll's to the %WINDOWSDIR%/Assembly dir, and they will
+    be automatically installed (this is really cool, btw). Or simply
+    make sure they are in the "current directory".
+    
+    %WINDOWSDIR% is probably C:\windows.
 
  Create the Database:
   You will need to create the audio file database. Use tam.Server.exe's
   --create option to do this. The command line is something like
     
     tam.Server.exe --dbUrl=file:/home/myname/audiofiles.db --create
-
 
  Start the Server:
   Launch tam.Server.exe with appropriate options.
@@ -150,11 +150,4 @@ Track Attribute Manager - Jukebox
 
 * BUGS
 
- There are a lot of incomplete features.
-
- There is a fat memory leak in the server.
-
- If a file does not have a ID3v2 tag, it will not be played. This is
- technically NOT a bug. Truncated ID3v1 song names are really sad, and
- if a file doesn't have any ID3 info at all, you should probably go 
- through and tag it with a tagger program!
+ See todo.txt for a list of bugs, etc.

@@ -17,53 +17,55 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# Feel free to track down and contact ALL project contributors to
-# negotiate other terms. Bring a checkbook.
-#
+# Contacts:
 #   Tom Surace <tekhedd@byteheaven.net>
 
+RELEASE_TEXT_FILES = \
+  COPYING \
+  CHANGELOG \
+  README \
+  todo.txt \
+  Server/tamjb.init
 
-LIBDIR = ../lib
+RELEASE_BINARY_FILES = \
+  thirdparty/esd-sharp.dll \
+  thirdparty/Mp3Sharp.dll \
+  id3/byteheaven.id3.dll \
+  SimpleMp3Player/tamjb.SimpleMp3Player.dll \
+  Interfaces/tamjb.Interfaces.dll \
+  Engine/tamjb.Engine.dll \
+  Server/tamjb.Server.exe \
+  GtkPlayer/tamjb.GtkPlayer.exe \
 
-LIBPATH = -L $(LIBDIR)
+all: assykey.snk dll_subdirs exe_subdirs doc
 
-DEBUGFLAGS = -g -define:DEBUG -define:TRACE
+binary: all
+	-mkdir package 2> /dev/null
+	-mkdir package/bin 2> /dev/null
+	cp $(RELEASE_TEXT_FILES) package/.
+	cp $(RELEASE_BINARY_FILES) package/bin/.
 
-REFS = -r tam.Interfaces \
-        -r tam.LocalFileDatabase \
-        -r tam.SimpleMp3Player \
-        -r System.Data.dll
+#
+# You must manually create a key. Don't check it in!
+#
+assykey.snk:
+	echo "Please link your personal keyfile to assykey.sk!"
+	exit 1
 
-ENGINE_SRCS = FileSelector.cs \
-        Engine.cs \
-        EngineState.cs
-
-# libs for dependency checking during dev:
-DEPLIBS = $(LIBDIR)/tam.LocalFileDatabase.dll \
-        $(LIBDIR)/tam.SimpleMp3Player.dll
-
-BINARY_TARGETS = $(LIBDIR)/tam.Engine.dll
-
-
-all: dll_subdirs $(BINARY_TARGETS) exe_subdirs doc
-
+#
+# Build the various dll's in order of dependency (basically, engine last)
+#
 dll_subdirs:
+	$(MAKE) --directory=thirdparty
 	$(MAKE) --directory=id3
-	$(MAKE) --directory=Interfaces
-	$(MAKE) --directory=LocalFileDatabase
 	$(MAKE) --directory=SimpleMp3Player
+	$(MAKE) --directory=Interfaces
+	$(MAKE) --directory=Engine
 
 exe_subdirs:
 	$(MAKE) --directory=Server
 	$(MAKE) --directory=GtkPlayer
 
-
-#
-# The player backend Engine object
-# 
-$(LIBDIR)/tam.Engine.dll: $(ENGINE_SRCS)
-	mcs $(DEBUGFLAGS) $(LIBPATH) $(REFS) -target:library \
-                -out:$@ $(ENGINE_SRCS)
 
 doc: .build_docs
 

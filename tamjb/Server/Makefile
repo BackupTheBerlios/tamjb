@@ -1,29 +1,26 @@
 # $Id$
 
-LIBDIR = ../../lib
-
-LIBPATH = -L $(LIBDIR)
-
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
-# libs for dependency checking during dev:
-DEPLIBS = $(LIBDIR)/tam.LocalFileDatabase.dll \
-        $(LIBDIR)/tam.SimpleMp3Player.dll \
-        ../id3/id3.dll
+SERVER = tamjb.Server.exe
 
 SRCS = Server.cs \
         RecursiveScanner.cs
 
-SERVER = tam.Server.exe
-
-all: $(SERVER)
+#
+# libs that are part of this project (or, anyway, not system files)
+#
+DEPLIBS = ../id3/byteheaven.id3.dll \
+        ../thirdparty/Mp3Sharp.dll \
+        ../thirdparty/esd-sharp.dll \
+        ../Interfaces/tamjb.Interfaces.dll \
+        ../SimpleMp3Player/tamjb.SimpleMp3Player.dll \
+        ../Engine/tamjb.Engine.dll
 
 SERVER_REFS = -r System.Runtime.Remoting \
-        -r ../id3/id3.dll \
-        -r tam.Engine \
-        -r tam.Interfaces \
-        -r tam.LocalFileDatabase \
-        -r tam.SimpleMp3Player
+        $(addprefix -r:, $(DEPLIBS))
+
+all: $(SERVER)
 
 $(SERVER): $(SRCS) $(DEPLIBS)
 	mcs $(DEBUGFLAGS) $(LIBPATH) $(SERVER_REFS) -out:$@ $(SRCS)

@@ -24,7 +24,7 @@
 //
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace tam.GtkPlayer
+namespace byteheaven.tamjb.GtkPlayer
 {
    using System;
    using System.Collections;
@@ -38,6 +38,8 @@ namespace tam.GtkPlayer
    using Gtk;
    using GtkSharp;
    using Glade;
+
+   using byteheaven.tamjb.Interfaces;
 
    ///
    /// A class to be connected to the Glade main window

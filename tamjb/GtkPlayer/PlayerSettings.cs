@@ -25,7 +25,7 @@
 //
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace tam.GtkPlayer
+namespace byteheaven.tamjb.GtkPlayer
 {
    using System;
    using System.Configuration;

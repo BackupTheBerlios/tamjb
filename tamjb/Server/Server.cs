@@ -22,12 +22,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
-// Feel free to track down and contact ALL project contributors to
-// negotiate other terms. Bring a checkbook.
-//
+// Contacts:
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace tam.Server
+namespace byteheaven.tamjb.Server
 {
    using System;
    using System.Diagnostics;
@@ -44,8 +42,8 @@ namespace tam.Server
    /// \todo Make SimpleMp3Player not static so it doesn't need to be
    ///   referenced here
    ///
-   using tam.SimpleMp3Player;
-   using tam.LocalFileDatabase;
+   using byteheaven.tamjb.SimpleMp3Player;
+   using byteheaven.tamjb.Engine;
 
    ///
    /// Server for client-server mode

@@ -1,5 +1,7 @@
 
 TODO
+ Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
+ wrapper makefiles, etc.
 
  Bug: If a playlist is enabled (say, the "Suck" button is enabled) and a new
  file is found by the file scanner, that file is never played until the
