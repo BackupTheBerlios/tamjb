@@ -41,7 +41,7 @@ Track Attribute Manager - Jukebox
 
    Known good configuration:
 
-     Gentoo: mono-1.0
+     Gentoo: mono-1.0.4
 
    Should compile and/or run fine with Microsoft(TM)'s runtime, except 
    for the esd dependency. With the Gtk# binaries, the gui frontend will
@@ -104,7 +104,7 @@ Track Attribute Manager - Jukebox
  - esound, Esd#
 
    As there seem to be no stable audio api's for C# under Linux
-   at the moment, I am using the fine esd-sharp wrapper from:
+   at the moment. I am using the fine esd-sharp wrapper from:
    
      http://amy.udd.htu.se/~malte/mono/esd/
 
@@ -121,19 +121,21 @@ Track Attribute Manager - Jukebox
 
    Mp3Sharp Rules!
 
-   I have made several changes to mp3sharp for performance, etc. It will
-   soon be available, somewhere, as its own project. In the meantime, a 
-   CVS package "mp3sharp" is available in the tamjb cvs repository. (So,
-   do a "cvs get -d blahblah...cvs.sourceforge.net/cvsroot/tamjb mp3sharp".)
+   This project has its own copy of the mp3sharp dev tree which has now
+   been rolled into the official release. The official release has not
+   yet been tested. So, if you don't feel like trying something untested,
+   retrieve this version of mp3sharp from CVS using.
+
+     "cvs get -d blahblah...cvs.sourceforge.net/cvsroot/tamjb mp3sharp"
+
+   If you DO feel like trying something untested, tamjb _should_ work
+   just fine with the precompiled DLL from the mp3sharp distribution.
 
    Official Mp3Sharp home page:
 
      http://www.mle.ie/~rob/mp3sharp/
 
-   This code is GPL'ed. Which is good.
-
-   The source download includes an Mp3Sharp.dll binary which works fine,
-   aside from the infinite loop problem.
+   This code is GPL'ed. 
 
 
 * Compiling
@@ -155,6 +157,10 @@ Track Attribute Manager - Jukebox
   4) cd into tamjb, and type make
 
 * Running (Part 2)
+
+ This describes installing and running tamjb as a client-server 
+ application. If you have compiled it as a standalone app, simply 
+ configure your database in the setup dialog.
 
  Environment
 

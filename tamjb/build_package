@@ -12,8 +12,9 @@ KEYFILE=$HOME/.byteheaven.snk
 
 # The last known good snapshot tag:
 
-PACKAGE_DIR=tamjb-2004-08-03
-PACKAGE_TAG=SNAPSHOT_2004_08_03
+# Tue Dec  7 17:09:36 PST 2004
+PACKAGE_DIR=tamjb-2004-12-07
+PACKAGE_TAG=SNAPSHOT_2004_12_07
 
 if [ -d $PACKAGE_DIR ] ; then 
   echo "Package dir ${PACKAGE_DIR} exists! Bailing"
