@@ -1,6 +1,9 @@
 # $Id$
 # A simple unix makefile for mp3sharp. Whee.
 
+# Note that the "official" distribution should be a suitable
+# drop-in replacement at this point.
+
 MP3SHARPDIR = ../../../mp3sharp/mp3sharp
 
 TARGET = ../Mp3Sharp.dll

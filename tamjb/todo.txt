@@ -19,9 +19,6 @@ TODO
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
 
- - Save the current logged in user in the database (should remember who was
-  the last user. Really.
-
  - Implement delete/copy user/mood
 
  - Drop songs from future part of playlist if they are flagged as suck or
@@ -43,6 +40,11 @@ TODO
 
 
 DONE
+ - Tue Dec  7 18:07:55 PST 2004
+
+  Save the current logged in user in the database (should remember who was
+  the last user. Really.
+
   Allow the program to run standalone, not as a client server program, 
   for the simple case where one person is listening.
 

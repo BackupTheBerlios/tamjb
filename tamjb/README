@@ -41,7 +41,7 @@ Track Attribute Manager - Jukebox
 
    Known good configuration:
 
-     Gentoo: mono-1.0.4
+     Gentoo: mono-1.0.4-r1
 
    Should compile and/or run fine with Microsoft(TM)'s runtime, except 
    for the esd dependency. With the Gtk# binaries, the gui frontend will
@@ -59,7 +59,7 @@ Track Attribute Manager - Jukebox
 
    Known good configuration:
 
-     Gentoo: gtk-sharp-1.0
+     Gentoo: gtk-sharp-1.0.4-r1
 
    Once again, the code and binaries
 
