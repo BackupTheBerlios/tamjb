@@ -1,30 +1,45 @@
 $Id$
 
-README file for tam jukebox project. 
+Track Attribute Manager - Jukebox
 
-This file is not distributed under the GPL. You can take any words
-or phrases out of it and use them in any order, for any purpose. But
-don't quote me on that.
+
+* Running (Part 1)
+
+  If you have a binary package, see "Running (Part 2)" farther down.
+
+  To download the source code for this package, go to
+
+    http://tamjb.sourceforge.net/
+
+  And await instructions.
 
 
 * Compiling
 
  Initial project development is being done on a Gentoo 1.4 system with
  linux kernel 2.6.x. The binary runs on other Gentoo systems, and the
- Gtk frontend can be made to work under Windows.
+ Gtk frontend can be made to work under just about any mono platform.
 
  Someday, .NET will natively support lots of cool streaming interfaces
  in a cross-platform manner. Until then, we can decode the mp3 streams
- in managed code, using up most of the resources of a Pentium-III. Hey,
- it sounds good, what more could you want?
+ in managed code, using up most of the resources of a Pentium-III. While
+ gradually using more and more RAM. What could be cooler?
 
  To build your own, you will need these tools:
+
+
+ - GPL 
+
+   This package has been developed under the GPL version 2, and should
+   run fine with any higher version. Download a copy from www.gnu.org,
+   or use the copy included with the package (see "COPYING").
+
 
  - C# compiler, and .NET runtime libraries.
 
    Known good configuration:
 
-     Gentoo: mono-0.31
+     Gentoo: mono-0.91 (beta1)
 
 
  - Gtk, gtk-sharp
@@ -36,15 +51,12 @@ don't quote me on that.
 
    Known good configuration:
 
-     Gentoo: gtk-sharp-0.16
-
-   You will have to change one or two lines of code to compile with newer
-   versions.
+     Gentoo: gtk-sharp-0.91.1 (beta1)
 
 
  - SQLite
 
-   C# support fo sqlite is built into mono at this point. You will need
+   C# support for sqlite is built into mono at this point. You will need
    an actual sqlite binary though. The calls have been wrapped so
    you don't need to worry about building with thread-safe support. 
 
@@ -59,24 +71,18 @@ don't quote me on that.
  - esound, Esd#
 
    As there seem to be no stable audio api's for C# under Linux
-   at the moment, I am using the fine esd-sharp wrapper available from
+   at the moment, I am using the fine esd-sharp wrapper from:
    
      http://amy.udd.htu.se/~malte/mono/esd/
 
-   Known good: esd-sharp-0.1.2, with this patch. 
+   And apply the one-line patch:
 
---- ../esd-sharp.cs     2004-05-01 03:17:23.969082064 -0400
-+++ esd-sharp.cs        2004-03-20 12:51:58.000000000 -0500
-@@ -200,7 +200,7 @@
-                        ptr = Marshal.AllocHGlobal(buffer.Length);
- 
-                        Marshal.Copy(buffer, offset, ptr, length);
--                       length = Esd.write(id, ptr, length);
-+                       length = Esd.write(id, ptr, length - offset);
- 
-                        Marshal.FreeHGlobal(ptr);
-                        return length;
+     patches/esd-sharp-0.1.2-write.patch
 
+   Known good: esd-sharp-0.1.2, with patch
+
+   No license is supplied. I expect this to eventually be replace
+   with GStreamer (Gst#).
 
 
  - mp3id3tagkonverter
@@ -86,6 +92,12 @@ don't quote me on that.
     
      http://www.Planet-Source-Code.com/vb/scripts/ShowCode.asp?txtCodeId=2016&lngWId=10
 
+   A managed-code ID3V2 tag library is desperately needed here.
+
+   I cannot seem to find any license information in the source code. 
+   Replacing this piece of code is very high priority, and should be very
+   easy.
+
 
  - Mp3Sharp (What, MORE third-party managed code?)
 
@@ -93,33 +105,42 @@ don't quote me on that.
 
      http://www.mle.ie/~rob/mp3sharp/
 
+   The supplied DLL seems to work, but for some reason the code sometimes
+   goes into an infinite loop looking for sync at end-of-file, so use this
+   patch:
+
+     patches/mp3sharp-rev.9mar04-throwonsync.patch
+
    This class does not understand the ID3 tag at the end of a file, and
    can sometimes play a bit if noise or go into an infinite loop at the
-   end of a file. I have a fix for this (now it throws an exception) as 
-   well. This code is GPL, but I will try to get my "fix" into the real
-   distribution since it's pretty complex.
+   end of a file. Which is bad.
 
-   They supply an Mp3Sharp.dll binary, but I find it's somewhat less
-   efficient than one built by mcs.
+   This code is GPL'ed. Which is good.
+
+   The source download includes an Mp3Sharp.dll binary which works fine,
+   aside from the infinite loop problem.
    
 
-* Running
+* Running (Part 2)
 
- Put the required assemblies in your MONO_PATH, and start the server
- running. It will start scanning for files and playing audio right
- away. 
+ Note:
+  There is no way to initially create the audio file database. email
+  me for help if you actually get this far!
 
- Now launch the client (tam.GtkPlayer.exe). It defaults to localhost:5432,
- because this is what I typed in while prototyping. If the server is on
- a different host or port, enter this in the Config dialog. Once it
- connects, you should stop seeing lots of error messages to stdout.
+ Server:
+  Put the required assemblies in your MONO_PATH, and start the server
+  running. It will start scanning for files and playing audio right
+  away. Look at the output (or log file) to see if anything went wrong
+  starting esd. If you are running it from init.d, you may need to 
+  enable esound first.
 
- Issues:
+ Client:
+  Now launch the client (tam.GtkPlayer.exe). It defaults to localhost:5432,
+  because this is what I typed in while prototyping. This appears to also
+  be the default MySQL port, so you may have to change it in the Properties
+  dialog. The client only requires tam.GtkPlayer.exe and tam.Interfaces.dll,
+  so you will need Gtk, but you won't need SQLite.
 
-   There is no way to initially create the audio file database. email
-   me for help if you actually get this far!
-
-   Sometimes esd won't start. Watch the log file.
 
 
 
