@@ -1,9 +1,0 @@
-<configuration>
-  <system.runtime.remoting>
-    <application>
-      <channels>
-        <channel ref="tcp" port="8737"/>
-      </channels>
-    </application>
-  </system.runtime.remoting>
-</configuration>
