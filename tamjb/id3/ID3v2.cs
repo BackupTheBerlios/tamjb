@@ -156,12 +156,6 @@ namespace byteheaven.id3
 
       void _ReadFrames()
       {
-         if (_header.isUnsynchronized)
-         {
-            throw new ApplicationException( 
-               "TODO: unsynchronization not implemented yet" );
-         }
-
          byte [] headerBuffer = new byte[ID3v2FrameHeader.SIZE_BYTES];
 
          // Keep reading frames until they're all gone
@@ -176,6 +170,7 @@ namespace byteheaven.id3
             // Console.WriteLine( "POSITION: {0}", _reader.Position );
 
             _reader.Read( headerBuffer, ID3v2FrameHeader.SIZE_BYTES );
+
             ID3v2FrameHeader frameHeader = 
                new ID3v2FrameHeader( headerBuffer );
 
@@ -215,13 +210,6 @@ namespace byteheaven.id3
       void _OnFoundFrame( ID3v2FrameHeader frameHeader,
                           byte [] contentBuffer )
       {
-         if (frameHeader.isUnsynchronized)
-         {
-            Console.WriteLine( "Fixme: unsynchronization not implemented" );
-            Console.WriteLine( " (skipping frame)" );
-            return;
-         }
-
          if (frameHeader.isEncrypted)
          {
             // skip frame
@@ -234,6 +222,27 @@ namespace byteheaven.id3
             Console.WriteLine( "Fixme: Skipping compressed frame" );
             return;
          }
+
+         // if either this, or ALL frames are unsynchronized, deal with it
+         // "This bit MUST be set if the
+         // frame was altered by the unsynchronisation and SHOULD NOT be set if
+         // unaltered. If all frames in the tag are unsynchronised the
+         // unsynchronisation flag in the tag header SHOULD be set. It MUST NOT
+         // be set if the tag has a frame which is not unsynchronised."
+
+         int contentSize;
+         if (frameHeader.isUnsynchronized ||
+             _header.isUnsynchronized)
+         {
+            _FixUnsynchronized( contentBuffer, 
+                                frameHeader.size,
+                                out contentSize );
+         }
+         else
+         {
+            contentSize = frameHeader.size;
+         }
+
 
          switch (frameHeader.frameId)
          {
@@ -297,6 +306,69 @@ namespace byteheaven.id3
             Console.WriteLine( "ID3 frame type not supported: - {0} -", 
                                frameHeader.frameId );
             break;
+         }
+      }
+
+      ///
+      /// Modifies buffer in-place, removing unsynchronization codes.
+      ///
+      void _FixUnsynchronized( byte [] buffer, 
+                               int length,
+                               out int newLength )
+      {
+
+         // And I quote:
+         // "
+         //    %11111111 111xxxxx
+         //
+         // and should be replaced with:
+         // 
+         //    %11111111 00000000 111xxxxx
+         //
+         // This has the side effect that all $FF 00 combinations have to be
+         // altered, so they will not be affected by the decoding process.
+         // Therefore all the $FF 00 combinations have to be replaced with the
+         // $FF 00 00 combination during the unsynchronisation."
+         //
+
+         //
+         // To reverse this, we look for 0xff 0x00, and replace the 0x00
+         // by the next byte. Ah, the joy of transport streams!
+         // 
+         newLength = length;
+         int offset = 0;        // offset of data produced by shortening
+
+         byte prev = buffer[0]; // preload the first byte
+         int left = 1;          // copy destination
+         int right = 1;         // copy source
+         while (true)
+         {
+            // An unsynchronization sequence MUST be three bytes long. Cool.
+            if ((right + 1) >= length)
+               break;           // all done
+
+            // If the previous byte was an 0xff, and this byte is 0,
+            // skip this byte, because it's padding!
+
+            if ((prev == 0xff) && (buffer[right] == 0x00))
+            {
+               ++ right;
+               -- newLength;
+               prev = 0;        // next byte is guaranteed to be OK
+            }
+            else
+            {
+               prev = buffer[right];
+            }
+
+            // We simply recopy the buffer without the extra (stuffed)
+            // zero's, but only after we find the first one!
+
+            if (right > left)
+               buffer[left] = buffer[right];
+
+            ++left;
+            ++right;
          }
       }
 
