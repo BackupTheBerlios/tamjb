@@ -842,10 +842,13 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_AudioBtnClick]" );
 
-            MiscSettingsDialog dlg = 
-               new MiscSettingsDialog( _mainWindow, _backend );
+            if (null != _backend)
+            {
+               MiscSettingsDialog dlg = 
+                  new MiscSettingsDialog( _mainWindow, _backend );
 
-            // dlg.Run();
+               dlg.Run();
+            }
          }
          catch (Exception e)
          {
