@@ -46,9 +46,13 @@ namespace tam.GtkPlayer
       /// Server port (defaults to, uh, what?)
       public int    serverPort;
 
+      //
+      // OK, the location of this changed to ~/.local/share. What is
+      // going to be the ultimate base location huh? 
+      //
       static private string _confBase = 
       System.Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData )
-         + "/.tam.GtkPlayerrc";
+         + "/tam.GtkPlayer.exe";
 
       public void Store()
       {

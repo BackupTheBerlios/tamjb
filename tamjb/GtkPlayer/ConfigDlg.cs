@@ -34,22 +34,19 @@ namespace tam.GtkPlayer
    using Gtk;
    using GtkSharp;
 
-   // Need to include things that would  normally be hidden to get
-   // the data structs they use. Should these be moved into the global
-   // namespace to make them available at the "tam" namespace scope?
-   
-   public class ConfigDlg : Gtk.Dialog
+   public class ConfigDlg 
+      : Gtk.Dialog
    {
       ///
       /// \param parent Parent window
-      /// \param engine backend object
+      /// \param engine backend object (possibly not used?)
       /// \param settings is directly modified by ConfigDlg when OK is
       ///   pressed
       ///
       public ConfigDlg( Window parent, 
                         IEngine engine,
                         PlayerSettings settings )
-         : base( "TAM Config", parent, DialogFlags.DestroyWithParent )
+//         : base( "TAM Config", parent, DialogFlags.DestroyWithParent )
       {
          _backend = engine;
          _settings = settings;

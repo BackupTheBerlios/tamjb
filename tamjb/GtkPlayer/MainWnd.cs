@@ -57,8 +57,6 @@ namespace tam.GtkPlayer
       // Temporary hardcoded table index for the suck metric
       readonly uint DOESNTSUCK = 0;
 
-      // readonly string SETTINGS_FILE = "/home/tekhedd/.tam.GtkPlayerrc";
-
       static void Main( string [] args )
       {
          try
@@ -303,8 +301,10 @@ namespace tam.GtkPlayer
                                        "Two",
                                        "Three" };
 
-         // Note: interface may change
-         _playlistSel.SetPopdownStrings( _listOptions );
+         // Early version of gtk-sharp used the function:
+         // _playlistSel.SetPopdownStrings( _listOptions );
+         _playlistSel.PopdownStrings = _listOptions;
+
          _playlistSel.Entry.Changed += 
             new EventHandler( _OnPlaylistSelection );
 
@@ -333,6 +333,7 @@ namespace tam.GtkPlayer
          }
          catch (Exception e)
          {
+            _Trace( "Could not load settings, using defaults: " + e.Message );
             _settings = new PlayerSettings();
             _settings.serverName = "localhost";
             _settings.serverPort = 5432;
@@ -463,6 +464,13 @@ namespace tam.GtkPlayer
       {
          try
          {
+            if (null == _backend)
+            {
+               // Try now: throws on failure.
+               _backend = _ConnectToEngine( _settings.serverName,
+                                            _settings.serverPort );
+            }
+
             // State changed?
             if (_backend.CheckState(ref _engineState) || _pendingUpdate )
                _UpdateNowPlayingInfo();
@@ -470,11 +478,11 @@ namespace tam.GtkPlayer
          catch (Exception e)
          {
             ///
-            /// \todo Should we go to an "establishing connection" 
-            ///   interface here (and allow reconfiguration)?
+            /// \todo The GUI needs a status window with some sort of
+            ////  "lost connection" indicator...
             ///
             _Trace( "Could not update displayed track info: " 
-                               + e.ToString() );
+                    + e.Message );
          }
 
          return true; // keep calling
@@ -880,6 +888,9 @@ namespace tam.GtkPlayer
                _backend = null;
                _backend = _ConnectToEngine( _settings.serverName,
                                             _settings.serverPort );
+
+               // Save for future generations!
+               _settings.Store();
             }
          }
          catch (Exception e)
