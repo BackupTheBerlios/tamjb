@@ -27,13 +27,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
-// Feel free to track down and contact ALL project contributors to
-// negotiate other terms. Bring a checkbook.
-//
+// Contacts:
 //   Tom Surace <tekhedd@byteheaven.net>
 
 
-namespace tam.SimpleMp3Player
+namespace byteheaven.tamjb.SimpleMp3Player
 {
    using System;
    using System.IO;
