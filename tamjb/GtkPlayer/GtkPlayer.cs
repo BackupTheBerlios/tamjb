@@ -52,13 +52,20 @@ namespace byteheaven.tamjb.GtkPlayer
 
       // What's comin' at cha, including the current track.
       // Wish this wasn't hard coded
-      readonly int QUEUE_MIN_SIZE = 6; 
-
-      // Wish this also wasn't hard coded
-      readonly int HISTORY_VISIBLE_COUNT = 5;
+      readonly int HISTORY_SIZE = 5;
+      readonly int TRACK_LIST_SIZE = 11; // 5 old + 5 new + current
 
       // Temporary hardcoded table index for the suck metric
       readonly uint DOESNTSUCK = 0;
+
+      enum TrackListOffset : int
+      {
+         ARTIST,
+         TRACK_NAME,
+         SUCK,
+         MOOD,
+         TRACK_INFO
+      }
 
       ///
       /// Constructs the GtkPlayer from compiled-in Glade.XML resources
@@ -88,7 +95,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
             _settings = new PlayerSettings();
             _settings.serverName = "localhost";
-            _settings.serverPort = 5432;
+            _settings.serverPort = 6543;
          }
 
          _SetUpControls();
@@ -106,70 +113,75 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          _Trace( "[_SetUpControls]" );
 
-         _historyListStore = new ListStore( typeof(string),
-                                            typeof(string),
-                                            typeof(ITrackInfo) ); 
+         _trackListStore = new ListStore( typeof(string),
+                                          typeof(string),
+                                          typeof(string),
+                                          typeof(string),
+                                          typeof(ITrackInfo) ); 
 
          //
          // To prevent constant resizing, insert empty entries into
          // the list and update them, ensuring that the list is always
          // the same size. :/
          // 
-         for (int i = 0; i < HISTORY_VISIBLE_COUNT; i++)
-            _historyListStore.AppendValues( "", "", null );
 
-         _historyListView.AppendColumn( "Artist", 
-                                        new CellRendererText(),
-                                        "text",
-                                        0 );
+         for (int i = 0; i < TRACK_LIST_SIZE; i++)
+            _trackListStore.AppendValues( "", "", "", "", null );
 
-         _historyListView.AppendColumn( "Track Name", 
-                                        new CellRendererText(),
-                                        "text",
-                                        1 );
-
-         _historyListView.Model = _historyListStore;
-
-
-         //
-         // Set up the "future" history
-         //
-         _futureListStore = new ListStore( typeof(string),
-                                           typeof(string),
-                                           typeof(bool) ); 
-
-         // Create rows to store data
-         for (int i = 0; i < (QUEUE_MIN_SIZE - 1); i++)
-            _futureListStore.AppendValues( "", "", false );
-
-
+         
          TreeViewColumn column;
+         // Should be a checkbox or something. Hmmm.
+         column = new TreeViewColumn( "Suck", 
+                                      new CellRendererText(),
+                                      "text",
+                                      TrackListOffset.SUCK );
+
+         column.Sizing = TreeViewColumnSizing.Autosize; // Autosize, GrowOnly
+         column.MinWidth = 25;
+         // column.Toggled = new ToggledHandler( _OnSuckToggled );
+         _trackListView.AppendColumn( column );
+
+         // Should be a checkbox or something. Hmmm.
+         column = new TreeViewColumn( "Mood", 
+                                      new CellRendererText(),
+                                      "text",
+                                      TrackListOffset.MOOD );
+
+         column.Sizing = TreeViewColumnSizing.Autosize; // Autosize, GrowOnly
+         column.MinWidth = 25;
+         // column.Toggled = new ToggledHandler( _OnSuckToggled );
+         _trackListView.AppendColumn( column );
+
          column = new TreeViewColumn( "Artist", 
                                       new CellRendererText(),
                                       "text",
-                                      0 );
-         column.Sizing = TreeViewColumnSizing.GrowOnly;
-         _futureListView.AppendColumn( column );
+                                      TrackListOffset.ARTIST );
+         column.Sizing = TreeViewColumnSizing.Fixed;
+         column.MinWidth = 100;
+         _trackListView.AppendColumn( column );
 
          column = new TreeViewColumn( "Track Name", 
                                       new CellRendererText(),
                                       "text",
-                                      1 );
-         column.Sizing = TreeViewColumnSizing.GrowOnly;
-         _futureListView.AppendColumn( column );
+                                      TrackListOffset.TRACK_NAME );
+         column.Sizing = TreeViewColumnSizing.Fixed;
+         column.MinWidth = 100;
+         _trackListView.AppendColumn( column );
 
-         // Should be a checkbox or something. Hmmm.
-         column = new TreeViewColumn( "Suck", 
-                                      new CellRendererToggle(),
-                                      "active",
-                                      2 );
-         column.Sizing = TreeViewColumnSizing.Fixed; // Autosize, GrowOnly
-         // column.Toggled = new ToggledHandler( _OnSuckToggled );
-         _futureListView.AppendColumn( column );
+         _trackListView.Model = _trackListStore;
 
-         _futureListView.Model = _futureListStore;
-
+         // _trackListView.ColumnsAutosize();
+         // _trackListView.HeadersClickable = true;
       }
+
+      ///
+      /// When the close button is clicked...
+      ///
+      void _OnDelete( object sender, DeleteEventArgs delArgs )
+      {
+         Application.Quit();
+      }
+
 
       ///
       /// This is called periodically as a Timeout to check the status
@@ -238,144 +250,168 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       void _UpdateNowPlayingInfo()
       {
-         _Trace( "_UpdateNowPlayingInfo" );
+         _Trace( "[_UpdateNowPlayingInfo]" );
 
-         ITrackInfo trackInfo = null;
          if (null != _engineState)
-            trackInfo = _engineState.currentTrack;
-
-         if (null == trackInfo) // not playing after all
          {
-            _Status( "Server is stopped", 30 );
-            _titleDisplay.Buffer.Text = "(stopped)";
-            _artistDisplay.Buffer.Text = "";
+            if (_engineState.currentTrackIndex < 0)
+            {
+               _Status( "Server is stopped", 30 );
+            }
+         }
+         _pendingUpdate = false;
+         
+         _UpdateTrackListView();
+         _UpdateTransportButtonState();
+      }
+
+
+      ///
+      /// Update the current track info display to match the current 
+      /// selection in the listbox.
+      ///
+      void _UpdateTrackInfoDisplay()
+      {
+         _Trace( "[_UpdateTrackInfoDisplay]" );
+
+         if (null == _engineState) // Hrmm
+            return;
+
+         // Get selected track
+         TreeModel model;
+         TreeIter iter;
+         _selectedTrackInfo = null;
+         if (_trackListView.Selection.GetSelected( out model, out iter ))
+         {
+            _selectedTrackInfo =  (ITrackInfo)model.GetValue
+               ( iter,
+                 (int)TrackListOffset.TRACK_INFO );
+         }
+         
+         if (null != _selectedTrackInfo)
+         {
+            // Retrieve track suck/mood details as necessary (or from
+            // the model?)
+            
+            // Update display:
+            _titleDisplay.Buffer.Text = _selectedTrackInfo.title;
+            _artistDisplay.Buffer.Text = _selectedTrackInfo.artist;
+            _albumDisplay.Buffer.Text = _selectedTrackInfo.album;
+            _pathDisplay.Buffer.Text = _selectedTrackInfo.filePath;
          }
          else
          {
-            _pendingUpdate = false;
-
-            uint doesntSuckLevel;
-            try
-            {
-               doesntSuckLevel = _backend.GetAttribute( DOESNTSUCK, 
-                                                             trackInfo.key );
-            }
-            catch
-            {
-               // Attribute probably doesn't exist...
-               doesntSuckLevel = 5000;
-            }
-
-            // Invert the doesntSuck value to create a suck metric
-            double suckPercent = (10000 - doesntSuckLevel) / 100.0;
-
-
-            _titleDisplay.Buffer.Text = trackInfo.title;
-            _artistDisplay.Buffer.Text = trackInfo.artist;
-            _albumDisplay.Buffer.Text = trackInfo.album;
-            _pathDisplay.Buffer.Text = trackInfo.filePath;
-            _suckSlider.Value = suckPercent;
-            _suckValue = suckPercent;
-
-            // Ensure that the end of the path is visible? Maybe later
-//             TextIter iter = 
-//                _pathDisplay.GetIterAtLocation( trackInfo.filePath.Length,
-//                                                1 );
-//             _pathDisplay.ScrollToIter( iter,
-//                                        0.0, // within_margin
-//                                        true,
-//                                        1.0, // xalign
-//                                        0.0  ); // yalign 
-
-            //
-            // Should we dynamically build buttons here? Or hide/unhide
-            // some prebuild controls?
-            //
-            _isAppropriateActive = false;
-            _isSuckActive = false;
-            foreach (uint key in _engineState.activeCriteria)
-            {
-               _Trace( "Active: " + key );
-               if (0 == key)
-               {
-                  _isSuckActive = true;
-               }
-               else if (_appropriateKey == key)
-               {
-                  _isAppropriateActive = true;
-
-                  double appropriateLevel;
-                  try
-                  {
-                     appropriateLevel =
-                        (double)_backend.GetAttribute( (uint)_appropriateKey,
-                                                       trackInfo.key );
-                  }
-                  catch
-                  {
-                     // May throw if attribute has never been enabled
-                     appropriateLevel = 5000.0;
-                  }
-
-                  appropriateLevel /= 100.0;
-                  _appropriateSlider.Value = appropriateLevel;
-                  _appropriateValue = appropriateLevel;
-               }
-            }
-
-            _isSuckActiveBtn.Active = _isSuckActive;
-            _isAppropriateActive1Btn.Active = _isAppropriateActive;
+            _selectedTrackInfo = null;
+            _titleDisplay.Buffer.Text = "";
+            _artistDisplay.Buffer.Text = "";
+            _albumDisplay.Buffer.Text = "";
+            _pathDisplay.Buffer.Text = "";
          }
-         
-         _UpdateHistoryView();
-         _UpdateFutureView();
-         _UpdateButtonState();
+
+         _UpdateTrackInfoButtonState();
       }
-      
-      void _UpdateHistoryView()
+
+      ///
+      /// Sets the current playing track as the listbox selection
+      /// The opposite of MatchTrackListToDisplay.
+      ///
+      void _SelectCurrentTrack()
+      {
+         _Trace( "[_SelectCurrentTrack]" );
+
+         if (null == _engineState) // Hrmm
+            return;
+
+         // First make sure the list's selected track is the
+         // current track
+         int selected = HISTORY_SIZE;
+         _Trace( "  Selected: " + selected );
+         if (selected >= 0)
+         {
+            TreePath path = new TreePath( selected.ToString() );
+            _trackListView.Selection.SelectPath( path );
+         }
+      }         
+
+      ///
+      /// This is the opposite of _SelectCurrentTrack. It tries
+      /// to find a track in the track list that matches what is 
+      /// currently displayed, and highlights it.
+      ///
+      void _MatchTrackListToDisplay()
+      {
+         _Trace( "[_MatchTrackListToDisplay]" );
+
+         Debug.Assert( null != _selectedTrackInfo, 
+                       "No track is selected!" );
+
+         // We are not locked to the current selection. Try to
+         // select the currently-edited track in the list just to 
+         // make the list look synced up with the edit window
+
+         for (int row = 0; row < TRACK_LIST_SIZE; row++)
+         {
+            TreeIter rowIter;
+            if (_trackListStore.IterNthChild( out rowIter, row ))
+            {
+               ITrackInfo rowInfo = (ITrackInfo)_trackListStore.GetValue
+                  ( rowIter,
+                    (int)TrackListOffset.TRACK_INFO );
+
+               if (null == rowInfo) // empty row
+                  continue;     // ** Skip **
+
+               if (rowInfo.key == _selectedTrackInfo.key)
+               {
+                  // Same track! Select this row
+                  _trackListView.SetCursor
+                     ( _trackListStore.GetPath(rowIter),
+                       _trackListView.Columns[0],
+                       false );
+                  
+                  return;       // ** found it, return now **
+               }
+            }
+         }
+
+         // If we got here, not in list. Unselect all?
+      }
+
+
+
+      ///
+      /// Get attributes for a particular track using the current
+      /// logged in user's credentials
+      ///
+      void _GetAttributes( uint trackKey,
+                           out double suckPercent,
+                           out double moodPercent )
+      {
+         // HACK
+         suckPercent = 50.0;
+         moodPercent = 49.1;
+      }
+
+      ///
+      /// Update the track list display window. Dude!
+      ///
+      void _UpdateTrackListView()
       {
          if (null == _engineState) // huh
             return;
 
-         // Only show the last HISTORY_VISIBLE_COUNT entries
-
-         int row = HISTORY_VISIBLE_COUNT - 1;
-         TreeIter iter;
-         for (int i = (_engineState.currentTrackIndex - 1); i >= 0; i--, row--)
+         int i = _engineState.currentTrackIndex - HISTORY_SIZE;
+         int row = 0;
+         if (i < 0)
          {
-            ITrackInfo info = _engineState[i];
-
-            if (null == info)   // Other threads may have removed the entry.
-               break;
-
-            if (row >= 0 &&
-                _historyListStore.IterNthChild( out iter, row ))
-            {
-               _historyListStore.SetValue( iter, 0, info.artist );
-               _historyListStore.SetValue( iter, 1, _FixTitle(info) );
-            }
+            // Start at an offset in the display listbox!
+            row = -i;
+            i = 0;
          }
 
-         while (row >= 0)
-         {
-            if (_historyListStore.IterNthChild( out iter, row ))
-            {
-               _historyListStore.SetValue( iter, 0, "" );
-               _historyListStore.SetValue( iter, 1, "" );
-            }
-            --row;
-         }
-      }
-
-      void _UpdateFutureView()
-      {
-         if (null == _engineState) // No state!
-            return;
-
          TreeIter iter;
-         int row = 0;           // row in list
-         for (int i = _engineState.currentTrackIndex + 1; 
-              i < _engineState.Count; 
+         for (/* everything initialized already */;
+              i < _engineState.Count;
               i++, row++ )
          {
             ITrackInfo info = _engineState[i];
@@ -383,24 +419,59 @@ namespace byteheaven.tamjb.GtkPlayer
             if (null == info)   // Other threads may have removed the entry.
                break;
 
-            if (_futureListStore.IterNthChild( out iter, row ))
+            if (row >= TRACK_LIST_SIZE) // More in queue than we can display
+               break;
+
+            if (_trackListStore.IterNthChild( out iter, row ))
             {
-               _futureListStore.SetValue( iter, 0, info.artist );
-               _futureListStore.SetValue( iter, 1, _FixTitle(info) );
-               _futureListStore.SetValue( iter, 2, false ); // doesn't suck yet
+               double suckLevel;
+               double moodLevel;
+               _GetAttributes( info.key, out suckLevel, out moodLevel );
+
+               _trackListStore.SetValue( iter, 
+                                         (int)TrackListOffset.ARTIST, 
+                                         info.artist );
+               _trackListStore.SetValue( iter, 
+                                         (int)(int)TrackListOffset.TRACK_NAME, 
+                                         _FixTitle(info) );
+               _trackListStore.SetValue( iter, 
+                                         (int)TrackListOffset.SUCK, 
+                                         suckLevel.ToString( "f1" ) );
+
+               _trackListStore.SetValue( iter, 
+                                         (int)TrackListOffset.MOOD,
+                                         moodLevel.ToString( "f1" ) );
+
+               _trackListStore.SetValue( iter, 
+                                         (int)TrackListOffset.TRACK_INFO,
+                                         info );
             }
          }
 
-         while (row < QUEUE_MIN_SIZE)
+         while (row < TRACK_LIST_SIZE)
          {
-            if (_futureListStore.IterNthChild( out iter, row ))
+            if (_trackListStore.IterNthChild( out iter, row ))
             {
-               _futureListStore.SetValue( iter, 0, "" );
-               _futureListStore.SetValue( iter, 1, "" );
+               _trackListStore.SetValue( iter, (int)TrackListOffset.ARTIST, "" );
+               _trackListStore.SetValue( iter, (int)TrackListOffset.TRACK_NAME, "" );
+               _trackListStore.SetValue( iter, (int)TrackListOffset.SUCK, "" );
+               _trackListStore.SetValue( iter, (int)TrackListOffset.MOOD, "" );
+               _trackListStore.SetValue( iter, (int)TrackListOffset.TRACK_INFO, null );
             }
             ++row;
          }
+
+         if (_nowPlayingCheck.Active)
+         {
+            _SelectCurrentTrack();
+            _UpdateTrackInfoDisplay();
+         }
+         else
+         {
+            _MatchTrackListToDisplay();
+         }
       }
+
 
       ///
       /// Gets either the title or (if that is empty or all spaces or what)
@@ -438,111 +509,65 @@ namespace byteheaven.tamjb.GtkPlayer
          Application.Quit();
       }
 
-      void _OnSuckSliderChanged( object sender, EventArgs e )
-      {
-         _Trace( "[_OnSuckSliderChanged]" );
-            
-         try
-         {
-            if (!_isSuckActive)
-            {
-               // _Trace( "Slider changed, but attribute is not active!" );
-            }
-            else
-            {
-               _OnSliderChanged( _suckSlider,
-                                 ref _suckValue,
-                                 DOESNTSUCK,
-                                 true ); // inverted
-            }
-         }
-         catch (Exception ex)
-         {
-            _Trace( ex.ToString() );
-         }
-      }
-
-      void _OnAppropriateSliderChanged( object sender, EventArgs e )
-      {
-         _Trace( "[_OnAppropriateSliderChanged]" );
-         try
-         {
-            if (!_isAppropriateActive)
-            {
-               // _Trace( "Slider changed, but attribute is not active!" );
-            }
-            else
-            {
-               _OnSliderChanged( _appropriateSlider,
-                                 ref _appropriateValue,
-                                 (uint)_appropriateKey,
-                                 false ); // not inverted
-            }
-         }
-         catch (Exception ex)
-         {
-            _Trace( ex.ToString() );
-         }
-      }
-
-      ///
-      /// Helper function to handle the change of any slider
-      ///
-      void _OnSliderChanged( Scale slider,
-                             ref double cachedValue,
-                             uint attributeKey,
-                             bool isInverted )
-      {
-         if (_engineState.currentTrackIndex < 0)
-            return;
-
-         // avoid updating database if it still has the same value
-         double newValue = slider.Value;
-         if (newValue == cachedValue) 
-            return;
-
-         cachedValue = newValue;
-         uint trackKey = _engineState.currentTrack.key;
-
-         newValue = newValue * 100.0;
-
-         if (isInverted)        // Is less better?
-            newValue = 10000.0 - newValue;
-
-         // Paranoia is good
-         if (newValue < 0.0)
-            newValue = 0.0;
-         
-         if (newValue > 10000.0)
-            newValue = 10000.0;
-                  
-         // Flag the previously playing track as suck
-         _backend.SetAttribute( attributeKey, trackKey, (uint)newValue );
-
-         _SetPendingUpdate(); // Call after updating backend
-      }
-
       void _SuckBtnClick( object sender, EventArgs args )
       {
          try
          {
             _Trace( "[_SuckBtnClick]" );
 
-            if (_engineState.currentTrackIndex >= 0)
+            if (_engineState.currentTrackIndex < 0)
+               return;
+
+            if (null == _selectedTrackInfo) 
             {
-               // Whether the suck attribute table is active or not, 
-               // send feedback to the suck table.
-
-               uint suckTrackKey = _engineState.currentTrack.key;
-
-               // Stop playing this track NOW
-               _backend.GotoNextFile(); // this takes a while
-
-               // Flag the previously playing track as suck
-               _backend.DecreaseAttributeZenoStyle( DOESNTSUCK, suckTrackKey );
-
-               _SetPendingUpdate(); // update state to match backend
+               _Trace( "  No track selected" );
+               return;
             }
+
+            // Whether the suck attribute table is active or not, 
+            // send feedback to the suck table.
+
+            uint suckTrackKey = _selectedTrackInfo.key;
+
+            // Stop playing this track if it is the current track
+            if (_engineState.currentTrack.key == suckTrackKey)
+               _backend.GotoNextFile( _credentials, suckTrackKey );
+
+            // Flag the previously playing track as suck
+            _backend.IncreaseSuckZenoStyle( _credentials, suckTrackKey );
+
+            _SetPendingUpdate(); // update state to match backend
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      void _RuleBtnClick( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_RuleBtnClick]" );
+
+            if (_engineState.currentTrackIndex < 0)
+               return;
+
+            if (null == _selectedTrackInfo) 
+            {
+               _Trace( "  No track selected" );
+               return;
+            }
+
+            // Whether the suck attribute table is active or not, 
+            // send feedback to the suck table.
+
+            uint trackKey = _selectedTrackInfo.key;
+
+            // Flag the previously playing track as suck
+            _backend.DecreaseSuckZenoStyle( _credentials, trackKey );
+
+            _SetPendingUpdate(); // update state to match backend
          }
          catch (Exception e)
          {
@@ -553,27 +578,54 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Called when the user things this song is wrong for the playlist.
       ///
-      void _WrongBtnClick( object sender, EventArgs args )
+       void _MoodNoBtnClick( object sender, EventArgs args )
       {
-         _Trace( "_WrongBtnClick" );
+         _Trace( "[_MoodNoBtnClick]" );
 
          try
          {
-            // No "appropriate button" should be active?
-            if (! _isAppropriateActive)
+            if (null == _selectedTrackInfo) 
             {
-               _Trace( "Click while not active?" );
+               _Trace( "  No track selected" );
                return;
             }
-
-            ITrackInfo info = _engineState.currentTrack;
                
             // Send the player to the next file first.
-            _backend.GotoNextFile();
+            if (_engineState.currentTrack.key == _selectedTrackInfo.key)
+               _backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
 
             // Now that it's no longer playing, update the track.
-            _backend.DecreaseAttributeZenoStyle( _appropriateKey, 
-                                                 info.key );
+            _backend.DecreaseAppropriateZenoStyle( _credentials, 
+                                                   _mood,
+                                                   _selectedTrackInfo.key );
+
+            _SetPendingUpdate(); // update to match backend
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      ///
+      /// Called when the user things this song is wrong for the playlist.
+      ///
+      void _MoodYesBtnClick( object sender, EventArgs args )
+      {
+         _Trace( "[_MoodYesBtnClick]" );
+
+         try
+         {
+            if (null == _selectedTrackInfo) 
+            {
+               _Trace( "  No track selected" );
+               return;
+            }
+               
+            // Now that it's no longer playing, update the track.
+            _backend.IncreaseAppropriateZenoStyle( _credentials, 
+                                                   _mood,
+                                                   _selectedTrackInfo.key );
 
             _SetPendingUpdate(); // update to match backend
          }
@@ -585,9 +637,19 @@ namespace byteheaven.tamjb.GtkPlayer
 
       void _NextBtnClick( object sender, EventArgs args )
       {
+         _Trace( "[_NextBtnClick]" );
          try
          {
-            _backend.GotoNextFile();
+            if (null == _engineState)
+               return;
+
+            if (null == _selectedTrackInfo) 
+            {
+               _Trace( "  No track selected" );
+               return;
+            }
+               
+            _backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
             _SetPendingUpdate();
          }
          catch (Exception e)
@@ -601,14 +663,26 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       void _PrevBtnClick( object sender, EventArgs args )
       {
+         _Trace( "[_PrevBtnClick]" );
+
          try
          {
-            if (_engineState.currentTrackIndex > 0)
+            
+            if ((null == _engineState) ||
+                (_engineState.currentTrackIndex <= 0))
             {
-               _backend.GotoPrevFile();
-               _UpdateButtonState();
-               _SetPendingUpdate(); // Track is changing...
+               return;
             }
+
+            if (null == _selectedTrackInfo) 
+            {
+               _Trace( "  No track selected" );
+               return;
+            }
+
+            _backend.GotoPrevFile( _credentials, _selectedTrackInfo.key );
+            _UpdateTransportButtonState();
+            _SetPendingUpdate(); // Track is changing...
          }
          catch (Exception e)
          {
@@ -678,6 +752,9 @@ namespace byteheaven.tamjb.GtkPlayer
                                                             serverUrl );
 
             _Status( serverUrl + " - Connected", 10 );
+
+            _credentials = engine.GetDefaultCredentials();
+            _mood = engine.GetDefaultMood();
             return engine;
          }
          catch ( System.Net.WebException snw )
@@ -722,17 +799,19 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnIsSuckActiveToggled( object sender, EventArgs args )
+      void _OnLockToggled( object sender, EventArgs args )
       {
-         _Trace( "_OnIsSuckActiveToggled" );
+         /// \todo Have the appropriate toggles share 1 function.
+         ///
+         _Trace( "[_OnLockToggled]" );
          try
          {
-            if (_isSuckActiveBtn.Active)
-               _backend.ActivateCriterion( 0 );
-            else
-               _backend.DeactivateCriterion( 0 );
-
-            _SetPendingUpdate();
+            // Jump immediately to the current track, if enabled
+            if (_nowPlayingCheck.Active)
+            {
+               _SelectCurrentTrack();
+               _UpdateTrackInfoDisplay();
+            }
          }
          catch (Exception e)
          {
@@ -740,21 +819,22 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnIsAppropriateActive1Toggled( object sender, EventArgs args )
+      void _OnListCursorChanged( object sender, EventArgs e )
       {
-         /// \todo Have the appropriate toggles share 1 function.
-         ///
-         _Trace( "_OnIsAppropriateActive1Toggled" );
+         _Trace( "[_OnListCursorChanged]" );
+         
          try
          {
-            if (_isAppropriateActive1Btn.Active)
-               _backend.ActivateCriterion( _appropriateKey );
+            if (_nowPlayingCheck.Active)
+            {
+               _SelectCurrentTrack(); // restore to current track
+            }
             else
-               _backend.DeactivateCriterion( _appropriateKey );
-
-            _SetPendingUpdate();
+            {
+               _UpdateTrackInfoDisplay(); 
+            }
          }
-         catch (Exception e)
+         catch (Exception ex)
          {
             _Trace( e.ToString() );
          }
@@ -764,10 +844,6 @@ namespace byteheaven.tamjb.GtkPlayer
       void _SetPendingUpdate()
       {
          _pendingUpdate = true;
-         _titleDisplay.Buffer.Text = "";
-         _artistDisplay.Buffer.Text = "";
-         _albumDisplay.Buffer.Text = "";
-         _pathDisplay.Buffer.Text = "";
 
          _UpdateNow();
       }
@@ -776,14 +852,12 @@ namespace byteheaven.tamjb.GtkPlayer
       /// Here we decide which controls are greyed out, etc, based
       /// on the current state.
       ///
-      void _UpdateButtonState()
+      void _UpdateTransportButtonState()
       {
-         _Trace( "[_UpdateButtonState]" );
+         _Trace( "[_UpdateTransportButtonState]" );
 
          bool isConnected = (null != _engineState);
 
-         _isSuckActiveBtn.Sensitive = isConnected;
-         _isAppropriateActive1Btn.Sensitive = isConnected;
          _nextBtn.Sensitive = isConnected;
          _prevBtn.Sensitive = isConnected;
 
@@ -798,27 +872,35 @@ namespace byteheaven.tamjb.GtkPlayer
             _playBtn.Sensitive = false;
          }
 
-         if (!isConnected || 
-             !_engineState.isPlaying || 
-             _pendingUpdate)
+         if (isConnected)
          {
-            _suckBtn.Sensitive = false;
-            _notAppropriateBtn.Sensitive = false;
-            _suckSlider.Sensitive = false;
-            _appropriateSlider.Sensitive = false;
-         }
-         else
-         {
-            _suckSlider.Sensitive = _isSuckActive;
-            _suckBtn.Sensitive = _isSuckActive;
-
-            _appropriateSlider.Sensitive = _isAppropriateActive;
-            _notAppropriateBtn.Sensitive = _isAppropriateActive;
-
             if (_engineState.currentTrackIndex <= 0)
                _prevBtn.Sensitive = false;
             else
                _prevBtn.Sensitive = true;
+         }
+      }
+
+      void _UpdateTrackInfoButtonState()
+      {
+         _Trace( "[_UpdateTrackInfoButtonState]" );
+
+         _userBtn.Label = "User: " + _credentials.name;
+         _moodBtn.Label = "Mood: " + _mood.name;
+
+         if (null == _selectedTrackInfo)
+         {
+            _suckBtn.Sensitive = false;
+            _ruleBtn.Sensitive = false;
+            _moodNoBtn.Sensitive = false;
+            _moodYesBtn.Sensitive = false;
+         }
+         else
+         {
+            _suckBtn.Sensitive = true;
+            _ruleBtn.Sensitive = true;
+            _moodNoBtn.Sensitive = true;
+            _moodYesBtn.Sensitive = true;
          }
       }
 
@@ -848,18 +930,16 @@ namespace byteheaven.tamjb.GtkPlayer
 
       // State for the list/tree widgets
 
-      ListStore _historyListStore; // what we've played
-      ListStore _futureListStore; // what we're gonna play
+      ListStore _trackListStore;
 
       // State for the configurable attributes. I guess.
 
-      bool   _isAppropriateActive = false;
-      uint   _appropriateKey = 1;
-      double _appropriateValue;
+      // For now, the user credentials is a uint placeholder. Temporary.
+      ICredentials _credentials = null;
+      IMood        _mood = null;
 
-      bool   _isSuckActive = false;
-
-      double _suckValue;
+      // Holds basic info about the current track.
+      ITrackInfo   _selectedTrackInfo = null;
 
       // Misc
 
@@ -869,10 +949,7 @@ namespace byteheaven.tamjb.GtkPlayer
       // -- Widgets that are attached to Glade
       //
       [Glade.Widget]
-      TreeView _historyListView;
-
-      [Glade.Widget]
-      TreeView _futureListView;
+      TreeView _trackListView;
 
       [Glade.Widget]
       TextView _titleDisplay;
@@ -887,25 +964,25 @@ namespace byteheaven.tamjb.GtkPlayer
       TextView _albumDisplay;
 
       [Glade.Widget]
-      Scale  _suckSlider;
+      Button _userBtn;
 
       [Glade.Widget]
-      Scale  _appropriateSlider;
-
-      [Glade.Widget]
-      CheckButton _isSuckActiveBtn;
-
-      [Glade.Widget]
-      CheckButton _isAppropriateActive1Btn;
-
-//       [Glade.Widget]
-//       Button _isAppropriateActiveBtn;
+      Button _moodBtn;
 
       [Glade.Widget]
       Button _suckBtn;
 
       [Glade.Widget]
-      Button _notAppropriateBtn;
+      Button _ruleBtn;
+
+      [Glade.Widget]
+      Button _moodNoBtn;
+
+      [Glade.Widget]
+      Button _moodYesBtn;
+
+      [Glade.Widget]
+      CheckButton _nowPlayingCheck;
 
       [Glade.Widget]
       Button _prevBtn;

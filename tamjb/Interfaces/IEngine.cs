@@ -41,19 +41,6 @@ namespace byteheaven.tamjb.Interfaces
       ITrackInfo this [int index]{ get; }
       int Count{ get; }
 
-      ///
-      /// Retrieves the indexes of the currently active criteria
-      ///
-      uint [] activeCriteria{ get; }
-
-      /// 
-      /// This number indicates the index of the current
-      /// playing track, and is passed to gotoNext/Prev/etc
-      /// calls. 
-      ///
-      /// There's probably a better way to do this.
-      ///
-      long trackCounter{ get; }
    }
 
    ///
@@ -68,7 +55,17 @@ namespace byteheaven.tamjb.Interfaces
    {
       /// This is for the server only, not the client
       ///
-      void Poll();
+      // void Poll();
+
+      /// 
+      /// If you don't want to log in, you can always be Mr/Ms. Guest.
+      ///
+      ICredentials GetDefaultCredentials();
+
+      ///
+      /// The default mood. When you don't know how you feel!
+      ///
+      IMood GetDefaultMood();
 
       ///
       /// Get a snapshot of the engine state. 
@@ -83,29 +80,36 @@ namespace byteheaven.tamjb.Interfaces
       // These are fine - they retrieve info about tracks and playlist 
       // criteria using the unique keys.
       ITrackInfo GetFileInfo( uint key );
-      uint GetAttribute( uint playlistKey, uint trackKey );
-      void SetAttribute( uint playlistKey, uint trackKey, uint newValue );
-      IPlaylistCriterion GetCriterion( uint index );
 
-      // The attribute selection control needs work.
-      void ActivateCriterion( uint index );
-      void DeactivateCriterion( uint index );
+      void GetAttributes( ICredentials cred,
+                          IMood mood,
+                          uint trackKey,
+                          out double suck,
+                          out double appropriate );
 
       // These could possibly be changed to indicate the percieved 
       // "current value" of the attribute, so the server can be more
       // intelligent.
-      void IncreaseAttributeZenoStyle( uint attributeKey,
-                                       uint trackKey );
+      void IncreaseSuckZenoStyle( ICredentials cred,
+                                  uint trackKey );
 
-      void DecreaseAttributeZenoStyle( uint attributeKey,
-                                       uint trackKey );
+      void DecreaseSuckZenoStyle( ICredentials user,
+                                  uint trackKey );
+
+      void IncreaseAppropriateZenoStyle( ICredentials user,
+                                         IMood mood,
+                                         uint trackKey );
+
+      void DecreaseAppropriateZenoStyle( ICredentials user,
+                                         IMood mood,
+                                         uint trackKey );
 
 
       // These need to take, as a parameter, some sort of clue as to 
       // what your application's  state is, to deal with multiple 
       // concurrent requests.
-      void GotoNextFile();
-      void GotoPrevFile();
+      void GotoNextFile( ICredentials user, uint currentTrackKey );
+      void GotoPrevFile( ICredentials user, uint currentTrackKey );
 
       ///
       /// Stops playback if started

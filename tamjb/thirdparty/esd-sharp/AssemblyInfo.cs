@@ -12,9 +12,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyProduct("esd-sharp (built with byteheaven.tamjb")]
 [assembly: AssemblyCopyright ("Malte Hildingson 2003")]
 [assembly: AssemblyVersion("1.0.3.*")]
-//
-// 
-//
+
 [assembly: AssemblyDelaySign(false)]
 [assembly: AssemblyKeyFile("../../assykey.snk")]
 [assembly: AssemblyKeyName("")]

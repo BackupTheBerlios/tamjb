@@ -24,6 +24,10 @@ TODO
   if a file doesn't have any ID3 info at all, you should probably go 
   through and tag it with a tagger program!
 
+  HOWEVER, there should be a flag in the database so that when an 
+  untagged file is found, it will be added but when you are scanning
+  it will check again to see if an id3v2 tag has been added!
+
  - There are a lot of incomplete features.
 
 

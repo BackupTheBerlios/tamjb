@@ -4,12 +4,8 @@
 TARGET = tamjb.Engine.dll
 
 SOURCES = AssemblyInfo.cs \
-        PlaylistCriteria.cs \
-        PlayableData.cs \
-        LocalFileDatabase.cs \
-        FileSelector.cs \
         Engine.cs \
-        EngineState.cs
+        LocalFileDatabase.cs
 
 #
 # Choose your database

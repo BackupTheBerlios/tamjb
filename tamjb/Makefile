@@ -49,6 +49,9 @@ rel-binary: all
 	cp $(RELEASE_TEXT_FILES) package/.
 	cp $(RELEASE_BINARY_FILES) package/bin/.
 
+install: rel-binary
+	cd package && ./install.sh
+
 #
 # You must manually create a key. Don't check it in!
 #

@@ -152,45 +152,86 @@ namespace byteheaven.tamjb.Engine
       {
          _Trace( "[Engine]" );
 
-         if (null == _connectionString)
-            throw new ApplicationException( "Engine is not properly initialized by the server" );
+         try
+         {
+            if (null == _connectionString)
+               throw new ApplicationException( "Engine is not properly initialized by the server" );
 
-         _database = new StatusDatabase( _connectionString );
+            _database = new StatusDatabase( _connectionString );
 
-         /// \todo save the current state, or have a default set of
-         ///   playlist criteria
-
-         // By default, use the suck/wrong metrics and nothing else.
-         _criteria = new PlaylistCriteria();
-         _fileSelector = new FileSelector( _database, _criteria );
-
-         // Get defaults from this kind of thing?
-         // string bufferSize = 
-         //    ConfigurationSettings.AppSettings ["BufferSize"];
+            // Get defaults from this kind of thing?
+            // string bufferSize = 
+            //    ConfigurationSettings.AppSettings ["BufferSize"];
                         
-         // Set up default buffering for the audio engine
-         SimpleMp3Player.Player.bufferSize = 44100 / 8 ;
-         SimpleMp3Player.Player.buffersInQueue = 40;
-         SimpleMp3Player.Player.buffersToPreload = 20;
+            // Set up default buffering for the audio engine
+            SimpleMp3Player.Player.bufferSize = 44100 / 8 ;
+            SimpleMp3Player.Player.buffersInQueue = 40;
+            SimpleMp3Player.Player.buffersToPreload = 20;
 
-         // Set up callbacks
-         SimpleMp3Player.Player.OnTrackFinished +=
-            new TrackFinishedHandler( _TrackFinishedCallback );
+            // Set up callbacks
+            SimpleMp3Player.Player.OnTrackFinished +=
+               new TrackFinishedHandler( _TrackFinishedCallback );
 
-         SimpleMp3Player.Player.OnTrackPlayed +=
-            new TrackStartingHandler( _TrackStartingCallback );
+            SimpleMp3Player.Player.OnTrackPlayed +=
+               new TrackStartingHandler( _TrackStartingCallback );
+            
+            SimpleMp3Player.Player.OnReadBuffer +=
+               new ReadBufferHandler( _TrackReadCallback );
 
-         SimpleMp3Player.Player.OnReadBuffer +=
-            new ReadBufferHandler( _TrackReadCallback );
+            _controllingUser = GetDefaultCredentials();
+            _controllingMood = GetDefaultMood();
+         }
+         catch (Npgsql.NpgsqlException ne)
+         {
+            throw new ApplicationException( "NgpsqlException" +
+                                            ne.ToString() );
+         }
       }
       
       ~Engine()
       {
          _Trace( "[~Engine]" );
-         _fileSelector = null;
          _database = null;
 
       }
+
+      //
+      // foo
+      //
+      public ICredentials GetDefaultCredentials()
+      {
+         _Lock();
+         try
+         {
+            // Return built-in user mr. guest
+            Credentials cred;
+            _database.GetUser( "guest", out cred );
+            return cred;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      ///
+      /// The default mood. When you don't know how you feel!
+      ///
+      public IMood GetDefaultMood()
+      {
+         _Lock();
+         try
+         {
+            Mood mood;
+            _database.GetMood( "unknown", out mood );
+            return mood;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
 
       ///
       /// \todo Does state get copied both ways in spite of this
@@ -211,9 +252,7 @@ namespace byteheaven.tamjb.Engine
             state = new EngineState( _shouldBePlaying,
                                      _playQueueCurrentTrack,
                                      _playQueue,
-                                     _trackCounter,
-                                     _changeCount,
-                                     activeCriteria );
+                                     _changeCount );
             return true;
          }
          finally
@@ -248,8 +287,21 @@ namespace byteheaven.tamjb.Engine
             if (_shouldBePlaying && ( ! Player.isPlaying ))
             {
                _Trace( "Hey, we are not playing. Restarting.." );
-               GotoNextFile();
+               GotoNext();
             }
+         }
+         catch (Npgsql.NpgsqlException ne)
+         {
+            // NpgsqlException has a long-standing problem where it is
+            // not marked serializable. :(
+            throw new ApplicationException( "NpgsqlException" 
+                                            + ne.ToString() );
+         }
+         catch (Exception e)
+         {
+            _Trace( "Exception propagating from Poll()" );
+            _Trace( e.ToString() );
+            throw;
          }
          finally
          {
@@ -265,40 +317,50 @@ namespace byteheaven.tamjb.Engine
       ///
       bool EnqueueRandomSong()
       {
-         _Trace( "EnqueueRandomSong" );
+         _Trace( "[EnqueueRandomSong]" );
 
-         try
-         {
-            // Pick a song and go.
-            PlayableData next = _fileSelector.ChooseNextSong();
-            _PlaylistAppend( next );
+         ++_changeCount;
 
-            ++_changeCount;
-            return true;
-         }
-         catch (PlaylistEmptyException e)
+         // Pick a random suck and mood threshold
+         int suckThresh = _rng.Next( 00500, 09500 );
+         int moodThresh = _rng.Next( 00500, 09500 );
+         
+         // Pick a song and go.
+         uint nextKey;
+         uint count = _database.PickRandom( _controllingUser, 
+                                            _controllingMood,
+                                            suckThresh,
+                                            moodThresh,
+                                            out nextKey );
+
+         if (0 == count)
          {
-            _Trace( "No songs found" );
-            return false;
+            _Trace( "  Playlist Empty: No songs found" );
+            return false;    // No songs found
          }
+
+         PlayableData next = _database.GetFileInfo( nextKey );
+         _PlaylistAppend( next );
+
+         return true;
       }
 
       ///
-      /// Increases an attribute by 50% of the difference between its
+      /// Increases suck by 50% of the difference between its
       /// current level and 100%. Thus it theoretically never reaches
       /// 100% (cause integer math rounds down).
       ///
-      public void IncreaseAttributeZenoStyle( uint attributeKey,
-                                              uint trackKey )
+      public void IncreaseSuckZenoStyle( ICredentials cred,
+                                         uint trackKey )
       {
-         _Trace( "[IncreaseAttributeZenoStyle]" );
+         _Trace( "[IncreaseSuckZenoStyle]" );
 
          _Lock();
          try
          {
             ++_changeCount;
 
-            uint level = _database.GetAttribute( attributeKey, trackKey );
+            uint level = _database.GetSuck( cred.id, trackKey );
 
             // The database shouldn't contain invalid attributes, right?
             Debug.Assert( level <= 10000 && level >= 0 );
@@ -307,13 +369,12 @@ namespace byteheaven.tamjb.Engine
             // (so: if it was 10%, it's now 10 + 90/2 = 55%.)
 
             uint difference = 10000 - level;
-            if (difference > 0)    // avoid the tragic div/zero error.
-               level += ( difference / 2 ); 
+            level += ( difference / 2 ); 
 
             // Is our math correct?
             Debug.Assert( level <= 10000 && level >= 0 );
 
-            _database.SetAttribute( attributeKey, trackKey, level );
+            _database.SetSuck( cred.id, trackKey, level );
          }
          finally
          {
@@ -321,23 +382,16 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      ///
-      /// Decreases an attribute. 
-      ///
-      /// \see _IncreaseAttributeZenoStyle
-      ///
-      public void DecreaseAttributeZenoStyle( uint attributeKey,
-                                              uint trackKey )
+      public void DecreaseSuckZenoStyle( ICredentials cred,
+                                         uint trackKey )
       {
-         _Trace( "[DecreaseAttributeZenoStyle]" );
+         _Trace( "[DecreaseSuckZenoStyle]" );
 
          _Lock();
-
          try
          {
             ++_changeCount;
-
-            uint level = _database.GetAttribute( attributeKey, trackKey );
+            uint level = _database.GetSuck( cred.id, trackKey );
 
             // The database shouldn't contain invalid attributes, right?
             Debug.Assert( level <= 10000 && level >= 0 );
@@ -347,7 +401,7 @@ namespace byteheaven.tamjb.Engine
 
             level /= 2;
 
-            _database.SetAttribute( attributeKey, trackKey, level );
+            _database.SetSuck( cred.id, trackKey, level );
          }
          finally
          {
@@ -355,21 +409,74 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public void SetAttribute( uint attributeKey,
-                                uint trackKey,
-                                uint level )
+      public void IncreaseAppropriateZenoStyle( ICredentials cred,
+                                                IMood mood,
+                                                uint trackKey )
       {
+         _Trace( "[IncreaseAppropriateZenoStyle]" );
+
          _Lock();
          try
          {
             ++_changeCount;
-            _database.SetAttribute( attributeKey, trackKey, level );
+
+            uint level = _database.GetAppropriate( cred.id, 
+                                                   mood.id, 
+                                                   trackKey );
+
+            // The database shouldn't contain invalid attributes, right?
+            Debug.Assert( level <= 10000 && level >= 0 );
+
+            // how much is halfway from the current level to 100%?
+            // (so: if it was 10%, it's now 10 + 90/2 = 55%.)
+
+            uint difference = 10000 - level;
+            level += ( difference / 2 ); 
+
+            // Is our math correct?
+            Debug.Assert( level <= 10000 && level >= 0 );
+
+            _database.SetAppropriate( cred.id, mood.id, trackKey, level );
          }
          finally
          {
             _Unlock();
          }
       }
+
+      public void DecreaseAppropriateZenoStyle( ICredentials cred,
+                                                IMood mood,
+                                                uint trackKey )
+      {
+         _Trace( "[DecreaseAppropriateZenoStyle]" );
+
+         _Lock();
+         try
+         {
+            ++_changeCount;
+            uint level = _database.GetAppropriate( cred.id, 
+                                                   mood.id,
+                                                   trackKey );
+
+            // The database shouldn't contain invalid attributes, right?
+            Debug.Assert( level <= 10000 && level >= 0 );
+
+            // how much is halfway from the current level to 100%?
+            // (so: if it was 10%, it's now 10 + 90/2 = 55%.)
+
+            level /= 2;
+
+            _database.SetAppropriate( cred.id, 
+                                      mood.id,
+                                      trackKey, 
+                                      level );
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
 
       public bool isPlaying
       {
@@ -478,13 +585,22 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public uint GetAttribute( uint playlistKey,
-                                uint trackKey )
+      ///
+      /// IEngine interfaces
+      ///
+      public void GetAttributes( ICredentials cred,
+                                 IMood mood,
+                                 uint trackKey,
+                                 out double suck,
+                                 out double appropriate )
       {
          _Lock();
          try
          {
-            return _database.GetAttribute( playlistKey, trackKey );
+            suck = _database.GetSuck( cred.id, trackKey );
+            appropriate = _database.GetAppropriate( cred.id, 
+                                                    mood.id, 
+                                                    trackKey );
          }
          finally
          {
@@ -493,148 +609,49 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Retrieve a criterion based on index. This is a reference
-      /// to the live criterion being used to retrieve data, and changes
-      /// to it are immediate. 
+      /// GotoFile function with credentials for future expansion.
       ///
-      public IPlaylistCriterion GetCriterion( uint index )
-      {
-         _Trace( "[GetCriterion]" );
-
-         _Lock();
-         try
-         {
-            // Return from local cache of all criteria.
-            return (IPlaylistCriterion)_criterion[index];
-         }
-         finally
-         {
-            _Unlock();
-         }
-      }
-
-      ///
-      /// Activate a criterion
-      ///
-      /// \todo I hate this interface
-      ///
-      public void ActivateCriterion( uint index )
-      {
-         _Trace( "[ActivateCriterion] " + index );
-
-         _Lock();
-         try
-         {
-            // if playlist criterion is already active, do nothing
-
-            if (null != _criteria.Find( index ))
-               return;
-
-            // Make sure the index is up to date
-            _database.ImportNewFiles( index, 8000 );
-            _criteria.Add( _criterion[index] );
-            ++_changeCount;
-         }
-         finally
-         {
-            _Unlock();
-         }
-      }
-
-      public void DeactivateCriterion( uint index )
-      {
-         _Trace( "[DeactivateCriterion] " + index );
-
-         _Lock();
-         try
-         {
-            // if playlist criterion is already active, do nothing
-            _criteria.Remove( index );
-            ++_changeCount;
-         }
-         finally
-         {
-            _Unlock();
-         }
-      }
-
-      ///
-      /// Get the currently active criteria indexes.
-      /// ome
-      uint [] activeCriteria
-      { 
-         get
-         {
-            _Lock();
-            try
-            {
-               // Build a list of the current criteria's keys.
-               // This is kind of lame. 
-
-               // I want a way of
-               // authenticating users so that we can have per-user
-               // "Suck" values.
-
-               uint [] list = new uint[_criteria.Count];
-               int i = 0;
-               foreach (DictionaryEntry de in _criteria)
-               {
-                  PlaylistCriterion criterion = (PlaylistCriterion)de.Value;
-                  list[i] = criterion.attribKey;
-               }
-
-               return list;
-            }
-            finally
-            {
-               _Unlock();
-            }
-         }
-      }
-
-//       void SetPlaylist( uint index )
-//       {
-//          _Trace( "SetPlaylist( " + index + ")" );
-
-//          // Import any new entries from the local-files tables to the
-//          // attribute tables. This is only necessary if some external
-//          // program has twiddled our database while we were out. 
-
-//          // Is this the right place for this? I know 50% is the right
-//          // default value...for now.
-
-//          // Always use the suck metric
-//          _database.ImportNewFiles( (uint)Tables.DOESNTSUCK, 8000 );
-//          _criteria.Add( _criterion[0] );
-
-//          if (index != 0)
-//          {
-//             _database.ImportNewFiles( index, 8000 );
-//             _criteria.Add( _criterion[index] );
-//          }
-
-//          _fileSelector.SetCriteria( _criteria );
-//          ++_changeCount;
-//       }
-
-      ///
-      /// Start playing the next file in the queue
-      ///
-      public void GotoNextFile()
+      public void GotoNextFile( ICredentials cred, uint currentTrackKey )
       {
          _Trace( "[GotoNextFile]" );
 
          _Lock();
          try
          {
-            PlayableData nextFile = _PlaylistGoNext();
-            if (null != nextFile)
-            {
-               Player.PlayFile( nextFile.filePath, nextFile.key );
-               _shouldBePlaying = true;
-            }
+            GotoNext();
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
 
-            ++_changeCount;
+      ///
+      /// Start playing the next file in the queue
+      ///
+      void GotoNext()
+      {
+         _Trace( "[GotoNext]" );
+
+         ++_changeCount;
+
+         PlayableData nextFile = _PlaylistGoNext();
+         if (null != nextFile)
+         {
+            _Trace( "  NEXT = " + nextFile.title );
+            Player.PlayFile( nextFile.filePath, nextFile.key );
+            _shouldBePlaying = true;
+         }
+      }
+
+      public void GotoPrevFile( ICredentials cred, uint currentTrackKey )
+      {
+         _Trace( "[GotoPrevFile]" );
+
+         _Lock();
+         try
+         {
+            GotoPrev();
          }
          finally
          {
@@ -646,26 +663,17 @@ namespace byteheaven.tamjb.Engine
       /// Push this file onto the queue of songs to play and start
       /// playing it
       ///
-      public void GotoPrevFile()
+      void GotoPrev()
       {
-         _Trace( "[GotoPrevFile]" );
+         _Trace( "[GotoPrev]" );
+         ++_changeCount;
 
-         _Lock();
-         try
+         PlayableData prevFile = _PlaylistGoPrev();
+         _Trace( "  PREV = " + prevFile.title );
+         if (null != prevFile)
          {
-            PlayableData prevFile = _PlaylistGoPrev();
-            _Trace( "PREV = " + prevFile.title );
-            if (null != prevFile)
-            {
-               Player.PlayFile( prevFile.filePath, prevFile.key );
-               _shouldBePlaying = true;
-            }
-
-            ++_changeCount;
-         }
-         finally
-         {
-            _Unlock();
+            Player.PlayFile( prevFile.filePath, prevFile.key );
+            _shouldBePlaying = true;
          }
       }
 
@@ -860,7 +868,7 @@ namespace byteheaven.tamjb.Engine
       /// like -3dB from the absolute max level. Oh well, might 
       /// as well match that.
       ///
-      static readonly double TARGET_POWER_LEVEL = 16000.0;
+      static readonly double TARGET_POWER_LEVEL = 14000.0;
 
       ///
       /// Level below which we stop compressing and start
@@ -886,8 +894,8 @@ namespace byteheaven.tamjb.Engine
       // avoid distortion on kick drums, unless the release time is 
       // really long and you want to use it as a limiter, etc.
       //
-      static readonly double ATTACK_RATIO_NEW = 0.001;
-      static readonly double ATTACK_RATIO_OLD = 0.999;
+      static readonly double ATTACK_RATIO_NEW = 0.002;
+      static readonly double ATTACK_RATIO_OLD = 0.998;
 
       static readonly double DECAY_RATIO_NEW = 0.00000035;
       static readonly double DECAY_RATIO_OLD = 0.99999965;
@@ -1124,8 +1132,9 @@ namespace byteheaven.tamjb.Engine
          {
             return _database.Mp3FileEntryExists( fullPath );
          }
-         catch (Npgsql.NpgsqlException ne) // These damn things don't Reflect properly
+         catch (Npgsql.NpgsqlException ne) 
          {
+            // These damn things don't Reflect properly
             throw new ApplicationException( ne.ToString() );
          }
          finally
@@ -1224,20 +1233,6 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// \todo This array is temporary. Create a real playlist 
-      ///   info table or something. Indexed by Name, not uint.
-      ///
-      PlaylistCriterion [] _criterion = 
-      {
-         new PlaylistCriterion( (uint)Tables.DOESNTSUCK, 
-                                8000,
-                                6000 ),
-         new PlaylistCriterion( 1, 8000, 6000 ),
-         new PlaylistCriterion( 2, 8000, 6000 ),
-         new PlaylistCriterion( 3, 8000, 6000 )
-      };
-
-      ///
       /// Wrapper function to handle serialization of remote controls.
       ///
       void _Lock()
@@ -1309,6 +1304,22 @@ namespace byteheaven.tamjb.Engine
       uint      _maxFinishedPlaying = 20;
 
       ///
+      /// Credentials of the current user 
+      ///
+      /// \todo add multiuser support? maybe?
+      ///
+      ICredentials _controllingUser = null;
+
+      ///
+      /// Controlling user's mood
+      ///
+      /// \todo Support multiple moods per-user. I think.
+      ///
+      IMood _controllingMood = null;
+
+      Random _rng = new Random(); // Random numbers are cool
+
+      ///
       /// Desired number of tracks in the play queue. (Static config)
       ///
       static int _desiredQueueSize = 3;
@@ -1324,13 +1335,8 @@ namespace byteheaven.tamjb.Engine
       //
       // References to friendly objects we know and love
       //
-      FileSelector   _fileSelector;
-
-      // FileScanner    _fileScanner;
 
       StatusDatabase _database;
-
-      PlaylistCriteria _criteria = new PlaylistCriteria();
 
       //
       // This is the average rms power of the current track decaying
@@ -1339,11 +1345,6 @@ namespace byteheaven.tamjb.Engine
       // Initially maxed out to avoid clipping
       //
       double _decayingAveragePower = (float)32767.0;
-
-      ///
-      /// Total number of songs played
-      ///
-      int _songCount = 0;
 
    }
 } // tam namespace

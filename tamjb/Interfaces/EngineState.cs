@@ -41,23 +41,17 @@ namespace byteheaven.tamjb.Engine
       bool      _isPlaying;
       int       _currentTrackIndex;
       ArrayList _playQueue; // What's coming up, and what we've played.
-      long      _trackCounter;
       long      _changeCount;
-      uint []   _activeCriteria;
 
       public EngineState( bool isPlaying,
                           int  currentTrackIndex,
                           ArrayList playQueue,
-                          long trackCounter,
-                          long changeCount,
-                          uint [] activeCriteria )
+                          long changeCount )
       {
          _isPlaying = isPlaying;
          _currentTrackIndex = currentTrackIndex;
          _playQueue = playQueue; // should make a copy instead of ref?
-         _trackCounter = trackCounter;
          _changeCount = changeCount;
-         _activeCriteria = activeCriteria;
       }
 
       public long changeCount
@@ -122,29 +116,6 @@ namespace byteheaven.tamjb.Engine
          get
          {
             return _playQueue.Count;
-         }
-      }
-
-      /// 
-      /// This number indicates the index of the current
-      /// playing track, and is passed to gotoNext/Prev/etc
-      /// calls. 
-      ///
-      /// There's probably a better way to do this.
-      ///
-      public long trackCounter
-      { 
-         get
-         {
-            return _trackCounter;
-         }
-      }
-
-      public uint [] activeCriteria
-      { 
-         get
-         {
-            return _activeCriteria;
          }
       }
 

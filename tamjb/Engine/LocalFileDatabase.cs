@@ -44,6 +44,8 @@ using ByteFX.Data;
 using ByteFX.Data.MySqlClient;
 #endif
 
+using byteheaven.tamjb.Interfaces;
+
 ///
 /// File information database namespace
 ///
@@ -62,7 +64,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public StatusDatabase( string dbConnectionString )
       {
-         _Trace( "StatusDatabase" );
+         _Trace( "[StatusDatabase]" );
 
          _connectionString = dbConnectionString;
 
@@ -70,7 +72,7 @@ namespace byteheaven.tamjb.Engine
 
       ~StatusDatabase()
       {
-         _Trace( "~StatusDatabase" );
+         _Trace( "[~StatusDatabase]" );
       }
 
       /// 
@@ -79,7 +81,41 @@ namespace byteheaven.tamjb.Engine
       public void CreateTablesIfNecessary()
       {
          _CreateStatusTable();
-         _CreateAttributeTable();
+         _CreateUsersTable();
+         _CreateMoodTable();
+         _CreateSongSuckTable();
+         _CreateSongMoodTable();
+         
+         _CreateInitialData();
+      }
+
+      ///
+      /// Creates the default user and mood, and other default data
+      /// (if any)
+      ///
+      void _CreateInitialData()
+      {
+         // The default user: guest
+         string query =
+            "INSERT INTO users (\n" + 
+            "  name\n" +
+            " ) VALUES (\n" +
+            "  'guest'\n" +
+            " )";
+
+         _ExecuteNonQuery( query );
+
+         // The default mood: unknown
+         query =
+            "INSERT INTO mood (\n" + 
+            "  user_id,\n" +
+            "  name\n" +
+            " ) VALUES (\n" +
+            "  0,\n" +          // link to default user
+            "  'unknown'\n" +
+            " )";
+
+         _ExecuteNonQuery( query );
       }
 
       ///
@@ -87,9 +123,6 @@ namespace byteheaven.tamjb.Engine
       ///
       void _CreateStatusTable()
       {
-         IDbConnection dbcon = _GetDbConnection();
-         IDbCommand cmd = dbcon.CreateCommand();
-
 #if USE_SQLITE
          // Create a table to hold info derived from the files' own 
          // header info:
@@ -144,85 +177,234 @@ namespace byteheaven.tamjb.Engine
 #error No dbtype found
 #endif
 
-         cmd.CommandText = query;
-         int affected = cmd.ExecuteNonQuery();
-         cmd.Dispose();
-
-         dbcon.Close();
-         dbcon.Dispose();
+         _ExecuteNonQuery( query );
       }
 
       /// 
-      /// Function that creates the attribute table
+      /// Function to create the users table (uh, yeah)
       ///
-      /// \todo CREATE INDEX on the attribute table as appropriate
-      ///
-      void _CreateAttributeTable()
+      void _CreateUsersTable()
       {
-         // Create the Attribute table
-         IDbConnection dbcon = _GetDbConnection();
-         IDbCommand cmd = dbcon.CreateCommand();
+         //   id - unique id (autoincrement)
+         //   name - string used to log in
 
-         //   track_ref - reference to file_info.key
-         //   playlist_key - index of playlist
-         //   value - measure of how appropriate this song is to the
-         //     playlist, from 0 to 10000 inclusive. (100.00 percent)
+#if USE_SQLITE
+#error Please implement me
+#elif USE_POSTGRESQL
+         string query = 
+            "CREATE TABLE users ( \n" +
+            "  id           SERIAL,\n" +
+            "  name         TEXT NOT NULL\n" +
+            "  )";
+#else
+#error No database type found
+#endif
+
+         _ExecuteNonQuery( query );
+      }
+
+      ///
+      /// Create the table for storing mood info (indexing to
+      /// user and allowing lookup by name, etc).
+      ///
+      void _CreateMoodTable()
+      {
+         //   id - unique id (autoincrement) Unique of all users.
+         //   user_id - foreign key ref to users table id (not enforced)
+         //     (id of user whose mood this is)
+         //   name - Name of this mood
+
+#if USE_SQLITE
+#error Please implement me
+#elif USE_POSTGRESQL
+         string query = 
+            "CREATE TABLE mood ( \n" +
+            "  id           SERIAL,\n" +
+            "  user_id      INTEGER NOT NULL,\n" +
+            "  name         TEXT NOT NULL,\n" +
+            "  PRIMARY KEY ( id )\n" +
+            "  )";
+#else
+#error No database type found
+#endif
+
+         _ExecuteNonQuery( query );
+      }
+
+      void _CreateSongSuckTable()
+      {
+         //
+         // Store the suck value of each track on a per-user basis.
+         // build indexes on the keys because this is used in joins. A lot.
          //
          string query = 
-            "CREATE TABLE track_attribute ( " +
-            "  track_ref    INTEGER NOT NULL," +
-            "  playlist_key INTEGER NOT NULL," +
-            "  value        INTEGER NOT NULL" +
+            "CREATE TABLE song_suck ( \n" +
+            "  track_ref    INTEGER NOT NULL,\n" +
+            "  user_id      INTEGER NOT NULL,\n" +
+            "  value        INTEGER NOT NULL\n" +
             "  )";
 
-         cmd.CommandText = query;
-         cmd.ExecuteNonQuery();
-         cmd.Dispose();
+         _ExecuteNonQuery( query );
 
-         // Create an index on the very popular track_ref and playlist_key
-         // fields
-
-         cmd = dbcon.CreateCommand();
-
-         // Create a table to hold info derived from the files' own 
-         // header info:
-         //   statuskey - refers to file_info.key autogenerated unique
-         //     btree index
-         //   playlist_key - index of playlist
-         //   value - measure of how appropriate this song is to the
-         //     playlist, from 0 to 10000 inclusive. (100.00 percent)
-         //
          query = 
-            "CREATE INDEX track_ix ON"
-            + " track_attribute ( track_ref )"
+            "CREATE INDEX song_suck_track_ref_ix \n" +
+            "  ON song_suck ( track_ref )";
+
+         _ExecuteNonQuery( query );
+
+         query = 
+            "CREATE INDEX song_suck_user_id_ix \n" +
+            "  ON song_suck ( user_id )";
+
+         _ExecuteNonQuery( query );
+      }
+
+      void _CreateSongMoodTable()
+      {
+         //
+         // Store the "appropriateness" measurement of each song indexed
+         // by (track + user + mood). Yeouch, that's a lot of indexing.
+         //
+         string query = 
+            "CREATE TABLE song_mood ( \n" +
+            "  track_ref    INTEGER NOT NULL,\n" +
+            "  mood_id      INTEGER NOT NULL,\n" +
+            "  value        INTEGER NOT NULL\n" +
+            "  )";
+
+         _ExecuteNonQuery( query );
+
+         query = 
+            "CREATE INDEX song_mood_track_ref_ix \n" +
+            "  ON song_suck ( track_ref )";
+
+         _ExecuteNonQuery( query );
+
+         query = 
+            "CREATE INDEX song_mood_mood_id_ix \n" +
+            "  ON song_mood ( mood_id )";
+
+         _ExecuteNonQuery( query );
+      }
+
+      ///
+      /// Retrieve a user's info by name.
+      ///
+      public void GetUser( string name,
+                           out Credentials creds )
+      {
+         string query = 
+            "SELECT id\n" +
+            + " FROM users"
+            + " WHERE name = '" + _StripEvil(name) + "'";
             ;
 
-         cmd.CommandText = query;
-         cmd.ExecuteNonQuery();
-         cmd.Dispose();
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+            reader = cmd.ExecuteReader();
 
+            PlayableData returnData;
+            if (!reader.Read())
+            {
+               // Nothing returned. This is bad!
+               throw new Exception( "User name not found" );
+            }
 
-         cmd = dbcon.CreateCommand();
+            uint id = (uint)reader.GetInt32(0); 
+            creds = new Credentials( name, id );
+            return;
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
 
-         // Create a table to hold info derived from the files' own 
-         // header info:
-         //   statuskey - refers to file_info.key autogenerated unique
-         //     btree index
-         //   playlist_key - index of playlist
-         //   value - measure of how appropriate this song is to the
-         //     playlist, from 0 to 10000 inclusive. (100.00 percent)
-         //
-         query = 
-            "CREATE INDEX playlist_ix ON"
-            + " track_attribute ( playlist_key )"
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      ///
+      /// Retrieve a user's info by name.
+      ///
+      public void GetMood( string name,
+                           out Mood mood )
+      {
+         string query = 
+            "SELECT id\n" +
+            + " FROM mood"
+            + " WHERE name = '" + _StripEvil(name) + "'";
             ;
 
-         cmd.CommandText = query;
-         cmd.ExecuteNonQuery();
-         cmd.Dispose();
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+            reader = cmd.ExecuteReader();
 
-         dbcon.Close();
-         dbcon.Dispose();
+            PlayableData returnData;
+            if (!reader.Read())
+            {
+               // Nothing returned. This is bad!
+               throw new Exception( "User name not found" );
+            }
+
+            uint id = (uint)reader.GetInt32(0); 
+            mood = new Mood( name, id );
+            return;
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
       }
 
       ///
@@ -283,7 +465,7 @@ namespace byteheaven.tamjb.Engine
          }
          catch (Exception e)
          {
-            throw new ApplicationException( "Query failed: " + query, e );
+            _Rethrow( query, e );
          }
          finally
          {
@@ -294,7 +476,9 @@ namespace byteheaven.tamjb.Engine
             }
 
             if (null != cmd)
+            {
                cmd.Dispose();
+            }
 
             if (null != dbcon)
             {
@@ -302,6 +486,8 @@ namespace byteheaven.tamjb.Engine
                dbcon.Dispose();
             }
          }
+         
+         throw new ApplicationException( "not reached" );
       }
 
       ///
@@ -309,8 +495,6 @@ namespace byteheaven.tamjb.Engine
       ///
       void AddFileInfo( PlayableData newData )
       {
-         _lastModified = DateTime.Now;
-
          // Create a table to hold info derived from the files' own 
          // header info:
          string query = 
@@ -346,12 +530,14 @@ namespace byteheaven.tamjb.Engine
          catch (Exception e)
          {
             // Pass along the exception with the query added
-            throw new ApplicationException( "Query failed: " + query, e );
+            _Rethrow( query, e );
          }
          finally
          {
             if (null != cmd)
+            {
                cmd.Dispose();
+            }
 
             if (null != dbcon)
             {
@@ -389,25 +575,32 @@ namespace byteheaven.tamjb.Engine
       /// selects one song at random based on the supplied playlist
       /// limitations:
       ///
-      /// \param criteria Song seletion criteria (aside from random)
+      /// \param cred Current user (may be null for no filter)
+      /// \param mood That person's mood (may be null for no filter)
+      /// \param suckThreshold
+      /// \param moodThreshold
       /// \param key Unique key of the file that is chosen
       ///
       /// \return Total number of tracks in this playlist. If 0, the
       ///   output string track will be empty.
       ///
-      public uint PickRandom( ref PlaylistCriteria criteria,
+      public uint PickRandom( ICredentials cred,
+                              IMood mood,
+                              int suckThreshold,
+                              int moodThreshold,
                               out uint   key )
       {
-         Debug.Assert( null != criteria ); // parameter required
-
          key = 0;
 
-         _UpdateTrackCache( ref criteria );
+         string baseQuery = _BuildFullQuery( cred, 
+                                             mood, 
+                                             suckThreshold, 
+                                             moodThreshold );
 
          // 
          // First, how many tracks match this query?
          //
-         uint count = criteria.matchCount;
+         uint count = GetRowCount( baseQuery );
          if (count < 1)
             return count;       // ** quick exit **
 
@@ -418,10 +611,7 @@ namespace byteheaven.tamjb.Engine
 
          _Trace( "Choosing track: " + offset );
 
-         string query = 
-            _BuildFullQuery( criteria )
-            + " LIMIT 1 OFFSET " + offset
-            ;
+         string query =  baseQuery  + " LIMIT 1 OFFSET " + offset;
          
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -447,7 +637,7 @@ namespace byteheaven.tamjb.Engine
          }
          catch (Exception e)
          {
-            throw new ApplicationException( "Query failed: " + query, e );
+            _Rethrow( query, e );
          }
          finally
          {
@@ -471,16 +661,14 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// \return the number of entries in the playlist indexed by
-      ///   key.
+      /// \return the number of entries in the playlist that match
+      ///   the criteria
       ///
-      public uint GetRowCount( PlaylistCriteria criteria )
+      public uint GetRowCount( string baseQuery )
       {
          // Wrap the count query in a count clause, see?
          string query =
-            "SELECT count(*) from ( " 
-            + _BuildFullQuery( criteria )
-            + " ) as count_table";
+            "SELECT count(*) from ( " + baseQuery + " ) as count_table";
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -500,7 +688,7 @@ namespace byteheaven.tamjb.Engine
          }
          catch (Exception e)
          {
-            throw new ApplicationException( "Query failed: " + query, e );
+            _Rethrow( query, e );
          }
          finally
          {
@@ -513,91 +701,260 @@ namespace byteheaven.tamjb.Engine
                dbcon.Dispose();
             }
          }
-      }
 
-      string _BuildFullQuery( PlaylistCriteria criteria )
+         throw new ApplicationException( "not reached" );
+     }
+
+      string _BuildFullQuery( ICredentials cred,
+                              IMood mood,
+                              int suckThreshold,
+                              int moodThreshold )
       {
-         if (criteria.Count == 0)
-         {
-            // Just play any file (no limiting criteria)
+         // No filtering? Just select all files
+         if (null == cred && null == mood)
             return "SELECT filekey FROM file_info";
-         }
 
          StringBuilder query = new StringBuilder( "" );
 
-         bool first = true;
-         foreach (DictionaryEntry de in criteria)
+         // Add user-suck filters
+         if (null != cred)
+            query.Append( _BuildPartialQuerySuck( cred, suckThreshold ) );
+
+         if (null != cred && null != mood)
+            query.Append( " INTERSECT " );
+         
+         // Add mood filters
+         if (null != mood)
+            query.Append( _BuildPartialQueryMood( mood, moodThreshold ) );
+
+         return query.ToString();
+      }
+
+      ///
+      /// Build a subquery that selects based on suck
+      ///
+      string _BuildPartialQuerySuck( ICredentials cred,
+                                     int suckThreshold )
+      {
+         string query = 
+            "( SELECT song_suck.track_ref\n"
+            + " FROM song_suck\n"
+            + " WHERE song_suck.user_id = " + cred.id
+            + " AND song_suck.value <= " + suckThreshold
+            + " UNION ALL\n"
+            + "SELECT file_info.filekey\n"
+            + " FROM file_info\n"
+            + " WHERE file_info.filekey NOT IN \n"
+            + " ( SELECT song_suck.track_ref from song_suck ) )"
+            ;
+
+         return query.ToString();
+      }
+
+      ///
+      /// Build a subquery that selects based on mood
+      ///
+      string _BuildPartialQueryMood( IMood mood,
+                                     int moodThreshold )
+      {
+         // Find all the songs that don't suck too much. Note the 
+         // outer join--unrated songs are considered to be completely
+         // free of suck.
+
+         string query = 
+            "( SELECT song_mood.track_ref\n"
+            + " FROM song_mood\n"
+            + " WHERE song_mood.mood_id = " + mood.id + "\n"
+            + " AND song_mood.value <= " + moodThreshold + "\n"
+            + " UNION ALL\n"
+            + "SELECT file_info.filekey\n"
+            + " FROM file_info\n"
+            + " WHERE file_info.filekey NOT IN \n"
+            + " ( SELECT song_mood.track_ref from song_mood ) )"
+            ;
+
+         return query.ToString();
+      }
+
+      ///
+      /// Get the suck value of a track
+      ///
+      /// If the suck metric does not exist, it is added!
+      ///
+      public uint GetSuck( uint userId, uint trackKey )
+      {
+         string query = 
+            "SELECT value FROM song_suck"
+            + " WHERE track_ref = " + trackKey
+            + " AND user_id = " + userId
+            ;
+
+         uint value;
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
          {
-            PlaylistCriterion crit = (PlaylistCriterion)de.Value;
-            if (!first)
-               query.Append( " INTERSECT " );
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+               // This song is not rated (NR? :), so just return the
+               // default value for it:
+               value = _defaultSuckValue;
+            }
             else
-               first = false;
-            
-            query.Append( _BuildPartialQuery( crit ) );
+            {
+               value = (uint) reader.GetInt32(0);
+            }
          }
-         return query.ToString();
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+            value = 0;
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+               cmd.Dispose();
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         return value;
       }
 
       ///
-      /// Build one part of a compound SELECT. This means no LIMIT,
-      /// ORDER BY, etc will be in the returned query.
+      /// Set the suck value for a given song (according to this user's
+      /// opinion)
       ///
-      string _BuildPartialQuery( PlaylistCriterion criterion )
+      public void SetSuck( uint userId, uint trackKey, uint newLevel )
       {
-         // Restrict the criteria first, because they'll return the smallest
-         // number of rows (smaller than the join anyway).
          string query = 
-            "SELECT track_attribute.track_ref"
-            + " FROM track_attribute"
-            + " WHERE track_attribute.playlist_key = " + criterion.attribKey
-            + " AND track_attribute.value >= " + criterion.value
+            "UPDATE song_suck "
+            + " SET value = " + newLevel
+            + " WHERE track_ref = " + trackKey
+            + " AND user_id = " + userId
             ;
 
-         /// 
-         /// \todo Implment the range checking required to enforce attribute
-
-         return query.ToString();
+         if (0 >= _ExecuteNonQuery( query ))
+         {
+            // No rows affected, try insert?
+            query = 
+               "INSERT INTO song_suck ( value, track_ref, user_id )" +
+               " VALUES ( \n" +
+               newLevel + ",\n" +
+               trackKey + ",\n" +
+               userId +
+               " )";
+               
+            _ExecuteNonQuery( query );
+         }
       }
 
+
       ///
-      /// A function that imports data from the local-file info table
-      /// (file_info) into a playlist's attribute table (track_attribute).
+      /// Get the mood-appropriateness value of a track
       ///
-      /// \param attribKey Unique index of the attribute table
-      /// \param initValue Initial attribute value
-      ///
-      public void ImportNewFiles( uint attribKey, int initValue )
+      public uint GetAppropriate( uint userId, uint moodId, uint trackKey )
       {
-         _lastModified = DateTime.Now;
-
-         // Find every row in file_info for which there is no corresponding
-         // entry in track_attribute, and insert the results into 
-         // track_attribute.
-
          string query = 
-            "INSERT INTO track_attribute "
-            + " ( "
-            + " track_ref,"
-            + " playlist_key,"
-            + " value"
-            + " )"
-            + " SELECT"
-            + " file_info.filekey,"
-            + attribKey + ","
-            + initValue
-            + " FROM file_info"
-            + " EXCEPT SELECT "
-            + " track_ref,"
-            + attribKey + ","
-            + initValue
-            + " FROM track_attribute "
-            + " WHERE track_attribute.playlist_key = " + attribKey
+            "SELECT value FROM song_mood"
+            + " WHERE track_ref = " + trackKey
+            + " AND mood_id = " + moodId
             ;
 
-         _Trace( query );
-         _ExecuteNonQuery( query );
+         uint value;
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+               // Nothing returned. use default
+               return _defaultAppropriateValue;
+            }
+            else
+            {
+               value = (uint) reader.GetInt32(0);
+            }
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+            value = 0;
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+               cmd.Dispose();
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         return value;
+         
       }
+
+      ///
+      /// Set the mood-appropriateness value of a track
+      ///
+      public void SetAppropriate( uint userId, 
+                                  uint moodId,
+                                  uint trackKey, 
+                                  uint newLevel )
+      {
+         string query = 
+            "UPDATE song_mood "
+            + " SET value = " + newLevel
+            + " WHERE track_ref = " + trackKey
+            + " AND mood_id = " + moodId
+            ;
+
+         if (0 >= _ExecuteNonQuery( query ))
+         {
+            // No rows affected, try insert?
+            query = 
+               "INSERT INTO song_mood ( value, track_ref, mood_id )" +
+               " VALUES ( \n" +
+               newLevel + ",\n" +
+               trackKey + ",\n" +
+               moodId +
+               " )";
+               
+            _ExecuteNonQuery( query );
+         }
+      }
+
 
       ///
       /// Get the value of the attribute of a particular playlist
@@ -635,7 +992,8 @@ namespace byteheaven.tamjb.Engine
          }
          catch (Exception e)
          {
-            throw new ApplicationException( "Query failed: " + query, e );
+            _Rethrow( query, e );
+            value = 0;
          }
          finally
          {
@@ -669,7 +1027,6 @@ namespace byteheaven.tamjb.Engine
             + " AND track_ref = " + trackKey
             ;
 
-         _lastModified = DateTime.Now;
          _ExecuteNonQuery( query );
       }
 
@@ -703,7 +1060,7 @@ namespace byteheaven.tamjb.Engine
          }
          catch (Exception e)
          {
-            throw new ApplicationException( "Query failed: " + query, e );
+            _Rethrow( query, e );
          }
          finally
          {
@@ -721,36 +1078,23 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Cache all track keys in memory to make a lookup table
-      /// to make quick selection of random rows possible.
+      /// \return the number of rows affected (UPDATE INSERT DELETE),
+      ///   just like IDbCommand.ExecuteNonQuery.
       ///
-      void _UpdateTrackCache( ref PlaylistCriteria criteria )
-      {
-         // For now, just cache the count. could build in-memory
-         // ranked tables for better random weights?
-         // if (criteria.cacheTime != _lastModified)
-         // {
-            criteria.matchCount = GetRowCount( criteria );
-            criteria.cacheTime = _lastModified;
-         // }
-      }
-
-      void _ExecuteNonQuery( string sqlString )
+      int _ExecuteNonQuery( string sqlString )
       {
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
          try
          {
-            _lastModified = DateTime.Now;
-
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = sqlString;
-            cmd.ExecuteNonQuery();
+            return cmd.ExecuteNonQuery();
          }
          catch (Exception e)
          {
-            throw new ApplicationException( "Query Failed: " + sqlString, e );
+            _Rethrow( sqlString, e );
          }
          finally
          {
@@ -763,6 +1107,23 @@ namespace byteheaven.tamjb.Engine
                dbcon.Dispose();
             }
          }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      ///
+      /// Rethrow a caught exception, adding the query.
+      ///
+      void _Rethrow( string query, Exception e )
+      {
+#if USE_POSTGRESQL
+         // Avoid throwing non-serializable NpgsqlException as 
+         // InnerException
+         throw new ApplicationException( "Query failed: " + query
+                                         + "-->" + e.ToString() );
+#else
+         throw new ApplicationException( "Query failed: " + query, e );
+#endif
       }
 
       ///
@@ -793,12 +1154,6 @@ namespace byteheaven.tamjb.Engine
 
 
       ///
-      /// Time of last database insert or update or whatever. In this
-      /// process anyway. :/
-      ///
-      DateTime _lastModified = DateTime.Now;
-
-      ///
       /// How to connect to our database
       ///
       string _connectionString;
@@ -807,6 +1162,9 @@ namespace byteheaven.tamjb.Engine
       /// My local rng
       ///
       Random _rng = new Random();
+
+      uint _defaultSuckValue        = 00000; // Doesn't suck AT ALL
+      uint _defaultAppropriateValue = 10000; // "It's all good" (TM)
    }
 }
 

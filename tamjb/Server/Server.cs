@@ -341,6 +341,11 @@ namespace byteheaven.tamjb.Server
                Thread.Sleep( 3000 );   // wait a while
             }
          }
+         catch (Exception outerEx)
+         {
+            Console.WriteLine( "Exception in main loop" );
+            Console.WriteLine( outerEx.ToString() );
+         }
          finally
          {
             // Ensure this is stopped, regardless, or the app may not
@@ -348,6 +353,8 @@ namespace byteheaven.tamjb.Server
 
             SimpleMp3Player.Player.ShutDown();
          }
+
+         return 3; // Should not be reached
       }
 
       static void _CreateDatabase( string connectionString )
