@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyCompany ("BYTE HEAVEN")]
 [assembly: AssemblyProduct("tam jukebox")]
 [assembly: AssemblyCopyright ("2004 Tom Surace")]
-[assembly: AssemblyVersion("1.0.0.*")]
+[assembly: AssemblyVersion("1.0.*")]
 //
 // 
 //
