@@ -25,7 +25,8 @@ RELEASE_TEXT_FILES = \
   CHANGELOG \
   README \
   todo.txt \
-  Server/tamjb.init
+  Server/tamjb.init \
+  install.sh
 
 RELEASE_BINARY_FILES = \
   thirdparty/esd-sharp.dll \
