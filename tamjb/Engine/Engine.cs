@@ -32,9 +32,11 @@ namespace byteheaven.tamjb.Engine
    using System.Collections;
    using System.Data;
    using System.Diagnostics;
+   using System.IO;
    using System.Runtime.Remoting;
    using System.Runtime.Remoting.Lifetime; // for ILease
    using System.Threading;
+   using System.Xml.Serialization;
 
    using byteheaven.tamjb.Interfaces;
    using byteheaven.tamjb.SimpleMp3Player;
@@ -42,17 +44,6 @@ namespace byteheaven.tamjb.Engine
 #if USE_POSTGRESQL
    using Npgsql;
 #endif
-
-   /// 
-   /// Attribute tables in the database
-   ///
-   enum Tables : uint
-   {
-      // Suck database is always attribute 0 because it's special!
-      // Note that it's really a DOESNTSUCK table, because higher values
-      // always mean more-desirable.
-      DOESNTSUCK = 0,              
-   }
 
    ///
    /// The main jukebox player object.
@@ -158,6 +149,9 @@ namespace byteheaven.tamjb.Engine
                throw new ApplicationException( "Engine is not properly initialized by the server" );
 
             _database = new StatusDatabase( _connectionString );
+
+            // Todo: initialize compressor from stored settings in database
+            _compressor = _LoadCompressor();
 
             // Get defaults from this kind of thing?
             // string bufferSize = 
@@ -712,166 +706,16 @@ namespace byteheaven.tamjb.Engine
       ///
       void _TrackReadCallback( byte [] buffer, int length )
       {
-         _Compress( buffer, length );
-      }
-
-      ///
-      /// Exponential-decay-styled compressor.
-      ///
-      void _Compress( byte [] buffer, 
-                      int length )
-      {
-         Debug.Assert( length % 4 == 0, 
-                       "I could have sworn this was 16 bit stereo" );
-
-         if (length < 4)
-            return;
-
-         /// 
-         /// \bug Should not be hardcoded 16-bit stereo
-         ///
-
-         // Assumes the buffer is 16-bit little-endian stereo.
-
-         _compressMutex.WaitOne();
-
-         int offset = 0;
-         double correction;
-         while (offset + 3 < length)
+         _audioMutex.WaitOne(); 
+         try
          {
-            double magnitude;
-
-            // Approximate the average power of both channels by summing
-            // them (yes, phase differences are a problem but whatever)
-            // And exponentially decay or release the level:
-
-            double left = (((long)(sbyte)buffer[offset + 1] << 8) |
-                           ((long)buffer[offset] ));
-
-            // Fast attack, slow decay
-            magnitude = Math.Abs(left);
-            if (magnitude > _decayingAveragePower)
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _attackRatioOld) +
-                   (magnitude * _attackRatioNew));
-            }
-            else
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _decayRatioOld) +
-                   (magnitude * _decayRatioNew));
-            }
-
-            double right = (((long)(sbyte)buffer[offset + 3] << 8) |
-                            ((long)buffer[offset + 2] ));
-
-            magnitude = Math.Abs(right);
-            if (magnitude > _decayingAveragePower)
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _attackRatioOld) +
-                   (magnitude * _attackRatioNew));
-            }
-            else
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _decayRatioOld) +
-                   (magnitude * _decayRatioNew));
-            }
-
-            // How far off from the target power are we?
-            if (_decayingAveragePower < _gateLevel)
-               correction = _targetPowerLevel / _gateLevel;
-            else
-               correction = _targetPowerLevel / _decayingAveragePower;
-
-            // For inf:1 compression, use "offset", otherwise
-            // use this ratio to get other ratios:
-            correction = (correction * _compressRatio) 
-               + (1.0 - _compressRatio);
-
-            // Write new values to the samples: left
-
-            long sample = (long)_SoftClip( left * correction );
-            buffer[offset]     = (byte)(sample & 0xff);
-            buffer[offset + 1] = (byte)(sample >> 8);
-
-            // Now the right!
-
-            sample = (long)_SoftClip( right * correction );
-            buffer[offset + 2] = (byte)(sample & 0xff);
-            buffer[offset + 3] = (byte)(sample >> 8);
-
-            offset += 4;
+            _compressor.Process( buffer, length );
          }
-
-         _compressMutex.ReleaseMutex();
-      }
-
-      double _SoftClip( double original )
-      {
-         if (original > _clipThreshold) // Soft-clip 
+         finally
          {
-            // Unsophisticated asympotic clipping algorithm
-            // I came up with in the living room in about 15 minutes.
-            return (_clipThreshold +
-                    (_clipLeftover * (1 - (_clipThreshold / original)))); 
+            _audioMutex.ReleaseMutex();
          }
-         else if (original < (- _clipThreshold))
-         {
-            // Unsophisticated asympotic clipping algorithm
-            // I came up with in the living room in about 15 minutes.
-            return ((-_clipThreshold) -
-                    (_clipLeftover * (1 + (_clipThreshold / original)))); 
-         }
-
-         return original;
       }
-
-      ///
-      /// Target power level for compression/expansion.
-      /// 
-      /// Hot-mastered albums have an average power level with
-      /// like -3dB from the absolute max level. Oh well, might 
-      /// as well match that.
-      ///
-      double _targetPowerLevel = 16000.0;
-
-      ///
-      /// Level below which we stop compressing and start
-      /// expanding (if possible)
-      ///
-      double _gateLevel = 1000.0;
-
-      /// 
-      /// Compression ratio where for n:1 compression, 
-      /// RATIO = (1 - 1/n).  or something.
-      ///
-      /// 1.0 = infinity:1
-      /// 0.875 = 8:1
-      /// 0.833 = 6:1
-      /// 0.75 = 4:1
-      /// 0.5 = 2:1
-      /// 0.0 = no compression 
-      ///
-      double _compressRatio = 0.833;
-
-      //
-      // Attack time really should be more than a 10 milliseconds to 
-      // avoid distortion on kick drums, unless the release time is 
-      // really long and you want to use it as a limiter, etc.
-      //
-      double _attackRatioNew = 0.002;
-      double _attackRatioOld = 0.998;
-
-      double _decayRatioNew = 0.00000035;
-      double _decayRatioOld = 0.99999965;
-
-      // Sample value for start of soft clipping. Leftover must
-      // be 32767 - _clipThreshold.
-      double _clipThreshold = 18000.0;
-      double _clipLeftover =  14767.0;
 
       //
       // Attack ratio per-sample. Hmmm.
@@ -880,28 +724,27 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _attackRatioNew;
+            return _compressor.compressAttack;
          }
          set
          {
             _Lock();
-            _compressMutex.WaitOne();
             try
             {
-               _attackRatioNew = value;
-               if (_attackRatioNew >= 1.0)
-                  _attackRatioNew = 1.0;
-               
-               if (_attackRatioNew <= 0.0)
-                  _attackRatioNew = 0.0;
-               
-               _attackRatioOld = 1.0 - _attackRatioNew;
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressAttack = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
 
-               _Trace( "attackRatio:" + _attackRatioNew );
+               _StoreCompressSettings();
             }
             finally
             {
-               _compressMutex.ReleaseMutex();
                _Unlock();
             }
          }
@@ -911,28 +754,27 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _decayRatioNew;
+            return _compressor.compressDecay;
          }
          set
          {
             _Lock();
-            _compressMutex.WaitOne();
             try
             {
-               _decayRatioNew = value;
-               if (_decayRatioNew >= 1.0)
-                  _decayRatioNew = 1.0;
-               
-               if (_decayRatioNew <= 0.0)
-                  _decayRatioNew = 0.0;
-               
-               _decayRatioOld = 1.0 - _decayRatioNew;
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressDecay = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
 
-               _Trace( "decayRatio:" + _decayRatioNew );
+               _StoreCompressSettings();
             }
             finally
             {
-               _compressMutex.ReleaseMutex();
                _Unlock();
             }
          }
@@ -945,27 +787,27 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return (int)_targetPowerLevel;
+            return _compressor.compressThreshold;
          }
          set
          {
             _Lock();
-            _compressMutex.WaitOne();
             try
             {
-               _targetPowerLevel = (double)value;
-               
-               if (_targetPowerLevel >= 32767.0)
-                  _targetPowerLevel = 32767.0;
-               
-               if (_targetPowerLevel < 1.0) // Uh, you WANT complete silence?
-                  _targetPowerLevel = 1.0;
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressThreshold = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
 
-               _Trace( "targetPower:" + _targetPowerLevel );
+               _StoreCompressSettings();
             }
             finally
             {
-               _compressMutex.ReleaseMutex();
                _Unlock();
             }
          }
@@ -979,27 +821,27 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return (int)_gateLevel;
+            return _compressor.gateThreshold;
          }
          set
          {
             _Lock();
-            _compressMutex.WaitOne();
             try
             {
-               _gateLevel = (double)value;
-               
-               if (_gateLevel >= 32767.0)
-                  _gateLevel = 32767.0;
-               
-               if (_gateLevel < 0.0)
-                  _gateLevel = 0.0;
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.gateThreshold = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
 
-               _Trace( "gateLevel:" + _gateLevel );
+               _StoreCompressSettings();
             }
             finally
             {
-               _compressMutex.ReleaseMutex();
                _Unlock();
             }
          }
@@ -1012,27 +854,27 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressRatio;
+            return _compressor.compressRatio;
          }
          set
          {
             _Lock();
-            _compressMutex.WaitOne();
             try
             {
-               _compressRatio = value;
-               
-               if (_compressRatio > 1.0)
-                  _compressRatio = 1.0;
-               
-               if (_compressRatio < 0.0) // Uh, you WANT complete silence?
-                  _compressRatio = 0.0;
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressRatio = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
 
-               _Trace( "compressRatio:" + _compressRatio );
+               _StoreCompressSettings();
             }
             finally
             {
-               _compressMutex.ReleaseMutex();
                _Unlock();
             }
          }
@@ -1045,29 +887,27 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return (int)_clipThreshold;
+            return _compressor.clipThreshold;
          }
          set
          {
             _Lock();
-            _compressMutex.WaitOne();
             try
             {
-               _clipThreshold = (double)value;
-               
-               if (_clipThreshold >= 32766.0)
-                  _clipThreshold = 32766.0;
-               
-               if (_clipThreshold < 1.0) // Uh, you WANT complete silence?
-                  _clipThreshold = 1.0;
-               
-               _clipLeftover = 32767.0 - _clipThreshold;
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.clipThreshold = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
 
-               _Trace( "clipThreshold:" + _clipThreshold );
+               _StoreCompressSettings();
             }
             finally
             {
-               _compressMutex.ReleaseMutex();
                _Unlock();
             }
          }
@@ -1113,22 +953,59 @@ namespace byteheaven.tamjb.Engine
          // Note this is the rms / (2^8). :)
          double rms = Math.Sqrt( sum / (length / 2) );
 
-         ///
-         /// \bug
-         /// The decay rate will change with the sample rate and the
-         /// buffer size, so this ratio REALLY shouldn't be hardcoded.
-         ///
-         _decayingAveragePower = 
-            (_decayingAveragePower * 0.9) +
-            (rms * 0.1);
+         // TODO: add this value in to the average for this track.
+         // TODO: store the rms value on a per-track basis for later
+         //       levelling efforts
+      }
 
-//          ++ _spew;
-//          if (_spew > 10)
-//          {
-//             _spew = 0;
-//             _Trace( "DECAY: " + _decayingAveragePower 
-//                     + "RMS: " + rms );
-//          }
+      ///
+      /// Save the current compression settings
+      ///
+      void _StoreCompressSettings()
+      {
+         Debug.Assert( null != _compressor );
+
+         // Create a serializer, and serialize to rom
+         XmlSerializer serializer = 
+            new XmlSerializer( typeof(Compressor) );
+         
+         StringWriter str = new StringWriter();
+         serializer.Serialize( str, _compressor );
+         
+         _database.StoreCompressSettings( str.ToString() );
+      }
+
+      ///
+      /// load a compressor using the settings in the database, or a default
+      /// one if the settings are not found/valid
+      ///
+      Compressor _LoadCompressor()
+      {
+         Compressor compressor = null;
+         try
+         {
+            string settings = _database.GetCompressSettings();
+            if (null != settings)
+            {
+               XmlSerializer serializer = 
+                  new XmlSerializer( typeof( Compressor ) );
+
+               StringReader str = new StringReader( settings );
+               compressor = (Compressor)serializer.Deserialize( str );
+            }
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+
+         if (null == compressor)
+         {
+            _Trace( "Note: compression settings not found, using defaults" );
+            compressor = new Compressor(); // load with defaults
+         }
+         
+         return compressor;
       }
 
       ///
@@ -1627,8 +1504,6 @@ namespace byteheaven.tamjb.Engine
       ///
       Mutex     _serializer = new Mutex();
 
-      Mutex     _compressMutex = new Mutex();
-
       ///
       /// How many finished-playing tracks to keep in the queue
       ///
@@ -1669,13 +1544,17 @@ namespace byteheaven.tamjb.Engine
 
       StatusDatabase _database;
 
-      //
-      // This is the average rms power of the current track decaying
-      // exponentially over time. Normalized to 16 bits.
-      //
-      // Initially maxed out to avoid clipping
-      //
-      double _decayingAveragePower = (float)32767.0;
+      ///
+      /// Our main audio processor: the level manager
+      ///
+      Compressor _compressor;
 
+      ///
+      /// A mutex to prevent audio from being mangled when settings
+      /// are updated. (So, it prevents any processor from working while
+      /// its settings are being changed, thus preventing them from
+      /// having to worry about concurrency.)
+      ///
+      Mutex _audioMutex = new Mutex();
    }
 } // tam namespace

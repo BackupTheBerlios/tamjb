@@ -5,6 +5,7 @@ TARGET = tamjb.Engine.dll
 
 SOURCES = AssemblyInfo.cs \
         Engine.cs \
+        Compressor.cs \
         LocalFileDatabase.cs
 
 #

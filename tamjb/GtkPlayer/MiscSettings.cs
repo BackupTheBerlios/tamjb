@@ -111,7 +111,6 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          try
          {
-            _Trace( "[_OnFormatAttack]" );
             args.RetVal = args.Value.ToString( "F1" );
          }
          catch (Exception e)
@@ -130,7 +129,13 @@ namespace byteheaven.tamjb.GtkPlayer
             // attack, and 0.0002 is pretty slow. The scale value should
             // range from 0-9 for this to work:
             double newVal = Math.Pow( ATTACK_BASE, (10 - _attackScale.Value) );
-            _backend.compressAttack = newVal;
+
+            if (_ChangeRatio(_backend.compressAttack, newVal) > 0.01)
+            {
+               _Trace( "compressAttack: " + _backend.compressAttack
+                       + " --> " + newVal );
+               _backend.compressAttack = newVal;
+            }
          }
          catch (Exception e)
          {
@@ -149,7 +154,14 @@ namespace byteheaven.tamjb.GtkPlayer
             // want an instantaneous release ever! :)
             // range from 1-10 for this to work:
             double newVal = Math.Pow( DECAY_BASE, (12 - _decayScale.Value) );
-            _backend.compressDecay = newVal;
+
+            if (_ChangeRatio(_backend.compressDecay, newVal) > 0.01)
+            {
+               _Trace( "compressDecay: " + _backend.compressDecay
+                       + " --> " + newVal );
+
+               _backend.compressDecay = newVal;
+            }
          }
          catch (Exception e)
          {
@@ -162,7 +174,8 @@ namespace byteheaven.tamjb.GtkPlayer
          try
          {
             _Trace( "[_OnTargetChanged]" );
-            _backend.compressThreshold = (int)_targetScale.Value;
+            if (_backend.compressThreshold != (int)_targetScale.Value)
+               _backend.compressThreshold = (int)_targetScale.Value;
          }
          catch (Exception e)
          {
@@ -175,7 +188,13 @@ namespace byteheaven.tamjb.GtkPlayer
          try
          {
             _Trace( "[_OnRatioChanged]" );
-            _backend.compressRatio = _ratioScale.Value;
+
+            if (Math.Abs(_backend.compressRatio - _ratioScale.Value) > 0.001)
+            {
+               _Trace( "compressRatio: " + _backend.compressRatio
+                       + " --> " + _ratioScale.Value );
+               _backend.compressRatio = _ratioScale.Value;
+            }
          }
          catch (Exception e)
          {
@@ -188,7 +207,9 @@ namespace byteheaven.tamjb.GtkPlayer
          try
          {
             _Trace( "[_OnGateChanged]" );
-            _backend.gateThreshold = (int)_gateThresholdScale.Value;
+            
+            if ((int)_gateThresholdScale.Value !=  _backend.gateThreshold)
+               _backend.gateThreshold = (int)_gateThresholdScale.Value;
          }
          catch (Exception e)
          {
@@ -201,12 +222,28 @@ namespace byteheaven.tamjb.GtkPlayer
          try
          {
             _Trace( "[_OnClipThresholdChanged]" );
-            _backend.clipThreshold = (int)_clipThresholdScale.Value;
+            if (_backend.clipThreshold != (int)_clipThresholdScale.Value)
+               _backend.clipThreshold = (int)_clipThresholdScale.Value;
          }
          catch (Exception e)
          {
             _Trace( e.ToString() );
          }
+      }
+
+      ///
+      /// Compute the percent change from old to new, using old as the
+      /// basis. Well, percent where 100% = 1.0
+      ///
+      /// This is NOT suitable for values that actually go to 0.0, because
+      /// it divides by old. :)
+      ///
+      double _ChangeRatio( double old, double newVal )
+      {
+         if (Math.Abs(old) <= 0.0000000001)
+            throw new ApplicationException( "overflow problem" );
+
+         return Math.Abs( (old - newVal) / old );
       }
 
       void _Trace( string msg )

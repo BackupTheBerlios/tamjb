@@ -69,7 +69,6 @@ namespace byteheaven.tamjb.GtkPlayer
          FileStream    stream = null;
          try
          {
-            // Create a serializer for the Sailboat type
             XmlSerializer serializer = new XmlSerializer( this.GetType() );
 
             stream = new FileStream( name,
@@ -90,7 +89,6 @@ namespace byteheaven.tamjb.GtkPlayer
          FileStream    stream = null;
          try
          {
-            // Create a serializer for the Sailboat type
             XmlSerializer serializer = 
                new XmlSerializer( typeof( PlayerSettings ) );
 

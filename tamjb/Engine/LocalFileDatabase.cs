@@ -85,6 +85,7 @@ namespace byteheaven.tamjb.Engine
          _CreateMoodTable();
          _CreateSongSuckTable();
          _CreateSongMoodTable();
+         _CreateSettingsTable();
          
          _CreateInitialData();
       }
@@ -101,6 +102,18 @@ namespace byteheaven.tamjb.Engine
          GetUser( "guest", out guest );
 
          CreateMood( guest, "unknown" );
+
+         // Default settings (will only be UPDATEd from now on)
+         string query = 
+            "INSERT INTO settings ( \n" +
+            "  control_user, control_mood, compression )\n" +
+            " VALUES (\n" +
+            "  'guest', 'unknown', ''\n" +
+            " )"
+            ;
+
+         _ExecuteNonQuery( query );
+
       }
 
       ///
@@ -270,6 +283,191 @@ namespace byteheaven.tamjb.Engine
             "  ON song_mood ( mood_id )";
 
          _ExecuteNonQuery( query );
+      }
+
+      void _CreateSettingsTable()
+      {
+         //
+         // This table contains one row only, which contains all the
+         // application state for restart. Whee.
+         //
+         // is_playing - 1 if playing, 0 if stopped
+         // control_user - controlling user's name (yes, not text)
+         // control_mood - controlling user's name (yes, not text)
+         // compression - compression settings (serialized xml)
+         //
+         string query = 
+            "CREATE TABLE settings ( \n" +
+            "  control_user TEXT NOT NULL,\n" +
+            "  control_mood TEXT NOT NULL,\n" +
+            "  compression  TEXT NOT NULL\n" +
+            "  )";
+
+         _ExecuteNonQuery( query );
+      }
+
+      public void StoreController( string user, string mood )
+      {
+#if USE_POSTGRESQL
+         string query = 
+            "UPDATE settings "
+            + " SET control_user = :user,"
+            + "   control_mood = :mood"
+            ;
+#else
+#error I am very lazy, please code this up
+#endif
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+#if USE_POSTGRESQL
+            IDbDataParameter param = 
+               new NpgsqlParameter( "user", DbType.String );
+            param.Value = user;
+            cmd.Parameters.Add( param );
+            
+            param = 
+               new NpgsqlParameter( "mood", DbType.String );
+            param.Value = mood;
+            cmd.Parameters.Add( param );
+#else
+#error I am very lazy, please code this up
+#endif
+            
+            cmd.ExecuteNonQuery();
+            return;
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      ///
+      ///
+      ///
+      public void StoreCompressSettings( string xml )
+      {
+// Er, let's see, I can write a wrapper class, or use mono-specific
+// wrappers, or I can just give up. :)
+#if USE_POSTGRESQL
+         // Postgres ":variable" instead of the more-common "@variable"
+         // Boo!
+         string query = 
+            "UPDATE settings "
+            + " SET compression = :compression"
+            ;
+
+         IDbDataParameter param = 
+            new NpgsqlParameter( "compression",
+                                 DbType.String );
+#else
+#error I am very lazy, please code this up
+#endif
+
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            param.Value = xml;
+            cmd.Parameters.Add( param );
+
+            cmd.ExecuteNonQuery();
+            return;
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      public string GetCompressSettings()
+      {
+         string query = "SELECT compression FROM settings";
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+            reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+               return null;     // NOT FOUND
+
+            return reader.GetString(0); 
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
       }
 
       ///
