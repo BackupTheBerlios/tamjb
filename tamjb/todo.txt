@@ -12,26 +12,26 @@ TODO
 
  - Fix memory leak
 
-  The program is now very large (mono 1.0.4) and leaks memory
-  at a fantastic rate! The rate of leakage depends on the mono
-  version. What am I doing wrong?
+   Much of the memory bloat and leakage seems to have gone away with
+   a build against mono 1.1.4. Perhaps it isn't the tamjb code after
+   all.
 
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
 
- - Implement delete/copy user/mood
+ - Implement delete/copy of user/mood
 
  - Drop songs from future part of playlist if they are flagged as suck or
    something.
 
  - Display the mp3 bitrate 
 
- - Add support for mono mp3 files
+ - Add support for monophonic mp3 files
 
  - Calculate average song volume and store for later level adjustment
 
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
-  wrapper makefiles, etc.
+  wrapper makefiles, etc. (gentoo)
 
  - Front-panel checkbox to tag damaged mp3's. This way, you don't have
   to say they suck, and later you can rewrip them. Needs a way to list

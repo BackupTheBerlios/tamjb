@@ -1142,6 +1142,9 @@ namespace byteheaven.tamjb.Engine
       ///
       string _StripEvil( string impureString )
       {
+         // Apparently the postgres wrapper doesn't catch '+'?
+//         return impureString.Replace( '+', ' ' );
+
          // Note: regex seems to cause massive resource leak
 
          // string firstResult = _invalidCharRegex.Replace( impureString, " " );
@@ -1150,20 +1153,20 @@ namespace byteheaven.tamjb.Engine
          // First escape any escape characters in thestring
          // string pure = _invalidCharRegex.Replace( impureString, " " );
 
-         string pure = impureString.Replace( "\\", "\\\\" );
+//          string pure = impureString.Replace( "\\", "\\\\" );
 
-         // Second, escape any single ticks
-         pure = pure.Replace( "'", "''" ); 
+//          // Second, escape any single ticks
+//          pure = pure.Replace( "'", "''" ); 
 
-         /// \todo Find out why special characters (other than single-tick)
-         ///   cause SQLite to
-         ///   throw exceptions and replace this regex workaround that
-         ///   isn't very friendly to non-english-language users.
-         ///   (Some characters also cause problems on postgres.)
-         ///
-         pure = _tickRegex.Replace( pure, " " );
+//          /// \todo Find out why special characters (other than single-tick)
+//          ///   cause SQLite to
+//          ///   throw exceptions and replace this regex workaround that
+//          ///   isn't very friendly to non-english-language users.
+//          ///   (Some characters also cause problems on postgres.)
+//          ///
+//          pure = _tickRegex.Replace( pure, " " );
 
-         return pure;
+//          return pure;
       }
 
       ///
