@@ -117,7 +117,12 @@ Track Attribute Manager - Jukebox
 
    Mp3Sharp Rules!
 
-   Available here:
+   I have made several changes to mp3sharp for performance, etc. It will
+   soon be available, somewhere, as its own project. In the meantime, a 
+   CVS package "mp3sharp" is available in the tamjb cvs repository. (So,
+   do a "cvs get -d blahblah...cvs.sourceforge.net/cvsroot/tamjb mp3sharp".)
+
+   Official Mp3Sharp home page:
 
      http://www.mle.ie/~rob/mp3sharp/
 
@@ -131,9 +136,6 @@ Track Attribute Manager - Jukebox
 
    The source download includes an Mp3Sharp.dll binary which works fine,
    aside from the infinite loop problem.
-
-   You can also download my patched Mp3Sharp.dll binary, and compile the
-   rest of the code yourself.
 
 
 * Compiling
