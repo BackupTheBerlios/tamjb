@@ -15,7 +15,8 @@ SOURCES = PlaylistCriteria.cs \
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 
-REFS = -r System.Data.dll \
+REFS = -r Mono.Data.SqliteClient.dll \
+        -r System.Data.dll \
         -r tam.Interfaces
 
 REF_LIBS = $(LIBDIR)/tam.Interfaces.dll

@@ -35,6 +35,7 @@ using System.Diagnostics;
 using System.IO;                // Directory functions
 using System.Text.RegularExpressions;
 using System.Text;
+using Mono.Data.SqliteClient;
 
 ///
 /// File information database namespace
@@ -48,16 +49,21 @@ namespace tam.LocalFileDatabase
    public class StatusDatabase
    {
       ///
-      /// Creates the database object and opens a connection to the
-      /// database. Database is held open for the life of this object.
+      /// Creates the database wrapper.
       ///
-      /// \param connection Connection to an already-open database.
+      /// \param dbConnectionString connection string for our database. 
       ///
-      /// \throw (any) anything that _dbconnection can throw. Etc.
-      ///
-      public StatusDatabase( IDbConnection connection )
+      public StatusDatabase( string dbConnectionString )
       {
-         _dbcon = connection;
+         _Trace( "StatusDatabase" );
+
+         _connectionString = dbConnectionString;
+
+      }
+
+      ~StatusDatabase()
+      {
+         _Trace( "~StatusDatabase" );
       }
 
       /// 
@@ -69,10 +75,13 @@ namespace tam.LocalFileDatabase
          _CreateAttributeTable();
       }
 
+      ///
+      /// Create the status table
+      ///
       void _CreateStatusTable()
       {
-         // Create Mr. Table.
-         IDbCommand cmd = _dbcon.CreateCommand();
+         IDbConnection dbcon = _GetDbConnection();
+         IDbCommand cmd = dbcon.CreateCommand();
 
          // Create a table to hold info derived from the files' own 
          // header info:
@@ -91,6 +100,7 @@ namespace tam.LocalFileDatabase
          cmd.CommandText = query;
          int affected = cmd.ExecuteNonQuery();
          cmd.Dispose();
+         dbcon.Dispose();
       }
 
       /// 
@@ -101,7 +111,8 @@ namespace tam.LocalFileDatabase
       void _CreateAttributeTable()
       {
          // Create the Attribute table
-         IDbCommand cmd = _dbcon.CreateCommand();
+         IDbConnection dbcon = _GetDbConnection();
+         IDbCommand cmd = dbcon.CreateCommand();
 
          // Create a table to hold info derived from the files' own 
          // header info:
@@ -125,7 +136,7 @@ namespace tam.LocalFileDatabase
          // Create an index on the very popular track_ref and playlist_key
          // fields
 
-         cmd = _dbcon.CreateCommand();
+         cmd = dbcon.CreateCommand();
 
          // Create a table to hold info derived from the files' own 
          // header info:
@@ -145,7 +156,7 @@ namespace tam.LocalFileDatabase
          cmd.Dispose();
 
 
-         cmd = _dbcon.CreateCommand();
+         cmd = dbcon.CreateCommand();
 
          // Create a table to hold info derived from the files' own 
          // header info:
@@ -163,6 +174,8 @@ namespace tam.LocalFileDatabase
          cmd.CommandText = query;
          cmd.ExecuteNonQuery();
          cmd.Dispose();
+
+         dbcon.Dispose();
       }
 
       ///
@@ -190,11 +203,13 @@ namespace tam.LocalFileDatabase
             ;
 
          uint value;
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          IDataReader reader = null;
          try
          {
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
             reader = cmd.ExecuteReader();
 
@@ -230,6 +245,9 @@ namespace tam.LocalFileDatabase
 
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
       }
 
@@ -265,10 +283,12 @@ namespace tam.LocalFileDatabase
             "  0" +
             "  )";
 
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          try
          {
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
             cmd.ExecuteNonQuery();
          }
@@ -281,6 +301,9 @@ namespace tam.LocalFileDatabase
          {
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
       }
 
@@ -339,20 +362,22 @@ namespace tam.LocalFileDatabase
          //
          uint offset = (uint)_rng.Next( 0, (int)count );
 
-         Trace.WriteLine( "Choosing track: " + offset );
+         _Trace( "Choosing track: " + offset );
 
          string query = 
             _BuildFullQuery( criteria )
             + " LIMIT 1 OFFSET " + offset
             ;
          
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          IDataReader reader = null;
          try
          {
-            Trace.WriteLine( query );
+            _Trace( query );
 
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
             reader = cmd.ExecuteReader();
@@ -377,6 +402,9 @@ namespace tam.LocalFileDatabase
 
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
 
          return count;
@@ -394,12 +422,14 @@ namespace tam.LocalFileDatabase
             + _BuildFullQuery( criteria )
             + " )";
 
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          try
          {
-            Trace.WriteLine( query );
+            _Trace( query );
 
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
             // Returns the first parameter, the number of rows:
@@ -416,6 +446,9 @@ namespace tam.LocalFileDatabase
          {
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
       }
 
@@ -499,7 +532,7 @@ namespace tam.LocalFileDatabase
             + " WHERE track_attribute.playlist_key = " + attribKey
             ;
 
-         Trace.WriteLine( query );
+         _Trace( query );
          _ExecuteNonQuery( query );
       }
 
@@ -517,11 +550,13 @@ namespace tam.LocalFileDatabase
             ;
 
          uint value;
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          IDataReader reader = null;
          try
          {
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
             reader = cmd.ExecuteReader();
@@ -534,8 +569,6 @@ namespace tam.LocalFileDatabase
             {
                value = (uint) reader.GetInt32(0);
             }
-            // clean up
-            reader.Close();
          }
          catch (Exception e)
          {
@@ -548,6 +581,9 @@ namespace tam.LocalFileDatabase
 
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
 
          return value;
@@ -677,10 +713,12 @@ namespace tam.LocalFileDatabase
             "  WHERE file_path = '" + _StripEvil( fullPath ) + "'" +
             "  ;";
 
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          try
          {
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
             // Returns the first parameter, the number of rows:
@@ -698,6 +736,9 @@ namespace tam.LocalFileDatabase
          {
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
 
          return false;
@@ -720,12 +761,14 @@ namespace tam.LocalFileDatabase
 
       void _ExecuteNonQuery( string sqlString )
       {
+         IDbConnection dbcon = null;
          IDbCommand cmd = null;
          try
          {
             _lastModified = DateTime.Now;
 
-            cmd = _dbcon.CreateCommand();
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
             cmd.CommandText = sqlString;
             cmd.ExecuteNonQuery();
          }
@@ -737,8 +780,30 @@ namespace tam.LocalFileDatabase
          {
             if (null != cmd)
                cmd.Dispose();
+
+            if (null != dbcon)
+               dbcon.Dispose();
          }
       }
+
+      ///
+      /// Close/Dispose of the returned object, OK?
+      ///
+      IDbConnection _GetDbConnection()
+      {
+         // Perhaps the one incredibly asinine thing about .NET: you have
+         // to hardcode the type of database you are connecting to. Could
+         // this be an intentional mistake? Hah.
+         IDbConnection dbcon = new SqliteConnection( _connectionString );
+         dbcon.Open();
+         return dbcon;
+      }
+
+      void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "StatusDatabase" );
+      }
+
 
       ///
       /// Time of last database insert or update or whatever. In this
@@ -747,9 +812,9 @@ namespace tam.LocalFileDatabase
       DateTime _lastModified = DateTime.Now;
 
       ///
-      /// Our database connection.
+      /// How to connect to our database
       ///
-      IDbConnection _dbcon = null; 
+      string _connectionString;
 
       ///
       /// My local rng

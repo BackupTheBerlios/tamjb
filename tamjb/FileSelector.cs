@@ -33,6 +33,8 @@ namespace tam
    using System.Diagnostics;    // Debug.Assert()
    using tam.LocalFileDatabase;
 
+   
+
    public class PlaylistEmptyException : Exception
    {
       public PlaylistEmptyException( string desc )
@@ -50,6 +52,15 @@ namespace tam
    ///
    public class FileSelector
    {
+      // This is for testing
+      public StatusDatabase database
+      {
+         set
+         {
+            _database = value;
+         }
+      }
+
       public FileSelector( StatusDatabase db,
                            PlaylistCriteria criteria )
       {

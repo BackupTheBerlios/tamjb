@@ -1,7 +1,7 @@
 /// \file
 /// $Id$
 ///
-/// <file brief description>
+/// No file desription
 ///
 
 // Copyright (C) 2004 Tom Surace.

@@ -29,8 +29,7 @@ LIBPATH = -L $(LIBDIR)
 
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
-REFS = -r Mono.Data.SqliteClient.dll \
-        -r tam.Interfaces \
+REFS = -r tam.Interfaces \
         -r tam.LocalFileDatabase \
         -r tam.SimpleMp3Player \
         -r System.Data.dll

@@ -32,7 +32,6 @@ namespace tam
    using System.Diagnostics;
    using System.Runtime.Remoting;
    using System.Threading;
-   using Mono.Data.SqliteClient;
    using tam.LocalFileDatabase;
    using tam.SimpleMp3Player;
 
@@ -93,16 +92,12 @@ namespace tam
       /// 
       public Engine()
       {
+         _Trace( "Engine" );
+
          if (null == _connectionString)
             throw new ApplicationException( "Engine is not properly initialized by the server" );
 
-         // Perhaps the one incredibly asinine thing about .NET: you have
-         // to hardcode the type of database you are connecting to. Could
-         // this be an intentional mistake? Hah.
-         _databaseConnection = new SqliteConnection( _connectionString );
-         _databaseConnection.Open();
-
-         _database = new StatusDatabase( _databaseConnection );
+         _database = new StatusDatabase( _connectionString );
 
          /// \todo save the current state, or have a default set of
          ///   playlist criteria
@@ -131,16 +126,9 @@ namespace tam
       
       ~Engine()
       {
-         Trace.WriteLine( "[~Engine]" );
+         _Trace( "~Engine" );
          _fileSelector = null;
          _database = null;
-
-         if (null != _databaseConnection)
-         {
-            // Only after all other objects are done
-            _databaseConnection.Close(); 
-            _databaseConnection = null;
-         }
       }
 
       ///
@@ -215,7 +203,7 @@ namespace tam
       ///
       bool EnqueueRandomSong()
       {
-         Trace.WriteLine( "EnqueueRandomSong" );
+         _Trace( "EnqueueRandomSong" );
 
          try
          {
@@ -228,7 +216,7 @@ namespace tam
          }
          catch (PlaylistEmptyException e)
          {
-            Trace.WriteLine( "No songs found" );
+            _Trace( "No songs found" );
             return false;
          }
       }
@@ -241,6 +229,8 @@ namespace tam
       public void IncreaseAttributeZenoStyle( uint attributeKey,
                                               uint trackKey )
       {
+         _Trace( "IncreaseAttributeZenoStyle" );
+
          try
          {
             _serializer.WaitOne();
@@ -278,6 +268,8 @@ namespace tam
       public void DecreaseAttributeZenoStyle( uint attributeKey,
                                               uint trackKey )
       {
+         _Trace( "DecreaseAttributeZenoStyle" );
+
          try
          {
             _serializer.WaitOne();
@@ -306,6 +298,8 @@ namespace tam
                                 uint trackKey,
                                 uint level )
       {
+         _Trace( "SetAttribute" );
+
          try
          {
             _serializer.WaitOne();
@@ -432,6 +426,7 @@ namespace tam
       public uint GetAttribute( uint playlistKey,
                                 uint trackKey )
       {
+         _Trace( "GetAttribute" );
          try
          {
             _serializer.WaitOne();
@@ -451,6 +446,8 @@ namespace tam
       ///
       public IPlaylistCriterion GetCriterion( uint index )
       {
+         _Trace( "GetCriterion" );
+
          try
          {
             _serializer.WaitOne();
@@ -471,6 +468,8 @@ namespace tam
       ///
       public void ActivateCriterion( uint index )
       {
+         _Trace( "ActivateCriterion" );
+
          try
          {
             _serializer.WaitOne();
@@ -493,6 +492,8 @@ namespace tam
 
       public void DeactivateCriterion( uint index )
       {
+         _Trace( "DeactivateCriterion" );
+
          try
          {
             _serializer.WaitOne();
@@ -509,7 +510,7 @@ namespace tam
 
       void SetPlaylist( uint index )
       {
-         Trace.WriteLine( "_SetPrimaryPlaylist( " + index + ")" );
+         _Trace( "SetPlaylist( " + index + ")" );
 
          // Import any new entries from the local-files tables to the
          // attribute tables. This is only necessary if some external
@@ -537,6 +538,8 @@ namespace tam
       ///
       public void GotoNextFile()
       {
+         _Trace( "GotoNextFile" );
+
          try
          {
             _serializer.WaitOne();
@@ -559,12 +562,14 @@ namespace tam
       ///
       public void GotoPrevFile()
       {
+         _Trace( "GotoPrevFile" );
+
          try
          {
             _serializer.WaitOne();
 
             PlayableData prevFile = _PlaylistGoPrev();
-            Trace.WriteLine( "PREV = " + prevFile.title );
+            _Trace( "PREV = " + prevFile.title );
             if (null != prevFile)
                Player.PlayFile( prevFile.filePath, prevFile.key );
 
@@ -815,6 +820,11 @@ namespace tam
          return null;
       }
 
+      void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "Engine" );
+      }
+
       ///
       /// \todo This array is temporary. Create a real playlist 
       ///   info table or something. Indexed by Name, not uint.
@@ -891,8 +901,6 @@ namespace tam
       //
       // References to friendly objects we know and love
       //
-      IDbConnection  _databaseConnection;
-
       FileSelector   _fileSelector;
 
       // FileScanner    _fileScanner;
