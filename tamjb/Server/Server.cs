@@ -58,6 +58,8 @@ namespace tam.Server
       static string _connectionString = null;
       static int QUEUE_MIN_SIZE = 6; // get ahead of ourselves.
 
+      static int SCAN_FINISHED_SLEEP_TIME = 100; // loops
+
       /// 
       /// \todo The list of mp3 dirs should be changeable at runtime
       ///   via some sort of interface.
@@ -227,6 +229,10 @@ namespace tam.Server
 
             RecursiveScanner scanner = null;;
             int scannerIndex = 0;
+            int scanRetryCountdown = 0;
+
+            // Drop priority of the scanner thread. I guess.
+            Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
 
             while (true)
             {
@@ -240,25 +246,37 @@ namespace tam.Server
                   // Don't bother if no mp3 dirs are configured
                   if (_mp3RootDirs.Count > 0)
                   {
-                     if (null == scanner)
+                     if (scanRetryCountdown > 0)
                      {
-                        string nextDir = (string)_mp3RootDirs[scannerIndex];
-                        Trace.WriteLine( "Now scanning: " + nextDir );
-
-                        scanner = new RecursiveScanner( nextDir, engine );
+                        -- scanRetryCountdown;
                      }
-
-                     Debug.Assert( scanner != null, "logic error" );
-
-                     if (scanner.DoNextFile(5) == ScanStatus.FINISHED)
+                     else
                      {
-                        Trace.WriteLine( "Scan Finished" );
-
-                        ++ scannerIndex;
-                        if (scannerIndex >= _mp3RootDirs.Count)
-                           scannerIndex = 0;
-
-                        scanner = null;
+                        if (null == scanner)
+                        {
+                           string nextDir = (string)_mp3RootDirs[scannerIndex];
+                           Trace.WriteLine( "Now scanning: " + nextDir );
+                           
+                           scanner = new RecursiveScanner( nextDir, engine );
+                        }
+                        
+                        Debug.Assert( scanner != null, "logic error" );
+                        
+                        if (scanner.DoNextFile(5) == ScanStatus.FINISHED)
+                        {
+                           Trace.WriteLine( "Scan Finished" );
+                           
+                           ++ scannerIndex;
+                           if (scannerIndex >= _mp3RootDirs.Count)
+                           {
+                              // Done scanning all dirs. Wait a few minutes
+                              // before restarting.
+                              scanRetryCountdown = SCAN_FINISHED_SLEEP_TIME;
+                              scannerIndex = 0;
+                           }
+                           
+                           scanner = null;
+                        }
                      }
                   }
                }
@@ -276,7 +294,7 @@ namespace tam.Server
                   Console.WriteLine( "Poll Failed: " + e.ToString() );
                }
 
-               Thread.Sleep( 500 );   // wait a while
+               Thread.Sleep( 1000 );   // wait a while
             }
          }
          finally
