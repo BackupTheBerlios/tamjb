@@ -252,8 +252,17 @@ namespace tam.GtkPlayer
          {
             _pendingUpdate = false;
 
-            uint doesntSuckLevel = _backend.GetAttribute( DOESNTSUCK, 
-                                                          trackInfo.key );
+            uint doesntSuckLevel;
+            try
+            {
+               doesntSuckLevel = _backend.GetAttribute( DOESNTSUCK, 
+                                                             trackInfo.key );
+            }
+            catch
+            {
+               // Attribute probably doesn't exist...
+               doesntSuckLevel = 5000;
+            }
 
             // Invert the doesntSuck value to create a suck metric
             double suckPercent = (10000 - doesntSuckLevel) / 100.0;
@@ -293,9 +302,18 @@ namespace tam.GtkPlayer
                {
                   _isAppropriateActive = true;
 
-                  double appropriateLevel = 
-                     (double)_backend.GetAttribute( (uint)_appropriateKey,
-                                                    trackInfo.key );
+                  double appropriateLevel;
+                  try
+                  {
+                     appropriateLevel =
+                        (double)_backend.GetAttribute( (uint)_appropriateKey,
+                                                       trackInfo.key );
+                  }
+                  catch
+                  {
+                     // May throw if attribute has never been enabled
+                     appropriateLevel = 5000.0;
+                  }
 
                   appropriateLevel /= 100.0;
                   _appropriateSlider.Value = appropriateLevel;

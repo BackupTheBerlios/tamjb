@@ -9,7 +9,7 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 # libs for dependency checking during dev:
 DEPLIBS = $(LIBDIR)/tam.LocalFileDatabase.dll \
         $(LIBDIR)/tam.SimpleMp3Player.dll \
-        $(LIBDIR)/mp3IdkonvertUtil.dll
+        ../id3/id3.dll
 
 SRCS = Server.cs \
         RecursiveScanner.cs
@@ -19,7 +19,7 @@ SERVER = tam.Server.exe
 all: $(SERVER)
 
 SERVER_REFS = -r System.Runtime.Remoting \
-        -r mp3IdkonvertUtil \
+        -r ../id3/id3.dll \
         -r tam.Engine \
         -r tam.Interfaces \
         -r tam.LocalFileDatabase \

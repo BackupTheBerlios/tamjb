@@ -40,8 +40,7 @@ ENGINE_SRCS = FileSelector.cs \
 
 # libs for dependency checking during dev:
 DEPLIBS = $(LIBDIR)/tam.LocalFileDatabase.dll \
-        $(LIBDIR)/tam.SimpleMp3Player.dll \
-        $(LIBDIR)/mp3IdkonvertUtil.dll
+        $(LIBDIR)/tam.SimpleMp3Player.dll
 
 BINARY_TARGETS = $(LIBDIR)/tam.Engine.dll
 
@@ -49,6 +48,7 @@ BINARY_TARGETS = $(LIBDIR)/tam.Engine.dll
 all: dll_subdirs $(BINARY_TARGETS) exe_subdirs doc
 
 dll_subdirs:
+	$(MAKE) --directory=id3
 	$(MAKE) --directory=Interfaces
 	$(MAKE) --directory=LocalFileDatabase
 	$(MAKE) --directory=SimpleMp3Player

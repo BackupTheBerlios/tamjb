@@ -43,7 +43,21 @@ namespace byteheaven.id3
    ///
    public class ID3v2
    {
-
+      public bool isValid
+      {
+         ///
+         /// \return true if an id3v2 header was found, false otherwise.
+         ///
+         /// \note Check other fields for null, there may have been no
+         ///   useful data in the id3 block!
+         ///
+         get
+         {
+            // If the header was found, this is valid.
+            return (null != _header);
+         }
+      }
+      
       public ID3v2Header header
       {
          get
@@ -56,6 +70,20 @@ namespace byteheaven.id3
       // if NULL, these are not present in the file.d
       
       public string tcon = null;
+      
+      /// 
+      /// Permits readonly access to the default genre (first in list)
+      ///
+      public string DefaultGenre
+      {
+         get
+         {
+            // Sorry, Genre parsing is still broken...I think I have to
+            // get each char one at a time and compare to NULL. :(
+            return null;
+         }
+      }
+
       public string tit2 = null;
       public string tpe1 = null;
       public string talb = null;
@@ -80,6 +108,8 @@ namespace byteheaven.id3
       /// \note comment may contain newlines
       ///
       public string comm = null;
+
+      public string tyer = null; // year?
 
       ///
       /// CD identifier. Yay!
@@ -221,6 +251,10 @@ namespace byteheaven.id3
          case "TIT3":           // Song refinement (op3)
             Console.WriteLine( "Desirable frame not supported :( - {0} -", 
                                frameHeader.frameId );
+            break;
+
+         case "TYER":
+            tyer = _DecodeTextFrame( contentBuffer, frameHeader.size );
             break;
 
          case "MCDI":           // Music CD identifier -- oh yeah.

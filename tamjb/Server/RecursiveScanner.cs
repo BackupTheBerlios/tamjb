@@ -32,7 +32,8 @@ namespace tam.Server
    using System;
    using System.Diagnostics;
    using System.IO;
-   using mp3IdkonvertUtil;
+
+   using byteheaven.id3;
    using tam.LocalFileDatabase;
 
    enum ScanStatus
@@ -169,23 +170,27 @@ namespace tam.Server
       {
          // Get ID3 tags from the file
 
-         CID3v1Tag tag = new CID3v1Tag( path );
-         if (! tag.Read())
+         ID3v2 tag = new ID3v2( path );
+         if (!tag.isValid)
          {
-            // Couldn't read this file's tag. Silently (?) skip.
+            _Trace( "Note: No id3v2 tag found in file: '"
+                    + path 
+                    + "'" );
+            
             return;
          }
          
-//          if (tag.Title.Length == 0) // strip whitespace first?
-//          {
-//             // Use the file basename? Or what?
-//             // Console.WriteLine( "Missing info: " + path );
-//          }
+         if ((null == tag.tit2) || (tag.tit2.Length == 0))
+         {
+            _Trace( "Song title is empty, skipping: '"
+                    + path 
+                    + "'" );
+            
+            return;
+         }
 
-         string genre;
-         if (tag.Genre < ID3_GENRE_TABLE.GetLength(0))
-            genre = ID3_GENRE_TABLE[tag.Genre];
-         else
+         string genre = tag.DefaultGenre;
+         if (null == genre)
             genre = "unknown";
 
          if (! _engine.EntryExists( path )) 
@@ -194,10 +199,23 @@ namespace tam.Server
 
             PlayableData data = new PlayableData();
             data.filePath = path;
-            data.artist = tag.Artist;
-            data.album = tag.Album;
-            data.title = tag.Title;
-            data.track = tag.Track;
+
+            if (tag.tpe1 == null)
+               data.artist = "";
+            else
+               data.artist = tag.tpe1;
+
+            if (tag.talb == null)
+               data.album = "";
+            else
+               data.album = tag.talb;
+
+            if (tag.tit2 == null) // no title, maybe check tit1 and tit3?
+               data.title = "";
+            else
+               data.title = tag.tit2;
+
+            data.track = tag.trackIndex;
             data.genre = genre;
             data.lengthInSeconds = 0; // unknown, ID3 tag doesn't know
             _engine.Add( data );
