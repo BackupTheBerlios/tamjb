@@ -213,6 +213,7 @@ namespace tam.SimpleMp3Player
       public static void PlayFile( string path, uint index )
       {
          Debug.Assert( null != path ); // just plain bad parameter
+         Trace.WriteLine( "PlayFile", "Player" );
 
          _StartReaderThread();
 
@@ -247,6 +248,8 @@ namespace tam.SimpleMp3Player
       ///
       static public void GotoNextFile()
       {
+         Trace.WriteLine( "GotoNextFile", "Player" );
+
          _StartReaderThread();
 
          _configMutex.WaitOne();
@@ -282,6 +285,7 @@ namespace tam.SimpleMp3Player
       public static void SetNextFile( string path, uint index )
       {
          Debug.Assert( null != path, "just plain bad parameter" );
+         Trace.WriteLine( "SetNextFile", "Player" );
 
          _StartReaderThread();
 
@@ -319,6 +323,7 @@ namespace tam.SimpleMp3Player
       public static void EnqueueFile( string path, uint index )
       {
          Debug.Assert( null != path ); // just plain bad parameter
+         Trace.WriteLine( "EnqueueFile", "Player" );
 
          _StartReaderThread();  // just in case it's stopped
 
@@ -443,8 +448,8 @@ namespace tam.SimpleMp3Player
             _configMutex.WaitOne();
             while (true)
             {
-               // Execution will stop here if the parent thread tries to change the 
-               // configuration in some way.
+               // Execution will stop here if the parent thread tries to 
+               // change the configuration in some way.
                _configMutex.ReleaseMutex();
                _configMutex.WaitOne();
                
@@ -456,6 +461,7 @@ namespace tam.SimpleMp3Player
                   // Wait until the parent wakes us up.
                   _configMutex.ReleaseMutex();
                   _fileToPlayEvent.WaitOne();
+                  Trace.WriteLine( "STOP -> " + _state.ToString(), "MP3" );
                   _configMutex.WaitOne();
                   
                   // We've got the  _configMutex, so no race condition exists.

@@ -70,6 +70,7 @@ namespace tam.Server
          Console.WriteLine( " --port <port>" );
          Console.WriteLine( " --logFile <logFile>" );
          Console.WriteLine( " --dir <mp3_root_dir> (multiple dirs allowed)" );
+         Console.WriteLine( " --trace" );
       }
 
       ///
@@ -112,6 +113,7 @@ namespace tam.Server
          // defaults
          string logFile = "-";
          string dbUrl = null;
+         bool doTrace = false;
          _port = 0;
 
          for (int i = 0; i < args.Length; i++)
@@ -134,6 +136,10 @@ namespace tam.Server
 
             case "--dir":
                _mp3RootDirs.Add( args[++i] );
+               break;
+
+            case "--trace":
+               doTrace = true;
                break;
 
             default:
@@ -167,10 +173,13 @@ namespace tam.Server
                traceWriter = 
                   TextWriter.Synchronized(_RedirectLogFile( logFile ));
             }
-            
-            // Spit all trace output to logfile, unless 
-            Trace.Listeners.Add( new TextWriterTraceListener(traceWriter) );
-            Trace.AutoFlush = true;
+
+            if (doTrace)
+            {
+               // Spit all trace output to this stream
+               Trace.Listeners.Add( new TextWriterTraceListener(traceWriter) );
+               Trace.AutoFlush = true;
+            }
 
             _connectionString = "URI=" + dbUrl;
 
@@ -199,57 +208,59 @@ namespace tam.Server
 
             // Retrieve a reference to the "remote" engine. The backend
             // can reference the actual Engine class, not just its interface.
-            string serverUrl = "http://localhost:" + _port + "/Engine";
-            Engine engine = (Engine) Activator.GetObject( typeof(Engine), 
-                                                          serverUrl );
-
+            // string serverUrl = "http://localhost:" + _port + "/Engine";
+            string serverUrl = "tcp://localhost:" + _port + "/Engine";
             Trace.WriteLine( "tam.Server started on port " + _port );
 
             RecursiveScanner scanner = null;;
             int scannerIndex = 0;
-            if (_mp3RootDirs.Count > 0)
-            {
-               scanner = new RecursiveScanner( (string)_mp3RootDirs[0], 
-                                               engine );
-            }
 
-            // Drop this thread's priority--this is not very important!
-            System.Threading.Thread.CurrentThread.Priority = 
-               ThreadPriority.BelowNormal;
             while (true)
             {
+               Engine engine = 
+                  (Engine) Activator.GetObject( typeof(Engine), 
+                                                serverUrl );
+
                // Continually scan all configured dirs for new mp3's
                try
                {
                   // Don't bother if no mp3 dirs are configured
                   if (_mp3RootDirs.Count > 0)
                   {
+                     if (null == scanner)
+                     {
+                        string nextDir = (string)_mp3RootDirs[scannerIndex];
+                        Trace.WriteLine( "Now scanning: " + nextDir );
+
+                        scanner = new RecursiveScanner( nextDir, engine );
+                     }
+
                      Debug.Assert( scanner != null, "logic error" );
 
                      if (scanner.DoNextFile(5) == ScanStatus.FINISHED)
                      {
+                        Trace.WriteLine( "Scan Finished" );
+
                         ++ scannerIndex;
                         if (scannerIndex >= _mp3RootDirs.Count)
                            scannerIndex = 0;
 
-                        string nextDir = (string)_mp3RootDirs[scannerIndex];
-                        scanner = new RecursiveScanner( nextDir, engine );
+                        scanner = null;
                      }
                   }
                }
                catch (Exception e)
                {
-                  Console.WriteLine( "Drat! " + e.ToString() );
+                  Console.WriteLine( "Error while scanning: " + e.ToString() );
                }
                
                try
                {
-                  // Enqueue some songs cause I can
-                  engine.Poll();
+                  engine.Poll(); // keep the engine working
                }
                catch (Exception e)
                {
-                  Console.WriteLine( "Drat! " + e.ToString() );
+                  Console.WriteLine( "Poll Failed: " + e.ToString() );
                }
 
                Thread.Sleep( 500 );   // wait a while
@@ -276,11 +287,18 @@ namespace tam.Server
 
          // Could use Soap or Binary formatters if we wanted... 
          //  Will Binary work cross-platform? Soap is more reliable.
-         HttpChannel channel = 
-            new HttpChannel(properties,
+//          HttpChannel channel = 
+//             new HttpChannel(properties,
+//                             new BinaryClientFormatterSinkProvider(),
+//                             new BinaryServerFormatterSinkProvider());
+// 
+//          ChannelServices.RegisterChannel( channel );
+
+         TcpChannel channel =
+            new TcpChannel( properties,
                             new BinaryClientFormatterSinkProvider(),
                             new BinaryServerFormatterSinkProvider());
-
+                            
          ChannelServices.RegisterChannel( channel );
       }   
    }

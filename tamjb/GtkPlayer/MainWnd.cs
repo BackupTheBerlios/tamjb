@@ -43,20 +43,10 @@ namespace tam.GtkPlayer
    // namespace to make them available at the "tam" namespace scope?
    
    ///
-   /// Gtk# frontend to TamJB
+   /// Gtk# frontend to TamJB -- main program
    ///
-   public class MainWnd : Window
+   public class EntryPoint
    {
-      // Some constants
-      readonly int TITLE_MAX_WIDTH = 50;
-      readonly int ARTIST_MAX_WIDTH = 20;
-      // What's comin' at cha, including the current track.
-      readonly int QUEUE_MIN_SIZE = 6; 
-      readonly int HISTORY_VISIBLE_COUNT = 5;
-
-      // Temporary hardcoded table index for the suck metric
-      readonly uint DOESNTSUCK = 0;
-
       static void Main( string [] args )
       {
          try
@@ -68,7 +58,6 @@ namespace tam.GtkPlayer
             // Create a channel for communicating w/ the remote object
             // Should not have to explicitly state BinaryClient, should I?
 
-            // HttpChannel channel = new HttpChannel();
             ListDictionary properties = new ListDictionary();
             HttpChannel channel = 
                new HttpChannel(properties,
@@ -77,14 +66,18 @@ namespace tam.GtkPlayer
 
             ChannelServices.RegisterChannel( channel );
 
-            // TcpChannel tcpChannel = new TcpChannel();
-            // ChannelServices.RegisterChannel( tcpChannel );
+            // Yeah, we support Tcp too.
+            TcpChannel tcpChannel = new TcpChannel();
+            ChannelServices.RegisterChannel( tcpChannel );
             
             Application.Init ();
 
-            MainWnd player = new MainWnd();
-         
-            player.Show();
+            // Old:
+            // MainWnd player = new MainWnd();
+            // player.Show();
+
+            // New:
+            GtkPlayer gtkPlayer = new GtkPlayer();
 
             Application.Run ();
          }
@@ -103,10 +96,12 @@ namespace tam.GtkPlayer
      
             int result = md.Run ();
          }
-         _Trace( "bye" );
+         Trace.WriteLine( "exiting" );
 
          // If any stray threads are around, deal with it here.
       }
+
+#if QQQ // COMMENT OUT
 
       ///
       /// Constructs the main window layout and all component bits.
@@ -356,10 +351,7 @@ namespace tam.GtkPlayer
             _backend = null;
          }
 
-         /// \todo Retrieve settings from storage here?
-         ///
-
-         _configDlg = new ConfigDlg( this, _backend, _settings );
+         _configDlg = new ConfigDlg( _settings );
 
          _UpdateButtonState();
 
@@ -992,5 +984,7 @@ namespace tam.GtkPlayer
 
       tam.IEngine _backend;
 
+#endif // QQQ
    }
+
 }

@@ -34,21 +34,19 @@ namespace tam.GtkPlayer
    using Gtk;
    using GtkSharp;
 
+   ///
+   /// \todo Replace this with code that doesn't inherit from Gtk.Dialog,
+   ///   or use glade
+   ///
    public class ConfigDlg 
       : Gtk.Dialog
    {
       ///
-      /// \param parent Parent window
-      /// \param engine backend object (possibly not used?)
       /// \param settings is directly modified by ConfigDlg when OK is
       ///   pressed
       ///
-      public ConfigDlg( Window parent, 
-                        IEngine engine,
-                        PlayerSettings settings )
-//         : base( "TAM Config", parent, DialogFlags.DestroyWithParent )
+      public ConfigDlg( PlayerSettings settings )
       {
-         _backend = engine;
          _settings = settings;
 
          Response += new ResponseHandler( _OnResponse );
@@ -114,7 +112,6 @@ namespace tam.GtkPlayer
          }
       }
 
-      IEngine        _backend;
       PlayerSettings _settings;
 
       Entry          _serverName;

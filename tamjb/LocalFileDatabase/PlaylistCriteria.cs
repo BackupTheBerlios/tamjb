@@ -30,6 +30,7 @@ namespace tam.LocalFileDatabase
    using System;
    using System.Collections;
    using System.Collections.Specialized;
+   using System.Diagnostics;
 
    /// 
    /// Criteria for inclusion in a playlist.
@@ -75,6 +76,7 @@ namespace tam.LocalFileDatabase
 
       public void Add( PlaylistCriterion criterion )
       {
+         _Trace( "[Add] " + criterion.attribKey );
          _criterionList.Add( criterion.attribKey, criterion );
       }
 
@@ -83,6 +85,7 @@ namespace tam.LocalFileDatabase
       ///
       public void Remove( uint index )
       {
+         _Trace( "[Remove] " + index );
          _criterionList.Remove( index );
       }
 
@@ -105,6 +108,12 @@ namespace tam.LocalFileDatabase
       {
          return _criterionList.GetEnumerator();
       }
+
+      static void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "PlaylistCriteria" );
+      }
+
 
       /// Index of our playlist in the LocalFileDatabase
       ///
@@ -229,6 +238,11 @@ namespace tam.LocalFileDatabase
             return -1;
 
          return 0;
+      }
+
+      static void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "PlaylistCriterion" );
       }
 
       uint _value;              // base value

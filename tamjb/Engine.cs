@@ -137,7 +137,7 @@ namespace tam
       ///
       public bool CheckState( ref IEngineState state )
       {
-         _serializer.WaitOne();
+         _Lock();
          try
          {
             if (state != null)
@@ -157,7 +157,7 @@ namespace tam
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -175,24 +175,24 @@ namespace tam
       ///
       public void Poll()
       {
+         // _Trace( "Poll" );
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             // Enqueue at most one song each time this is polled
             if (unplayedTrackCount < _desiredQueueSize)
                EnqueueRandomSong();
 
             // If playback has stopped, restart it now.
             if (! this.isPlaying)
+            {
+               _Trace( "Hey, we are not playing. Restarting.." );
                GotoNextFile();
-
-            // Keep scanning for new files?
-            // _fileScanner.CheckOneDirectory();
+            }
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -232,10 +232,9 @@ namespace tam
       {
          _Trace( "IncreaseAttributeZenoStyle" );
 
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             ++_changeCount;
 
             uint level = _database.GetAttribute( attributeKey, trackKey );
@@ -257,7 +256,7 @@ namespace tam
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -271,10 +270,10 @@ namespace tam
       {
          _Trace( "DecreaseAttributeZenoStyle" );
 
+         _Lock();
+
          try
          {
-            _serializer.WaitOne();
-
             ++_changeCount;
 
             uint level = _database.GetAttribute( attributeKey, trackKey );
@@ -291,7 +290,7 @@ namespace tam
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -299,16 +298,15 @@ namespace tam
                                 uint trackKey,
                                 uint level )
       {
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             ++_changeCount;
             _database.SetAttribute( attributeKey, trackKey, level );
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -328,15 +326,14 @@ namespace tam
          ///
          get
          {
+            _Lock();
             try
             {
-               _serializer.WaitOne();
-               
                return (ITrackInfo)_PlaylistGetCurrent();
             }
             finally
             {
-               _serializer.ReleaseMutex();
+               _Unlock();
             }
          }
       }
@@ -356,15 +353,14 @@ namespace tam
       {
          get
          {
+            _Lock();
             try
             {
-               _serializer.WaitOne();
-
                return _PlaylistGetCount() - _playQueueCurrentTrack;
             }
             finally
             {
-               _serializer.ReleaseMutex();
+               _Unlock();
             }
          }
       }
@@ -380,15 +376,14 @@ namespace tam
          ///
          get
          {
+            _Lock();
             try
             {
-               _serializer.WaitOne();
-
                return (ITrackInfo)_PlaylistGetAt( index );
             }
             finally
             {
-               _serializer.ReleaseMutex();
+               _Unlock();
             }
          }
       }
@@ -397,45 +392,42 @@ namespace tam
       {
          get
          {
+            _Lock();
             try
             {
-               _serializer.WaitOne();
-
                return _PlaylistGetCount();
             }
             finally
             {
-               _serializer.ReleaseMutex();
+               _Unlock();
             }
          }
       }
 
       public ITrackInfo GetFileInfo( uint key )
       {
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             return (ITrackInfo)_database.GetFileInfo( key );
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
       public uint GetAttribute( uint playlistKey,
                                 uint trackKey )
       {
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             return _database.GetAttribute( playlistKey, trackKey );
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -448,16 +440,15 @@ namespace tam
       {
          _Trace( "GetCriterion" );
 
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             // Return from local cache of all criteria.
             return (IPlaylistCriterion)_criterion[index];
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -468,12 +459,11 @@ namespace tam
       ///
       public void ActivateCriterion( uint index )
       {
-         _Trace( "ActivateCriterion" );
+         _Trace( "[ActivateCriterion] " + index );
 
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             // if playlist criterion is already active, do nothing
 
             if (null != _criteria.Find( index ))
@@ -486,25 +476,24 @@ namespace tam
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
       public void DeactivateCriterion( uint index )
       {
-         _Trace( "DeactivateCriterion" );
+         _Trace( "[DeactivateCriterion] " + index );
 
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             // if playlist criterion is already active, do nothing
             _criteria.Remove( index );
             ++_changeCount;
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -515,7 +504,7 @@ namespace tam
       { 
          get
          {
-            _serializer.WaitOne();
+            _Lock();
             try
             {
                // Build a list of the current criteria's keys.
@@ -537,7 +526,7 @@ namespace tam
             }
             finally
             {
-               _serializer.ReleaseMutex();
+               _Unlock();
             }
          }
       }
@@ -574,10 +563,9 @@ namespace tam
       {
          _Trace( "GotoNextFile" );
 
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             PlayableData nextFile = _PlaylistGoNext();
             if (null != nextFile)
                Player.PlayFile( nextFile.filePath, nextFile.key );
@@ -586,7 +574,7 @@ namespace tam
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -598,10 +586,9 @@ namespace tam
       {
          _Trace( "GotoPrevFile" );
 
+         _Lock();
          try
          {
-            _serializer.WaitOne();
-
             PlayableData prevFile = _PlaylistGoPrev();
             _Trace( "PREV = " + prevFile.title );
             if (null != prevFile)
@@ -611,7 +598,7 @@ namespace tam
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -817,14 +804,15 @@ namespace tam
       ///
       public bool EntryExists( string fullPath )
       {
-         _serializer.WaitOne();
+         // _Trace( "EntryExists" );
+         _Lock();
          try
          {
             return _database.Mp3FileEntryExists( fullPath );
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -833,14 +821,14 @@ namespace tam
       ///
       public void Add( PlayableData newData )
       {
-         _serializer.WaitOne();
+         _Lock();
          try
          {
             _database.Add( newData );
          }
          finally
          {
-            _serializer.ReleaseMutex();
+            _Unlock();
          }
       }
 
@@ -872,6 +860,27 @@ namespace tam
          new PlaylistCriterion( 2, 8000, 6000 ),
          new PlaylistCriterion( 3, 8000, 6000 )
       };
+
+      ///
+      /// Wrapper function to handle serialization of remote controls.
+      ///
+      void _Lock()
+      {
+         // _Trace( " ?Wait" );
+         if (false == _serializer.WaitOne( 3000, // 5 seconds long enough?
+                                           false ))
+         {
+            throw new ApplicationException( 
+               "_serializer Timed out waiting for lock" );
+         }
+         // _Trace( " >Lock" );
+      }
+
+      void _Unlock()
+      {
+         // _Trace( " <Unlock" );
+         _serializer.ReleaseMutex();
+      }
 
       ///
       /// A few past tracks, the current track, and all queued future
