@@ -13,8 +13,10 @@ INTERFACE_SRCS = AssemblyInfo.cs \
         EngineState.cs \
         Mood.cs \
         PlayableData.cs \
+        IBackend.cs \
         IEngine.cs \
         IPlaylistCriterion.cs \
+        IRecursiveScanner.cs \
         ITrackInfo.cs
 
 # 

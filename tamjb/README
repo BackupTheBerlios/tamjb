@@ -63,22 +63,39 @@ Track Attribute Manager - Jukebox
 
  - SQLite OR PostgreSQL
 
-   Define what is preferred in Engine/Makefile. Note that the huge memory
-   leak reported previously seems to be SQLite-related. :(
-
-   New development is done using postgres, since SQLite seems to use
-   bigger chunks of processor time. With a bit of hacking, just about
-   any SQL database should work though.
-
-   C# support for sqlite is built into mono at this point. You will need
-   an actual sqlite binary though. The calls have been wrapped so
-   you don't need to worry about building with thread-safe support. 
+   SQLite support has been temporarily discontinued because of lack for
+   named parameters. With a bit of hacking, just about any SQL database 
+   should work though.
 
    Known good configuration:
 
      Gentoo: sqlite-2.8.11
      Gentoo: postgresql-7.4.3
 
+   PostgreSQL hints:
+     Create the postgresql installation in the "normal way".
+
+     Before starting  the server, be sure that it is launched with the
+     "-i" option. The Npgsql C# wrapper uses TCP/IP connections.
+
+     Create a database and user with no password, like this:
+
+      postgres@medtom postgresql $ createdb tamjb
+      CREATE DATABASE
+      postgres@medtom postgresql $ psql tamjb
+      Welcome to psql 7.4.3, the PostgreSQL interactive terminal.
+      [...]
+      tamjb=# create user tamjb;
+      CREATE USER
+      tamjb=# grant all privileges on database tamjb to tamjb;
+      GRANT
+
+     Now you can launch tamjb using the connect string:
+      'Server=localhost;Database=tamjb;USER ID=tamjb;Password='
+
+     You should add a password to the GRANT statement and the connect
+     string if you are not in a totally safe, private network. Or you
+     can limit connections to localhost only. Etc.
 
  - esound, Esd#
 

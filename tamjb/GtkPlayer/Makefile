@@ -2,7 +2,7 @@
 
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
-SRCS = MainWnd.cs \
+SRCS = Main.cs \
         GtkPlayer.cs \
         ConfigWindow.cs \
         MiscSettings.cs \

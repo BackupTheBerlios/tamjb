@@ -47,6 +47,8 @@ namespace byteheaven.tamjb.Engine
    /// The main jukebox player object.
    ///
    public class Backend
+      : IEngine, 
+        IBackend
    {
       ///
       /// get/set the database connection string (as an url, must
@@ -152,11 +154,11 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// \warning You must set the (static) connectionString property
-      ///   before any attempt to construct an engine.
+      /// \warning When creating an object for remoting, call Init() and
+      ///   access the singleton returned by theBackend. This constructor
+      ///   is public only for use by non-remoting configurations.
       /// 
-      protected Backend( int desiredQueueSize, 
-                         string connectionString )
+      public Backend( int desiredQueueSize, string connectionString )
       {
          _Trace( "[Backend]" );
 
@@ -192,13 +194,17 @@ namespace byteheaven.tamjb.Engine
             SimpleMp3Player.Player.OnReadBuffer +=
                new ReadBufferHandler( _TrackReadCallback );
 
-            _controllingUser = null;
-            _controllingMood = null;
          }
+#if USE_POSTGRESQL
          catch (Npgsql.NpgsqlException ne)
          {
             throw new ApplicationException( "NgpsqlException" +
                                             ne.ToString() );
+         }
+#endif
+         finally
+         {
+            ; // do nothing
          }
       }
       
@@ -212,6 +218,7 @@ namespace byteheaven.tamjb.Engine
 
       //
       // Get the current mood. May return null for either or both
+      // if no current user or mood exists.
       //
       public void GetCurrentUserAndMood( ref Credentials cred,
                                          ref Mood mood )
@@ -219,25 +226,8 @@ namespace byteheaven.tamjb.Engine
          _Lock();
          try
          {
-            if (cred == null)
-            {
-               cred = _controllingUser;
-            }
-            else
-            {
-               cred.name = _controllingUser.name;
-               cred.id = _controllingUser.id;
-            }
-
-            if (mood == null)
-            {
-               mood = _controllingMood;
-            }
-            else
-            {
-               mood.name = _controllingMood.name;
-               mood.id = _controllingMood.id;
-            }
+            cred = _controllingUser;
+            mood = _controllingMood;
          }
          finally
          {
@@ -306,6 +296,7 @@ namespace byteheaven.tamjb.Engine
                GotoNext();
             }
          }
+#if USE_POSTGRESQL
          catch (Npgsql.NpgsqlException ne)
          {
             // NpgsqlException has a long-standing problem where it is
@@ -313,6 +304,7 @@ namespace byteheaven.tamjb.Engine
             throw new ApplicationException( "NpgsqlException" 
                                             + ne.ToString() );
          }
+#endif
          catch (Exception e)
          {
             _Trace( "Exception propagating from Poll()" );
@@ -1219,11 +1211,13 @@ namespace byteheaven.tamjb.Engine
          {
             return _database.Mp3FileEntryExists( fullPath );
          }
+#if USE_POSTGRESQL
          catch (Npgsql.NpgsqlException ne) 
          {
             // These damn things don't Reflect properly
             throw new ApplicationException( ne.ToString() );
          }
+#endif
          finally
          {
             _Unlock();
@@ -1240,10 +1234,13 @@ namespace byteheaven.tamjb.Engine
          {
             _database.Add( newData );
          }
-         catch (Npgsql.NpgsqlException ne) // These damn things don't Reflect properly
+#if USE_POSTGRESQL
+         catch (Npgsql.NpgsqlException ne) 
          {
+            // These damn things don't Reflect properly
             throw new ApplicationException( ne.ToString() );
          }
+#endif
          finally
          {
             _Unlock();
@@ -1391,8 +1388,8 @@ namespace byteheaven.tamjb.Engine
          _Lock();
          try
          {
-            if (null == cred || null == mood)
-               throw new ApplicationException( "bad parameter" );
+            if (null == cred)
+               throw new ArgumentException( "may not be null", "cred" );
 
             if (_controllingUser.id != cred.id)
                throw new ApplicationException( "You are not in control" );
@@ -1411,7 +1408,8 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Get an existing mood by name for a given user
       ///
-      public Mood GetMood( Credentials cred, string name )
+      public Mood GetMood( Credentials cred, 
+                           string name )
       {
          _Lock();
          try

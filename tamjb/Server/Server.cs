@@ -44,6 +44,7 @@ namespace byteheaven.tamjb.Server
    ///
    using byteheaven.tamjb.SimpleMp3Player;
    using byteheaven.tamjb.Engine;
+   using byteheaven.tamjb.Interfaces;
 
    ///
    /// Server for client-server mode
@@ -108,6 +109,7 @@ namespace byteheaven.tamjb.Server
       /// \param args Now what, exactly, do you THINK is getting passed to
       ///   our static Main function? Hmmm?
       ///
+      [MTAThread]
       public static int Main(string [] args) 
       {
          // The command line deals with the problem that the config

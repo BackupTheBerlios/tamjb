@@ -100,6 +100,10 @@ namespace byteheaven.tamjb.GtkPlayer
             _settings.serverPort = 6543;
          }
 
+         PlayerApp.serverUrl =
+            "http://" + _settings.serverName + ":" 
+            + _settings.serverPort + "/Engine";
+
          _SetUpControls();
 
          // Load application icon here if possible, save for later use
@@ -115,6 +119,39 @@ namespace byteheaven.tamjb.GtkPlayer
 
          // Background processing callback
          Gtk.Timeout.Add( 2000, new Gtk.Function( _PollingCallback ) );
+      }
+
+
+      ///
+      /// This is a wrapper for the Main.backend property that sets
+      /// the status message appropriately while attempting to connect.
+      ///
+      public IEngine backend
+      {
+         ///
+         /// Get a reference to the player backend
+         ///
+         get
+         {
+            try
+            {
+               IEngine backendProxy = PlayerApp.backend;
+               return backendProxy;
+            }
+            catch ( System.Net.WebException snw )
+            {
+               // Probably couldn't connect. Use friendly message. Where is
+               // that advanced error msg dialog I want?
+               string msg = "Couldn't connect to the server '" 
+                  + _settings.serverName + ":" 
+                  + _settings.serverPort + "'";
+               
+               _Status( msg, 10 );
+               
+               // For now just rethrow.
+               throw new ApplicationException( msg, snw );
+            }
+         }
       }
 
       ///
@@ -220,21 +257,11 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          try
          {
-            if (null == _backend)
-            {
-               // Try now: throws on failure.
-               Debug.Assert( null != _settings, "settings object missing" );
-               _Status( "Connecting...", 2 );
-               _backend = _ConnectToEngine( _settings.serverName,
-                                            _settings.serverPort );
-               _Status( "Done", 4 );
-            }
-
             // State changed?
-            if (_backend.CheckState(ref _engineState) || _pendingUpdate )
+            if (backend.CheckState(ref _engineState) || _pendingUpdate )
             {
                _Status( "Updating...", 30 );
-               _backend.GetCurrentUserAndMood( ref _credentials, ref _mood );
+               backend.GetCurrentUserAndMood( ref _credentials, ref _mood );
                _UpdateNowPlayingInfo();
                _pendingUpdate = false;
          
@@ -393,7 +420,7 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          // If we're not connected OR we don't know who we are, just
          // don't worry about it.
-         if (null == _backend ||
+         if (null == backend ||
              null == _credentials || null == _mood)
          {
             suckPercent = 0.0;
@@ -401,7 +428,7 @@ namespace byteheaven.tamjb.GtkPlayer
             return;
          }
 
-         _backend.GetAttributes( _credentials,
+         backend.GetAttributes( _credentials,
                                  _mood,
                                  trackKey,
                                  out suckPercent,
@@ -547,10 +574,10 @@ namespace byteheaven.tamjb.GtkPlayer
 
             // Stop playing this track if it is the current track
             if (_engineState.currentTrack.key == suckTrackKey)
-               _backend.GotoNextFile( _credentials, suckTrackKey );
+               backend.GotoNextFile( _credentials, suckTrackKey );
 
             // Flag the previously playing track as suck
-            _backend.IncreaseSuckZenoStyle( _credentials, suckTrackKey );
+            backend.IncreaseSuckZenoStyle( _credentials, suckTrackKey );
 
             _SetPendingUpdate(); // update state to match backend
          }
@@ -581,7 +608,7 @@ namespace byteheaven.tamjb.GtkPlayer
             uint trackKey = _selectedTrackInfo.key;
 
             // Flag the previously playing track as suck
-            _backend.DecreaseSuckZenoStyle( _credentials, trackKey );
+            backend.DecreaseSuckZenoStyle( _credentials, trackKey );
 
             _SetPendingUpdate(); // update state to match backend
          }
@@ -608,10 +635,10 @@ namespace byteheaven.tamjb.GtkPlayer
                
             // Send the player to the next file first.
             if (_engineState.currentTrack.key == _selectedTrackInfo.key)
-               _backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
+               backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
 
             // Now that it's no longer playing, update the track.
-            _backend.DecreaseAppropriateZenoStyle( _credentials, 
+            backend.DecreaseAppropriateZenoStyle( _credentials, 
                                                    _mood,
                                                    _selectedTrackInfo.key );
 
@@ -639,7 +666,7 @@ namespace byteheaven.tamjb.GtkPlayer
             }
                
             // Now that it's no longer playing, update the track.
-            _backend.IncreaseAppropriateZenoStyle( _credentials, 
+            backend.IncreaseAppropriateZenoStyle( _credentials, 
                                                    _mood,
                                                    _selectedTrackInfo.key );
 
@@ -662,7 +689,7 @@ namespace byteheaven.tamjb.GtkPlayer
                return;
             }
                
-            _backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
+            backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
             _SetPendingUpdate();
          }
          catch (Exception e)
@@ -692,7 +719,7 @@ namespace byteheaven.tamjb.GtkPlayer
                return;
             }
 
-            _backend.GotoPrevFile( _credentials, _selectedTrackInfo.key );
+            backend.GotoPrevFile( _credentials, _selectedTrackInfo.key );
             _UpdateTransportButtonState();
             _SetPendingUpdate(); // Track is changing...
          }
@@ -712,7 +739,7 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnStopBtnClicked]" );
 
-            _backend.StopPlaying(); // Please stop! Please stop!
+            backend.StopPlaying(); // Please stop! Please stop!
          }
          catch (Exception e)
          {
@@ -729,52 +756,13 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnPlayBtnClicked]" );
 
-            _backend.StartPlaying(); // (if not already started)
+            backend.StartPlaying(); // (if not already started)
          }
          catch (Exception e)
          {
             _Trace( e.ToString() );
          }
       }
-
-
-      IEngine _ConnectToEngine( string serverName,
-                                int serverPort )
-      {
-         _Trace( "_ConnectToEngine" );
-         try
-         {
-            //
-            // http: and tcp: both valid here, although http seems
-            // to be broken in this release (beta1) of mono
-            //
-            string serverUrl = 
-               "http://" + serverName + ":" + serverPort + "/Engine";
-
-            _Status( serverUrl + " - Trying...", 10 );
-
-            // Retrieve a reference to the remote object
-            IEngine engine = (IEngine) Activator.GetObject( typeof(IEngine), 
-                                                            serverUrl );
-
-            _Status( serverUrl + " - Connected", 10 );
-
-            engine.GetCurrentUserAndMood( ref _credentials, ref _mood );
-            return engine;
-         }
-         catch ( System.Net.WebException snw )
-         {
-            // Probably couldn't connect. Use friendly message. Where is
-            // that advanced error msg dialog I want?
-            string msg = "Couldn't connect to the server '" 
-               + serverName + ":" + serverPort + "'";
-
-            _Status( msg, 10 );
-
-            // For now just rethrow. (Ick!)
-            throw new ApplicationException( msg, snw );
-         }
-      } 
 
       ///
       /// Run the configuration dialog.
@@ -796,11 +784,13 @@ namespace byteheaven.tamjb.GtkPlayer
                _settings.serverName = config.serverName;
                _settings.serverPort = config.serverPort;
 
-               // (re)connect to the player
-               _backend = null;
-               _backend = _ConnectToEngine( _settings.serverName,
-                                            _settings.serverPort );
-               
+               //
+               // Set the new server url
+               //
+               PlayerApp.serverUrl =
+                  "http://" + _settings.serverName + ":" 
+                  + _settings.serverPort + "/Engine";
+                  
                // If we got here, nothing threw an exception. Wow!
                // Save for future generations!
                _settings.Store();
@@ -821,10 +811,10 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_AudioBtnClick]" );
 
-            if (null != _backend)
+            if (null != backend)
             {
                MiscSettingsDialog dlg = 
-                  new MiscSettingsDialog( _mainWindow, _backend );
+                  new MiscSettingsDialog( _mainWindow, backend );
 
                dlg.Run();
             }
@@ -846,7 +836,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
             MoodDialog moodWin = 
                new MoodDialog( _mainWindow,
-                               _backend,
+                               backend,
                                _credentials,
                                _mood,
                                MoodDialog.DefaultField.USER );
@@ -855,11 +845,11 @@ namespace byteheaven.tamjb.GtkPlayer
             if (moodWin.isOk)
             {
                // get new/existing user's credentials from backend
-               _credentials = _backend.GetUser( moodWin.userName );
+               _credentials = backend.GetUser( moodWin.userName );
                if (null == _credentials)
-                  _credentials = _backend.CreateUser( moodWin.userName );
+                  _credentials = backend.CreateUser( moodWin.userName );
 
-               _backend.RenewLogon( _credentials );
+               backend.RenewLogon( _credentials );
 
                if ("" == moodWin.moodName)
                {
@@ -868,16 +858,16 @@ namespace byteheaven.tamjb.GtkPlayer
                else
                {
                   // Find the mood that matches this name
-                  _mood = _backend.GetMood( _credentials, 
+                  _mood = backend.GetMood( _credentials, 
                                             moodWin.moodName );
 
                   if (null == _mood)
                   {
-                     _mood = _backend.CreateMood( _credentials, 
+                     _mood = backend.CreateMood( _credentials, 
                                                   moodWin.moodName );
                   }
 
-                  _backend.SetMood( _credentials, _mood );
+                  backend.SetMood( _credentials, _mood );
                }
             }
          }
@@ -898,7 +888,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
             MoodDialog moodWin = 
                new MoodDialog( _mainWindow,
-                               _backend,
+                               backend,
                                _credentials,
                                _mood,
                                MoodDialog.DefaultField.MOOD );
@@ -907,11 +897,11 @@ namespace byteheaven.tamjb.GtkPlayer
             if (moodWin.isOk)
             {
                // get new/existing user's credentials from backend
-               _credentials = _backend.GetUser( moodWin.userName );
+               _credentials = backend.GetUser( moodWin.userName );
                if (null == _credentials)
-                  _credentials = _backend.CreateUser( moodWin.userName );
+                  _credentials = backend.CreateUser( moodWin.userName );
 
-               _backend.RenewLogon( _credentials );
+               backend.RenewLogon( _credentials );
 
                if ("" == moodWin.moodName)
                {
@@ -920,16 +910,16 @@ namespace byteheaven.tamjb.GtkPlayer
                else
                {
                   // Find the mood that matches this name
-                  _mood = _backend.GetMood( _credentials, 
+                  _mood = backend.GetMood( _credentials, 
                                             moodWin.moodName );
 
                   if (null == _mood)
                   {
-                     _mood = _backend.CreateMood( _credentials, 
+                     _mood = backend.CreateMood( _credentials, 
                                                   moodWin.moodName );
                   }
 
-                  _backend.SetMood( _credentials, _mood );
+                  backend.SetMood( _credentials, _mood );
                }
             }
          }
@@ -997,7 +987,7 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          _Trace( "[_UpdateTransportButtonState]" );
 
-         bool isConnected = (null != _backend);
+         bool isConnected = (null != backend);
 
          _nextBtn.Sensitive = isConnected;
          _prevBtn.Sensitive = isConnected;
@@ -1072,7 +1062,6 @@ namespace byteheaven.tamjb.GtkPlayer
 
       // Engine remote connection
 
-      IEngine _backend = null;
       EngineState _engineState = new EngineState();
 
       // State for the list/tree widgets
@@ -1082,8 +1071,8 @@ namespace byteheaven.tamjb.GtkPlayer
       // State for the configurable attributes. I guess.
 
       // For now, the user credentials is a uint placeholder. Temporary.
-      Credentials _credentials = null;
-      Mood        _mood = null;
+      Credentials _credentials = new Credentials();
+      Mood        _mood = new Mood();
 
       // Holds basic info about the current track.
       ITrackInfo   _selectedTrackInfo = null;

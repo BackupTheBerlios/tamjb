@@ -4,15 +4,14 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 SERVER = tamjb.Server.exe
 
-SRCS = Server.cs \
-        RecursiveScanner.cs
+SRCS = Server.cs
 
 #
 # libs that are part of this project (or, anyway, not system files)
 #
-DEPLIBS = ../id3/byteheaven.id3.dll \
-        ../thirdparty/Mp3Sharp.dll \
+DEPLIBS = ../thirdparty/Mp3Sharp.dll \
         ../thirdparty/esd-sharp.dll \
+        ../id3/byteheaven.id3.dll \
         ../Interfaces/tamjb.Interfaces.dll \
         ../SimpleMp3Player/tamjb.SimpleMp3Player.dll \
         ../Engine/tamjb.Engine.dll

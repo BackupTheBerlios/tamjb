@@ -187,7 +187,11 @@ namespace byteheaven.tamjb.Engine
          //   name - string used to log in
 
 #if USE_SQLITE
-#error Please implement me
+         string query = 
+            "CREATE TABLE users ( \n" +
+            "  id           INTEGER PRIMARY KEY NOT NULL,\n" +
+            "  name         TEXT NOT NULL\n" +
+            "  )";
 #elif USE_POSTGRESQL
          string query = 
             "CREATE TABLE users ( \n" +
@@ -213,7 +217,12 @@ namespace byteheaven.tamjb.Engine
          //   name - Name of this mood
 
 #if USE_SQLITE
-#error Please implement me
+         string query = 
+            "CREATE TABLE mood ( \n" +
+            "  id           INTEGER PRIMARY KEY NOT NULL,\n" +
+            "  user_id      INTEGER NOT NULL,\n" +
+            "  name         TEXT NOT NULL\n" +
+            "  )";
 #elif USE_POSTGRESQL
          string query = 
             "CREATE TABLE mood ( \n" +
@@ -308,7 +317,13 @@ namespace byteheaven.tamjb.Engine
 
       public void StoreController( string user, string mood )
       {
-#if USE_POSTGRESQL
+#if USE_SQLITE
+         string query = 
+            "UPDATE settings "
+            + " SET control_user = '" + _StripEvil( user ) + "',"
+            + "   control_mood = '" + _StripEvil( mood ) + "'"
+            ;
+#elif USE_POSTGRESQL
          string query = 
             "UPDATE settings "
             + " SET control_user = :user,"
@@ -326,7 +341,9 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
-#if USE_POSTGRESQL
+#if USE_SQLITE
+// do nothing
+#elif USE_POSTGRESQL
             IDbDataParameter param = 
                new NpgsqlParameter( "user", DbType.String );
             param.Value = user;
@@ -372,17 +389,21 @@ namespace byteheaven.tamjb.Engine
       {
 // Er, let's see, I can write a wrapper class, or use mono-specific
 // wrappers, or I can just give up. :)
-#if USE_POSTGRESQL
+#if USE_SQLITE
+         // Postgres ":variable" instead of the more-common "@variable"
+         // Boo!
+         string query = 
+            "UPDATE settings "
+            + " SET compression = '" + _StripEvil(xml) + "'"
+            ;
+
+#elif USE_POSTGRESQL
          // Postgres ":variable" instead of the more-common "@variable"
          // Boo!
          string query = 
             "UPDATE settings "
             + " SET compression = :compression"
             ;
-
-         IDbDataParameter param = 
-            new NpgsqlParameter( "compression",
-                                 DbType.String );
 #else
 #error I am very lazy, please code this up
 #endif
@@ -396,8 +417,14 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
+
+#if USE_POSTGRESQL
+            IDbDataParameter param = 
+               new NpgsqlParameter( "compression",
+                                    DbType.String );
             param.Value = xml;
             cmd.Parameters.Add( param );
+#endif
 
             cmd.ExecuteNonQuery();
             return;
@@ -771,7 +798,7 @@ namespace byteheaven.tamjb.Engine
             "SELECT file_path, artist, album, title, track," +
             + " genre, length_seconds" 
             + " FROM file_info"
-            + " WHERE filekey = " + key
+            + " WHERE filekey = " + key 
             ;
 
          uint value;
@@ -783,6 +810,7 @@ namespace byteheaven.tamjb.Engine
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
+
             reader = cmd.ExecuteReader();
 
             PlayableData returnData;
@@ -891,9 +919,11 @@ namespace byteheaven.tamjb.Engine
       }
 
       // This allows single-tics ("'") because they are filtered separately
-      // by tickRegex.
-      Regex _invalidCharRegex = new Regex( "[^\\'A-Za-z /!@#$%^&*()-_+=?~]" );
-      Regex _tickRegex = new Regex( "'" );
+      // by tickRegex. (this is far from inclusive, I know I know...)
+      Regex _invalidCharRegex = 
+         new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
+
+      // Regex _tickRegex = new Regex( "'" );
 
       ///
       /// Removes any special chars from the supplied string, to
@@ -908,10 +938,18 @@ namespace byteheaven.tamjb.Engine
       ///
       string _StripEvil( string impureString )
       {
-         string firstResult = _invalidCharRegex.Replace( impureString, " " );
-         string secondResult = _tickRegex.Replace( firstResult, "''" );
+         // string firstResult = _invalidCharRegex.Replace( impureString, " " );
+         // string secondResult = _tickRegex.Replace( firstResult, "''" );
 
-         return secondResult;
+         // First escape any escape characters in thestring
+         string pure = _invalidCharRegex.Replace( impureString, " " );
+
+         pure = pure.Replace( "\\", "\\\\" );
+
+         // Second, escape any single ticks
+         pure = pure.Replace( "'", "''" ); 
+
+         return pure;
       }
 
       ///
@@ -1059,12 +1097,20 @@ namespace byteheaven.tamjb.Engine
 
          StringBuilder query = new StringBuilder( "" );
 
+         // To INTERSECT both queries, we need a wrapping SELECT for
+         // the stupider database engines (SQLite)
+         bool needIntersect = (null != cred && null != mood);
+         
+
+         if (needIntersect)
+            query.Append( "SELECT * FROM (\n" );
+         
          // Add user-suck filters
          if (null != cred)
             query.Append( _BuildPartialQuerySuck( cred, suckThreshold ) );
 
-         if (null != cred && null != mood)
-            query.Append( " INTERSECT " );
+         if (needIntersect)
+            query.Append( "\n ) as suck_subquery\n INTERSECT " );
          
          // Add mood filters
          if (null != mood)
@@ -1080,7 +1126,7 @@ namespace byteheaven.tamjb.Engine
                                      int suckThreshold )
       {
          string query = 
-            "( SELECT song_suck.track_ref\n"
+            "SELECT song_suck.track_ref\n"
             + " FROM song_suck\n"
             + " WHERE song_suck.user_id = " + cred.id
             + " AND song_suck.value <= " + suckThreshold
@@ -1088,7 +1134,7 @@ namespace byteheaven.tamjb.Engine
             + "SELECT file_info.filekey\n"
             + " FROM file_info\n"
             + " WHERE file_info.filekey NOT IN \n"
-            + " ( SELECT song_suck.track_ref from song_suck ) )"
+            + " ( SELECT song_suck.track_ref from song_suck )"
             ;
 
          return query.ToString();
@@ -1105,7 +1151,7 @@ namespace byteheaven.tamjb.Engine
          // free of suck.
 
          string query = 
-            "( SELECT song_mood.track_ref\n"
+            "SELECT song_mood.track_ref\n"
             + " FROM song_mood\n"
             + " WHERE song_mood.mood_id = " + mood.id + "\n"
             + " AND song_mood.value <= " + moodThreshold + "\n"
@@ -1113,7 +1159,7 @@ namespace byteheaven.tamjb.Engine
             + "SELECT file_info.filekey\n"
             + " FROM file_info\n"
             + " WHERE file_info.filekey NOT IN \n"
-            + " ( SELECT song_mood.track_ref from song_mood ) )"
+            + " ( SELECT song_mood.track_ref from song_mood )"
             ;
 
          return query.ToString();
@@ -1383,8 +1429,8 @@ namespace byteheaven.tamjb.Engine
          // header info:
          string query = 
             "SELECT count(*) FROM file_info " +
-            "  WHERE file_path = '" + _StripEvil( fullPath ) + "'" +
-            "  ;";
+            "  WHERE file_path = '" + _StripEvil( fullPath ) + "'"
+            ;
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -1393,6 +1439,12 @@ namespace byteheaven.tamjb.Engine
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
+
+//             IDbDataParameter param = cmd.CreateParameter();
+//             param.DbType = DbType.String;
+//             param.ParameterName = "@file_path";
+//             param.Value = fullPath;
+//             cmd.Parameters.Add( param );
 
             // Returns the first parameter, the number of rows:
             object countObj = cmd.ExecuteScalar();

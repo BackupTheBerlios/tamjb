@@ -55,10 +55,28 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
+      ///
+      /// default constructor for creating uninitialized instances
+      ///
+      public Credentials()
+      {
+         _name = "";
+         _id = 0;
+      }
+
       public Credentials( string name, uint id )
       {
          _name = name;
          _id = id;
+      }
+
+      //
+      // Non-reference assignment operator.
+      //
+      public void Copy( Credentials other )
+      {
+         _name = other._name;
+         _id = other._id;
       }
 
       string _name;

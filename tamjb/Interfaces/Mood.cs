@@ -56,10 +56,25 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
+      ///
+      /// default constructor for creating uninitialized instances
+      ///
+      public Mood()
+      {
+         _name = "";
+         _id = 0;
+      }
+
       public Mood( string name, uint id )
       {
          _name = name;
          _id = id;
+      }
+      
+      public void Copy( Mood other )
+      {
+         _name = other._name;
+         _id = other._id;
       }
 
       string _name;

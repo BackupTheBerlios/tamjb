@@ -30,6 +30,7 @@ namespace byteheaven.tamjb.GtkPlayer
    using System.Collections;
    using System.Collections.Specialized;
    using System.Diagnostics;
+   using System.Reflection;
    using System.Runtime.Remoting;
    using System.Runtime.Remoting.Channels;
    using System.Runtime.Remoting.Channels.Http;
@@ -38,15 +39,14 @@ namespace byteheaven.tamjb.GtkPlayer
    using Gtk;
    using GtkSharp;
 
-   // Need to include things that would  normally be hidden to get
-   // the data structs they use. Should these be moved into the global
-   // namespace to make them available at the "tam" namespace scope?
-   
+   using byteheaven.tamjb.Interfaces;
+
    ///
    /// Gtk# frontend to TamJB -- main program
    ///
-   public class EntryPoint
+   public class PlayerApp
    {
+      [MTAThread]
       static void Main( string [] args )
       {
          try
@@ -72,10 +72,6 @@ namespace byteheaven.tamjb.GtkPlayer
             
             Application.Init ();
 
-            // Old:
-            // MainWnd player = new MainWnd();
-            // player.Show();
-
             // New:
             GtkPlayer gtkPlayer = new GtkPlayer();
 
@@ -100,6 +96,87 @@ namespace byteheaven.tamjb.GtkPlayer
 
          // If any stray threads are around, deal with it here.
       }
-   }
 
+      public static IEngine backend
+      {
+         get
+         {
+            if (null == _backendProxy)
+            {
+               if (_runLocal)
+               {
+                  _backendProxy = _CreateLocalEngine();
+               }
+               else
+               {
+                  // TODO: the backend could be instantiated in-process
+                  //   if we don't care about running it as a daemon.
+                  _backendProxy = 
+                     (IEngine) Activator.GetObject( typeof(IEngine), 
+                                                    _serverUrl );
+               }
+            }
+
+            return _backendProxy;
+         }
+      }
+
+      public static string serverUrl 
+      {
+         get
+         {
+            return _serverUrl;
+         }
+
+         set
+         {
+            // Set to null to force new connection on the next retrieval:
+            _backendProxy = null;
+
+            _serverUrl = value;
+         }
+      }
+
+      ///
+      /// Create a backend and scanner locally instead of remotely
+      ///
+      /// \todo Store engine parameters in the database (and then 
+      ///   perhaps move this function etc into the GUI part of the player.)
+      ///
+      static IEngine _CreateLocalEngine()
+      {
+         // Assembly id3 = Assembly.LoadWithPartialName( "byteheaven.id3" );
+         Assembly engineAssembly = 
+            Assembly.LoadWithPartialName( "tamjb.Engine" );
+         
+         Type type = Type.GetType( 
+            "byteheaven.tamjb.Engine.RecursiveScanner,tamjb.Engine" );
+         object [] args = new object[1];
+         args[0] = "/";
+         IRecursiveScanner scanner = 
+            (IRecursiveScanner)Activator.CreateInstance( type, args );
+
+         type = Type.GetType( 
+            "byteheaven.tamjb.Engine.Backend,tamjb.Engine" );
+         args = new object[2];
+         args[0] = (int)5; //QUEUE_MIN_SIZE;
+         args[1] = "foo"; // _connectionString;
+         _backendProxy = (IEngine)Activator.CreateInstance( type, args );
+         
+         return _backendProxy;
+      }
+
+
+      ///
+      /// Proxy object that references the server back end. If the
+      /// settings change, set this to null, and the accessor will know
+      /// to reconnect.
+      ///
+      static bool     _runLocal = false; // don't use remoting
+      static IEngine  _backendProxy = null;
+      static string   _serverUrl = "";
+
+
+
+   }
 }

@@ -25,7 +25,7 @@
 // Contacts:
 //   Tom Surace <tekhedd@byteheaven.net>
 
-namespace byteheaven.tamjb.Server
+namespace byteheaven.tamjb.Engine
 {
    using System;
    using System.Diagnostics;
@@ -33,19 +33,14 @@ namespace byteheaven.tamjb.Server
 
    using byteheaven.id3;
    using byteheaven.tamjb.Interfaces;
-   using byteheaven.tamjb.Engine;
-
-   enum ScanStatus
-   {
-      NOT_FINISHED,
-      FINISHED,
-   }
 
    ///
    /// Object that manages importing mp3 files from a directory tree
-   /// in the background.
+   /// in the background. This is not automatically created by the Engine,
+   /// but provided here for server processes to use.
    ///
-   class RecursiveScanner
+   public class RecursiveScanner
+      : IRecursiveScanner
    {
       /// 
       /// ID3 genre lookup table. 
@@ -113,7 +108,7 @@ namespace byteheaven.tamjb.Server
          _scanner =  new SubdirScanner( _rootDir );
       }
 
-      public ScanStatus DoNextFile( Backend engine )
+      public ScanStatus DoNextFile( IBackend engine )
       {
          return this.DoNextFile( 1, engine );
       }
@@ -126,7 +121,7 @@ namespace byteheaven.tamjb.Server
       ///
       /// \return FINISHED if no more subdirs have files
       ///
-      public ScanStatus DoNextFile( int nFiles, Backend engine )
+      public ScanStatus DoNextFile( int nFiles, IBackend engine )
       {
          // You must be "this old" to be inserted:
          TimeSpan minAge = new TimeSpan( 0, 0, 15 /* seonds */ );
@@ -162,7 +157,7 @@ namespace byteheaven.tamjb.Server
       /// \todo Create a pluggable interface to extract the file info
       ///   from various file types, not just mp3
       ///
-      void _UpdateMP3FileInfo( string path, Backend engine )
+      void _UpdateMP3FileInfo( string path, IBackend engine )
       {
          // Get ID3 tags from the file
 
@@ -228,6 +223,8 @@ namespace byteheaven.tamjb.Server
    }
 
 
+   ///
+   /// A private helper class for the RecursiveScanner.
    ///
    /// \todo Should the root parameter be absolute?
    ///
