@@ -4,7 +4,7 @@
 
 # binary/source package info
 PACKAGE_DIR=tamjb-snapshot
-PACKAGE_TAG=SNAPSHOT_12_05_2004
+PACKAGE_TAG=SNAPSHOT_2004_05_14
 LIBDIR="../lib"
 
 mkdir $PACKAGE_DIR
