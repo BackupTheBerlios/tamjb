@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2005 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -45,11 +45,23 @@ namespace byteheaven.tamjb.Engine
    /// A simple average-power based compressor using exponential
    /// decay based attack/release (so it tends to click if it's
    /// too aggressive). With soft clipping based on antilog (1/x)
-   /// based nonlinearity.
+   /// based nonlinearity. ("Asympote!" "What did you just call me?")
    ///
    public class Compressor
       : IAudioProcessor
    {
+      ///
+      /// Maximum value for the compressPredelay value. (samples)
+      ///
+      public readonly static uint MAX_PREDELAY = 88;
+
+      public Compressor()
+      {
+         // Initially select 1/2 millisecond for the delay as a default.
+         _leftFifo.delay = 22;
+         _rightFifo.delay = 22;
+      }
+
       ///
       /// Process this buffer.
       ///
@@ -123,21 +135,34 @@ namespace byteheaven.tamjb.Engine
             correction = (correction * _compressRatio) 
                + (1.0 - _compressRatio);
 
+            // Store samples to circular buffer, and save here.
+            // Note that the lookahead is hardcoded and you're stuck
+            // with it. :) 
+            // Use the returned value from the circular buffer as the
+            // current value. This introduces a delay, naturally.
+
             // Write new values to the samples: left
 
             long sample = (long)_SoftClip( left * correction );
+            sample = _leftFifo.Push( sample );
             buffer[offset]     = (byte)(sample & 0xff);
             buffer[offset + 1] = (byte)(sample >> 8);
 
             // Now the right!
 
             sample = (long)_SoftClip( right * correction );
+            sample = _rightFifo.Push( sample );
             buffer[offset + 2] = (byte)(sample & 0xff);
             buffer[offset + 3] = (byte)(sample >> 8);
 
+            // Now your left!
+
+            // No, that's your right.
+
+            // (Aqua Teen Rules!)
+
             offset += 4;
          }
-
       }
 
       double _SoftClip( double original )
@@ -266,6 +291,23 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
+      /// This controls how much in advance of the beat the attack
+      /// may occur.
+      ///
+      public uint compressPredelay
+      {
+         get
+         {
+            return _leftFifo.delay;
+         }
+         set
+         {
+            _leftFifo.delay = value;
+            _rightFifo.delay = value;
+         }
+      }
+
+      ///
       /// Compress threshold as a 16-bit unsigned int. 
       ///
       public int clipThreshold
@@ -341,5 +383,13 @@ namespace byteheaven.tamjb.Engine
       //
       double _decayingAveragePower = (float)32767.0;
 
+      ///
+      /// The short delay used to allow the compressor attack to precede
+      /// the actual event that caused it, allowing negative delay.
+      ///
+      // Note: the fifo is initially filled with 0, which is silence
+      //       with signed 16-bit samples. :)
+      SampleFifo _leftFifo = new SampleFifo( MAX_PREDELAY, 0 );
+      SampleFifo _rightFifo = new SampleFifo( MAX_PREDELAY, 0 );
    }
 }

@@ -146,6 +146,8 @@ namespace byteheaven.tamjb.Interfaces
       double compressDecay { get; set; }
       int compressThreshold { get; set; }
       double compressRatio{ get; set; }
+      uint compressPredelay{ get; set; }
+      uint compressPredelayMax{ get; }
 
       int gateThreshold{ get; set; }
 

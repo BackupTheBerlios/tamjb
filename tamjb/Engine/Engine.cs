@@ -189,6 +189,32 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
+      /// Predelay (negative delay on attack)
+      ///
+      public uint compressPredelay
+      {
+         get
+         {
+            return Backend.theBackend.compressPredelay;
+         }
+         set
+         {
+            Backend.theBackend.compressPredelay = value;
+         }
+      }
+
+      ///
+      /// Predelay (negative delay on attack)
+      ///
+      public uint compressPredelayMax
+      {
+         get
+         {
+            return Backend.theBackend.compressPredelayMax;
+         }
+      }
+
+      ///
       /// Input level gate threshold (0-32767). Probably should be
       /// less than the compress threshold. :)
       ///

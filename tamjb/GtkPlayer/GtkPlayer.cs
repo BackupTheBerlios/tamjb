@@ -230,6 +230,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       void _OnDelete( object sender, DeleteEventArgs delArgs )
       {
+         _Trace( "[_OnDelete]" );
          Application.Quit();
       }
 

@@ -10,11 +10,17 @@ TODO
 
    Error reporting (eek!)
 
+ - Compressor presets
+
+   The damn thing is very technical. This is good, if you're me, but probably
+   bad if you're not. :) Must add presets so I can share my favorite settings
+   with the two other people in the world that use this program.
+
  - Fix memory leak
 
    Much of the memory bloat and leakage seems to have gone away with
    a build against mono 1.1.4. Perhaps it isn't the tamjb code after
-   all.
+   all. Supposedly 1.1.5 fixes the "growing heap" problem...
 
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
@@ -27,6 +33,8 @@ TODO
  - Display the mp3 bitrate 
 
  - Add support for monophonic mp3 files
+
+ - Add support for ogg/vorbis, WAV, and losslessly-compressed files
 
  - Calculate average song volume and store for later level adjustment
 
@@ -49,6 +57,9 @@ TODO
 
 
 DONE
+  Added a predelay option to the compressor to make the attacks a bit less
+  "pop" prone on faster attack settings. Works OK.
+
  - Tue Dec  7 18:07:55 PST 2004
 
   Save the current logged in user in the database (should remember who was

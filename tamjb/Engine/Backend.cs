@@ -984,6 +984,48 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
+      public uint compressPredelayMax
+      {
+         get
+         {
+            return Compressor.MAX_PREDELAY;
+         }
+      }
+
+      ///
+      /// Compress predelay (in milliseconds. Should not be more than
+      /// compressPredelayMax, or less than 0).
+      ///
+      public uint compressPredelay
+      {
+         get
+         {
+            return _compressor.compressPredelay;
+         }
+         set
+         {
+            _Lock();
+            try
+            {
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressPredelay = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
+
+               _StoreCompressSettings();
+            }
+            finally
+            {
+               _Unlock();
+            }
+         }
+      }
+
       ///
       /// Calculate average power of this buffer, and update any 
       /// decaying means or whatever.

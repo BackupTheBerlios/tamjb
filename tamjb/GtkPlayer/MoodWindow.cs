@@ -211,7 +211,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                ButtonsType.Close, 
                                "Delete User - not implemented" );
          
-         int result = md.Run ();
+         md.Run ();
       }
 
       void _OnMoodDelete( object sender, EventArgs args )
@@ -223,7 +223,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                ButtonsType.Close, 
                                "Delete Mood - not implemented" );
          
-         int result = md.Run ();
+         md.Run ();
       }
 
       void _OnUserCopy( object sender, EventArgs args )
@@ -235,7 +235,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                ButtonsType.Close, 
                                "Copy User - not implemented" );
          
-         int result = md.Run ();
+         md.Run ();
       }
 
       void _OnMoodCopy( object sender, EventArgs args )
@@ -247,7 +247,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                ButtonsType.Close, 
                                "Copy Mood - not implemented" );
          
-         int result = md.Run ();
+         md.Run ();
       }
 
       ///

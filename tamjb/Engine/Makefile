@@ -9,7 +9,8 @@ SOURCES = AssemblyInfo.cs \
         Engine.cs \
         LocalFileDatabase.cs \
         MyRandom.cs \
-        RecursiveScanner.cs
+        RecursiveScanner.cs \
+        SampleFifo.cs
 
 #
 # Choose your database

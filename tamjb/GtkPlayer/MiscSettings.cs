@@ -91,6 +91,12 @@ namespace byteheaven.tamjb.GtkPlayer
          _gateThresholdScale.Value = _backend.gateThreshold;
 
          _clipThresholdScale.Value = _backend.clipThreshold;
+
+         // Convert from samples to seconds. Note that this assumes
+         // 44.1 samples per second. Approximately. :)
+         _Trace( " backend:" + _backend.compressPredelay );
+         _predelayScale.Value = 
+            ((double)_backend.compressPredelay) / 44.0;
       }
 
       void _OnClose( object sender, EventArgs args )
@@ -231,6 +237,36 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
+      void _OnPredelayChanged( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_OnPredelayChanged]" );
+
+            // Predelay is when the compressor begins to compensate for
+            // a change in levels _before_ the sound happens. Predelay
+            // is also not the proper name for this.
+
+            // The value is displayed in milliseconds. So...
+            uint delayInSamples = (uint)(_predelayScale.Value * 44.0);
+
+            // Limit the range
+            if (delayInSamples < 0)
+               delayInSamples = 0;
+
+            if (delayInSamples > _backend.compressPredelayMax)
+               delayInSamples = _backend.compressPredelayMax;
+
+            if (_backend.compressPredelay != delayInSamples)
+               _backend.compressPredelay = delayInSamples;
+         }
+
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
       ///
       /// Compute the percent change from old to new, using old as the
       /// basis. Well, percent where 100% = 1.0
@@ -274,5 +310,7 @@ namespace byteheaven.tamjb.GtkPlayer
       [Glade.Widget]
       Scale  _clipThresholdScale;   
 
+      [Glade.Widget]
+      Scale  _predelayScale;
    }
 }
