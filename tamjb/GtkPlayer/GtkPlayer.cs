@@ -821,6 +821,19 @@ namespace byteheaven.tamjb.GtkPlayer
                   PlayerApp.mp3RootDir = config.mp3RootDir;
 
                   _settings.Store();
+
+                  if (config.needToCreateDatabase)
+                  {
+                     try
+                     {
+                        PlayerApp.CreateDatabase( PlayerApp.connectionString );
+                     }
+                     catch (Exception createProblem)
+                     {
+                        _Complain( "Could not create database",
+                                   createProblem );
+                     }
+                  }
                }
             }
             else
@@ -851,7 +864,8 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Trace( e.ToString() );
+            _Complain( "Something went wrong configuring or saving settings", 
+                       e );
          }
       }
 
@@ -1102,6 +1116,34 @@ namespace byteheaven.tamjb.GtkPlayer
          _statusBar.Pop( _statusId );
          _statusBar.Push( _statusId, msg );
          _statusBarPopTimeout = timeout / 2; // 2 second poll interval
+      }
+
+      ///
+      /// A function to call when you want the user to know how
+      /// annoyed you are with the failings of some third party 
+      /// software, or of his input.
+      ///
+      /// \param msg Describes generally what went you were trying to
+      ///   do that failed ("Could not create file")
+      /// \param e The exception you got.
+      ///
+      /// \todo Implement this as something nicer than a stupid 
+      ///   MessageBox
+      ///
+      void _Complain( string msg, Exception e )
+      {
+         // Dump details to log for posterity
+         _Trace( msg );
+         _Trace( e.ToString() );
+
+         MessageDialog md = 
+            new MessageDialog( _mainWindow, 
+                               DialogFlags.Modal,
+                               MessageType.Error,
+                               ButtonsType.Ok, 
+                               msg );
+         md.Run();
+         md.Destroy();
       }
 
       void _Trace( string msg )

@@ -23,6 +23,9 @@ TODO
 
  - Implement delete/copy user/mood
 
+ - Drop songs from future part of playlist if they are flagged as suck or
+   something.
+
  - Add support for mono mp3 files
 
  - Calculate average song volume and store for later level adjustment

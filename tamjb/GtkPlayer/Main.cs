@@ -120,32 +120,30 @@ namespace byteheaven.tamjb.GtkPlayer
          get
          {
             if (null == _backendProxy)
-            {
-               if (_runLocal)
-               {
-                  object backend = _CreateLocalEngine();
-                  _backendProxy = (IEngine)backend;
-                  _backendInterface = (IBackend)backend;
-
-                  // Set up the configurable parameters. :)
-                  _backendInterface.desiredQueueSize = 6;
-                  _backendInterface.bufferCount = 20;
-                  _backendInterface.bufferPreload = 20;
-                  _backendInterface.bufferSize = 8192;
-               }
-               else
-               {
-                  // TODO: the backend could be instantiated in-process
-                  //   if we don't care about running it as a daemon.
-                  _backendProxy = 
-                     (IEngine) Activator.GetObject( typeof(IEngine), 
-                                                    _serverUrl );
-               }
-            }
+               _Connect();
 
             return _backendProxy;
          }
       }
+
+      static IBackend backendInterface
+      {
+         get
+         {
+            if (null == _backendProxy)
+            {
+               if (!_runLocal)
+               {
+                  throw new ApplicationException( 
+                     "Can't create IBackend object with remote connection" );
+               }
+               _Connect();
+            }
+
+            return _backendInterface;
+         }
+      }
+
 
       public static bool isStandalone
       {
@@ -200,7 +198,39 @@ namespace byteheaven.tamjb.GtkPlayer
             else
                _connectionString = value;
 
+          
+            if (null != _backendInterface)
+               _backendInterface.ShutDown();
+               
             _backendProxy = null; // force reload of backend
+            _backendInterface = null;
+         }
+      }
+
+      ///
+      /// Connect to the back end, or create local engine object if
+      /// not running client-server
+      ///
+      static void _Connect()
+      {
+         if (_runLocal)
+         {
+            object backend = _CreateLocalEngine();
+            _backendProxy = (IEngine)backend;
+            _backendInterface = (IBackend)backend;
+            
+            // Set up the configurable parameters. :) Should not be
+            // hardcoded, OK?
+            _backendInterface.desiredQueueSize = 6;
+            _backendInterface.bufferCount = 20;
+            _backendInterface.bufferPreload = 20;
+            _backendInterface.bufferSize = 8192;
+         }
+         else
+         {
+            _backendProxy = 
+               (IEngine) Activator.GetObject( typeof(IEngine), 
+                                              _serverUrl );
          }
       }
 
@@ -253,9 +283,6 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       public static void ScanForFiles()
       {
-         if (null == _backendInterface)
-            return;
-
          // Don't bother if no mp3 dirs are configured
          if (null != _mp3RootDir)
          {
@@ -269,7 +296,7 @@ namespace byteheaven.tamjb.GtkPlayer
                   
             Debug.Assert( _scanner != null, "logic error" );
             
-            if (_scanner.DoNextFile(5, _backendInterface) 
+            if (_scanner.DoNextFile(5, backendInterface) 
                 == ScanStatus.FINISHED)
             {
                Trace.WriteLine( "Scan Finished" );
@@ -278,14 +305,18 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
+      public static void CreateDatabase( string connectionString )
+      {
+         backendInterface.CreateDatabase( connectionString );
+      }
+
       ///
       /// Don't call this if you are running as a client to a remote
       /// engine, because it will simply throw an exception.
       ///
       public static void PollBackend()
       {
-         if (_runLocal && (null != _backendInterface))
-            _backendInterface.Poll();
+         backendInterface.Poll();
       }
 
       ///

@@ -28,6 +28,7 @@ namespace byteheaven.tamjb.GtkPlayer
    using System.Collections;
    using System.Collections.Specialized;
    using System.Diagnostics;
+   using System.IO;
    using System.Runtime.Remoting;
    using System.Runtime.Remoting.Channels;
    using System.Runtime.Remoting.Channels.Http;
@@ -65,6 +66,14 @@ namespace byteheaven.tamjb.GtkPlayer
          get
          {
             return _mp3RootDir;
+         }
+      }
+
+      public bool needToCreateDatabase
+      {
+         get
+         {
+            return _needToCreate;
          }
       }
 
@@ -110,6 +119,32 @@ namespace byteheaven.tamjb.GtkPlayer
                _database = _databaseEntry.Text;
                _mp3RootDir = _mp3RootDirEntry.Text;
 
+               // Complain if the mp3 root dir doesn't exist.
+               DirectoryInfo mp3DirInfo = new DirectoryInfo( _mp3RootDir );
+               if (!mp3DirInfo.Exists)
+               {
+                  MessageDialog md = 
+                     new MessageDialog( _localConfigDialog, 
+                                        DialogFlags.Modal,
+                                        MessageType.Error,
+                                        ButtonsType.Ok, 
+                                        ("Directory '" + _mp3RootDir 
+                                         + "' does not exist") );
+                  md.Run();
+                  md.Destroy();
+                  return;
+               }
+
+               // If the db file does not exist, create it. If necessary.
+               FileInfo dbInfo = new FileInfo( _database );
+               if (!dbInfo.Exists)
+               {
+                  // If we don't reate the file, quick exit here (keep
+                  // the dialog going)
+                  if (!_CreateDatabasePrompt( _database ))
+                     return;    
+               }
+
                // If we got here, the controls validated
                _localConfigDialog.Destroy();
                _isOk = true;
@@ -127,6 +162,58 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
+      bool _CreateDatabasePrompt( string filename )
+      {
+         string msg = "'" + filename + "' does not exist.\n"
+            + "Create a new database?";
+
+         // Confirm that this is really what we want (should not
+         // be hardcoded in English)
+         MessageDialog md = 
+            new MessageDialog( _localConfigDialog, 
+                               DialogFlags.Modal,
+                               MessageType.Question,
+                               ButtonsType.YesNo, 
+                               msg );
+  
+         ResponseType result = (ResponseType)md.Run();
+         md.Destroy();
+
+         if (result != ResponseType.Yes)
+            return false;
+
+         _needToCreate = true;
+         return true;           // it's OK
+      }
+                  
+
+      void _OnDatabaseBtnClick( object sender, EventArgs args )
+      {
+         FileSelection dlg = new FileSelection( "Enter Database Path" );
+         dlg.Filename = _databaseEntry.Text;
+         if ((ResponseType)dlg.Run() == ResponseType.Ok)
+            _databaseEntry.Text = dlg.Filename;
+
+         dlg.Destroy();
+      }
+
+      void _OnMp3BtnClick( object sender, EventArgs args )
+      {
+         FileSelection dlg = new FileSelection( "Enter Database Path" );
+         dlg.Filename = _mp3RootDirEntry.Text;
+         dlg.SelectionEntry.Text = ".";
+
+         // Try to make this into a directory selection dialog. :/
+         dlg.HideFileopButtons();
+         dlg.FileList.Parent.Visible = false;
+         dlg.SelectionEntry.Visible = false;
+
+         if ((ResponseType)dlg.Run() == ResponseType.Ok)
+            _mp3RootDirEntry.Text = dlg.Filename;
+
+         dlg.Destroy();
+      }
+
       void _Trace( string msg )
       {
          Trace.WriteLine( msg, "ConfigWindow" );
@@ -135,6 +222,9 @@ namespace byteheaven.tamjb.GtkPlayer
       bool _isOk = false;
       string _database;
       string _mp3RootDir;
+
+      // if true, we will attempt to creat the database file
+      bool _needToCreate = false; 
 
       [Glade.Widget]
       Dialog _localConfigDialog;

@@ -14,11 +14,11 @@ gui_wrapper=gtktamjb
 
 # These are copied to the gac
 
-install_files="Mp3Sharp.dll byteheaven.id3.dll esd-sharp.dll tamjb.SimpleMp3Player.dll id3helper.exe tamjb.GtkPlayer.exe tamjb.Server.exe"
+install_files="tamjb.Engine.dll tamjb.Interfaces.dll id3helper.exe tamjb.GtkPlayer.exe tamjb.Server.exe"
 
 # These are installed in (like) /usr/local/lib/tamjb
 
-lib_dlls="tamjb.Engine.dll tamjb.Interfaces.dll"
+lib_dlls="Mp3Sharp.dll byteheaven.id3.dll esd-sharp.dll tamjb.SimpleMp3Player.dll "
 
 for dll in $lib_dlls ; do
   echo "Registering ${dll}"

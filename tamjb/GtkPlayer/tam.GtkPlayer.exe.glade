@@ -1814,7 +1814,7 @@ Threshold</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
 		  <property name="invisible_char" translatable="yes">*</property>
-		  <property name="activates_default">False</property>
+		  <property name="activates_default">True</property>
 		</widget>
 		<packing>
 		  <property name="left_attach">1</property>
@@ -1830,6 +1830,7 @@ Threshold</property>
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <signal name="clicked" handler="_OnDatabaseBtnClick" object="this" last_modification_time="Wed, 25 Aug 2004 02:44:57 GMT"/>
 
 		  <child>
 		    <widget class="GtkAlignment" id="alignment12">
@@ -1885,6 +1886,7 @@ Threshold</property>
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <signal name="clicked" handler="_OnMp3BtnClick" object="this" last_modification_time="Wed, 25 Aug 2004 03:26:24 GMT"/>
 
 		  <child>
 		    <widget class="GtkAlignment" id="alignment11">
@@ -1945,7 +1947,7 @@ Threshold</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
 		  <property name="invisible_char" translatable="yes">*</property>
-		  <property name="activates_default">False</property>
+		  <property name="activates_default">True</property>
 		</widget>
 		<packing>
 		  <property name="left_attach">1</property>

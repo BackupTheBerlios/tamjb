@@ -34,6 +34,11 @@ namespace byteheaven.tamjb.Interfaces
    ///
    public interface IBackend
    {
+      int desiredQueueSize { get; set; }
+      uint bufferSize{ get; set; }
+      uint bufferCount{ get; set; }
+      uint bufferPreload{ get; set; }
+
       bool EntryExists( string fullPath );
       void Add( PlayableData newData );
       void Poll();
@@ -41,10 +46,6 @@ namespace byteheaven.tamjb.Interfaces
       // Kills all player threads and such so the program can exit
       void ShutDown();
 
-      int desiredQueueSize { get; set; }
-      uint bufferSize{ get; set; }
-      uint bufferCount{ get; set; }
-      uint bufferPreload{ get; set; }
-
+      void CreateDatabase( string connectionString );
    }
 }

@@ -333,6 +333,16 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
+      /// Create a new database in the given file (connection whatever)
+      ///
+      public void CreateDatabase( string connectionString )
+      {
+         StatusDatabase db = new StatusDatabase( connectionString );
+         db.CreateTablesIfNecessary();
+      }
+
+
+      ///
       /// Add a song at the end of the play queue.
       ///
       /// \return true if a song was enqueued, false if no songs
