@@ -66,6 +66,10 @@ Track Attribute Manager - Jukebox
    Define what is preferred in Engine/Makefile. Note that the huge memory
    leak reported previously seems to be SQLite-related. :(
 
+   New development is done using postgres, since SQLite seems to use
+   bigger chunks of processor time. With a bit of hacking, just about
+   any SQL database should work though.
+
    C# support for sqlite is built into mono at this point. You will need
    an actual sqlite binary though. The calls have been wrapped so
    you don't need to worry about building with thread-safe support. 
@@ -74,9 +78,6 @@ Track Attribute Manager - Jukebox
 
      Gentoo: sqlite-2.8.11
      Gentoo: postgresql-7.4.3
-
-   If you want to edit the database constructor or add multi-database 
-   support, any database provider should work.
 
 
  - esound, Esd#
@@ -91,8 +92,13 @@ Track Attribute Manager - Jukebox
    No license is supplied. I expect this to eventually be replaced
    with GStreamer (Gst#), but it does work quite nicely.
 
+   Update: I have asked about licensing, and the author is considering
+   choosing a license. I suppose this is progress of a sort.
+
 
  - Mp3Sharp (What, MORE third-party managed code?)
+
+   Mp3Sharp Rules!
 
    Available here:
 
@@ -176,10 +182,9 @@ Track Attribute Manager - Jukebox
 
  Client:
   Run tam.GtkPlayer.exe. It will connect to the server, which is by
-  default localhost:5432, because this is what I typed in while prototyping. 
-  This appears to also be the default MySQL port, which could be bad! Go
-  to the config dialog, and set the host and port to wherever you are running
-  the jukebox server.
+  default localhost:6543, because this is what I typed in while prototyping. 
+  If you used a different port, you will naturally have to configure it
+  in the configuration dialog.
 
 
 * BUGS
