@@ -17,7 +17,7 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 # -r tam.LocalFileDatabase
         
 REFS = -r Mp3Sharp \
-        -r EsdSharp
+        -r esd-sharp
 
 all: $(TARGET) CmdPlayer.exe
 

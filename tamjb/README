@@ -15,7 +15,8 @@ don't quote me on that.
 
  Someday, .NET will natively support lots of cool streaming interfaces
  in a cross-platform manner. Until then, we can decode the mp3 streams
- in managed code, using up most of the resources of a Pentium-III.
+ in managed code, using up most of the resources of a Pentium-III. Hey,
+ it sounds good, what more could you want?
 
  To build your own, you will need these tools:
 
@@ -62,7 +63,7 @@ don't quote me on that.
    
      http://amy.udd.htu.se/~malte/mono/esd/
 
-   Build it and make the assembly available as EsdSharp.dll
+   Known good: esd-sharp 0.1.2
 
 
  - mp3id3tagkonverter
@@ -107,8 +108,6 @@ don't quote me on that.
 
    Sometimes esd won't start. Watch the log file.
 
-   Of course, check the mailing list and/or bug database at sourceforge
-   for multitudes of other bug reports.
 
 
  

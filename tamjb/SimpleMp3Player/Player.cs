@@ -415,7 +415,7 @@ namespace tam.SimpleMp3Player
       ///
       static void _Mp3ReaderThread()
       {
-         Trace.WriteLine( "MP3> HELLO" );
+         Trace.WriteLine( "Hello", "MP3" );
 
          Thread audioThread = null;
          try
@@ -425,7 +425,7 @@ namespace tam.SimpleMp3Player
             ///    info etc etc. :/
             ///
             
-            Trace.WriteLine( "MP3> Starting esd" );
+            Trace.WriteLine( "Starting esd", "MP3" );
             ///
             /// \todo Exceptions won't propagate back to the parent 
             ///   thread. How do we indicate esd errors?
@@ -439,7 +439,7 @@ namespace tam.SimpleMp3Player
             // audioThread.Priority = ThreadPriority.BelowNormal;
             audioThread.Start();
 
-            Trace.WriteLine( "MP3> Entering main loop" );
+            Trace.WriteLine( "Entering main loop", "MP3" );
             _configMutex.WaitOne();
             while (true)
             {
@@ -451,7 +451,7 @@ namespace tam.SimpleMp3Player
                switch (_state)
                {
                case State.STOP:
-                  Trace.WriteLine( "MP3> STOP" );
+                  Trace.WriteLine( "STOP", "MP3" );
                   
                   // Wait until the parent wakes us up.
                   _configMutex.ReleaseMutex();
@@ -464,7 +464,7 @@ namespace tam.SimpleMp3Player
                   break;
                   
                case State.PLAY_FILE_REQUEST:
-                  Trace.WriteLine( "MP3> PLAY_FILE_REQUEST" );
+                  Trace.WriteLine( "PLAY_FILE_REQUEST", "MP3" );
                   
                   if (_bufferSizeChanged)
                   {
@@ -476,13 +476,13 @@ namespace tam.SimpleMp3Player
                         {
                            // If this happened, we probably want to kill the
                            // audio thread and restart esd. :(
-                           throw new ApplicationException( "MP3> Timed out waiting for the audio mutex" );
+                           throw new ApplicationException( "Timed out waiting for the audio mutex" );
                         }
 
                         ///
                         /// \todo Set sample rate here as well
                         ///
-                        Trace.WriteLine( "creating buffers!" );
+                        Trace.WriteLine( "creating buffers!", "MP3" );
                         _CreateBuffers();
                         _underflowEvent.Set();
                         _bufferSizeChanged = false; // no longer
@@ -502,7 +502,7 @@ namespace tam.SimpleMp3Player
                   break;
                   
                case State.PLAYING:
-                  // Trace.WriteLine( "MP3> PLAYING" );
+                  // Trace.WriteLine( "MP3> PLAYING", "MP3" );
                   
                   // Wait for a free audio buffer
                   Buffer buffer = _WaitForAndPopFreeBuffer();
@@ -526,7 +526,8 @@ namespace tam.SimpleMp3Player
                      // and recreate the Mp3Stream to get it working again
                      // here.
                      Trace.WriteLine( "Problem Reading from MP3:" 
-                                        + e.ToString() );
+                                        + e.ToString(), 
+                                      "MP3" );
 
                      // Flag the stream as finished. Heh!
                      buffer.validBytes = 0;
@@ -563,7 +564,7 @@ namespace tam.SimpleMp3Player
                   break;
                   
                case State.SHUTDOWN_REQUEST:
-                  Trace.WriteLine( "MP3> SHUTDOWN_REQUEST" );
+                  Trace.WriteLine( "SHUTDOWN_REQUEST", "MP3" );
                   _configMutex.ReleaseMutex();
                   // Handle cleanup in the "finally" block
                   return;
@@ -591,7 +592,7 @@ namespace tam.SimpleMp3Player
             if (null != _estream)
                _estream.Close();
 
-            Trace.WriteLine( "MP3> bye" );
+            Trace.WriteLine( "bye", "MP3" );
          }
       }
 
@@ -826,7 +827,16 @@ namespace tam.SimpleMp3Player
 
             try
             {
-               _estream.Write( buffer.mp3Buffer, 0, buffer.validBytes );
+               int toWrite = buffer.validBytes;
+               int written = 0;
+               while (toWrite > 0)
+               {
+                  written = _estream.Write( buffer.mp3Buffer, 
+                                            written, 
+                                            toWrite );
+
+                  toWrite -= written;
+               }
             }
             finally
             {
