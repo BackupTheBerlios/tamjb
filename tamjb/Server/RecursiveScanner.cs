@@ -131,14 +131,28 @@ namespace tam.Server
       ///
       public ScanStatus DoNextFile( int nFiles )
       {
+         // You must be "this old" to be inserted:
+         TimeSpan minAge = new TimeSpan( 0, 0, 15 /* seonds */ );
+
          string next;
          for (int i = 0; i < nFiles; i++)
          {
             if (! _scanner.GetNext( out next ))
                return ScanStatus.FINISHED;
 
-            if (next.ToLower().EndsWith( "mp3"))
+            // If this file is stil being copied, the id3 tag will not
+            // be there yet (cause it's at the end of the file). Wait
+            // until the file has not been modified for "n" seconds.
+
+            DateTime lastModified = File.GetLastWriteTime( next );
+            if ((DateTime.Now - lastModified) < minAge) // too young?
+            {
+               _Trace( "Too young: '" + next + "'" );
+            }
+            else if (next.ToLower().EndsWith( "mp3"))
+            {
                _UpdateMP3FileInfo( next );
+            }
          }
 
          return ScanStatus.NOT_FINISHED;
@@ -176,7 +190,7 @@ namespace tam.Server
 
          if (! _engine.EntryExists( path )) 
          {
-            Trace.WriteLine( "add> " + path );
+            _Trace( "adding '" + path + "'" );
 
             PlayableData data = new PlayableData();
             data.filePath = path;
@@ -188,6 +202,11 @@ namespace tam.Server
             data.lengthInSeconds = 0; // unknown, ID3 tag doesn't know
             _engine.Add( data );
          }
+      }
+
+      static void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "RecursiveScanner" );
       }
 
       string         _rootDir;
