@@ -1,0 +1,31 @@
+#!/sbin/runscript
+# $Id$
+
+# Init script for gentoo (requires conf.d/tamjb for variables, and
+# so on
+
+
+depend() {
+        use dotnet
+}
+
+start() {
+        ebegin "Starting tamjb"
+        # (Note raised priority--don't want anything interrupting my groove!
+        #  --make-pidfile --pidfile $TAMJB_PIDFILE 
+        start-stop-daemon \
+          -N $TAMJB_NICE_LEVEL \
+          --start \
+         --background \
+          --pidfile=$TAMJB_PIDFILE \
+          --exec $TAMJB -- $TAMJBOPTIONS
+        eend $?
+}
+
+stop() {
+        ebegin "Stopping tamjb"
+        #start-stop-daemon --stop --exec $TAMJB
+        start-stop-daemon --signal 2 --stop --make-pidfile --pidfile $TAMJB_PIDFILE
+        eend $?
+}
+
