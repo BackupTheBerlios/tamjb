@@ -63,6 +63,18 @@ namespace tam.GtkPlayer
       ///
       public GtkPlayer()
       {
+         //
+         // With the null first parameter, this callw ill try to load
+         // our resources as if they were compiled in. Which they are.
+         // Right?
+         //
+         Glade.XML glade = new Glade.XML( null,
+                                          "tam.GtkPlayer.exe.glade",
+                                          "GtkPlayer",
+                                          null );
+
+         glade.Autoconnect( this );
+
          try
          {
             _settings = PlayerSettings.Fetch();
@@ -76,16 +88,6 @@ namespace tam.GtkPlayer
             _settings.serverName = "localhost";
             _settings.serverPort = 5432;
          }
-
-         ///
-         /// \todo Retrieve the glade resources from our assembly.
-         ///
-         Glade.XML glade = new Glade.XML( null,
-                                          "tam.GtkPlayer.exe.glade",
-                                          "GtkPlayer",
-                                          null );
-
-         glade.Autoconnect( this );
 
          _SetUpControls();
 
