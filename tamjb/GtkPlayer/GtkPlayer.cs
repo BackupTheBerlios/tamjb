@@ -300,6 +300,9 @@ namespace tam.GtkPlayer
                   _appropriateValue = appropriateLevel;
                }
             }
+
+            _isSuckActiveBtn.Active = _isSuckActive;
+            _isAppropriateActive1Btn.Active = _isAppropriateActive;
          }
          
          _UpdateHistoryView();
