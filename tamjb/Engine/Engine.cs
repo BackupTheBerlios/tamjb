@@ -792,18 +792,17 @@ namespace byteheaven.tamjb.Engine
 
             // For inf:1 compression, use "offset", otherwise
             // use this ratio to get other ratios:
-            // correction *= RATIO;
+            correction *= RATIO;
 
-            // Compress the values
+            // Write new values to the samples: left
 
-            long sample;
-            sample = (long)(left * correction);
-
+            long sample = (long)_SoftClip( left * correction );
             buffer[offset]     = (byte)(sample & 0xff);
             buffer[offset + 1] = (byte)(sample >> 8);
 
-            sample = (long)(right * correction);
+            // Now the right!
 
+            sample = (long)_SoftClip( right * correction );
             buffer[offset + 2] = (byte)(sample & 0xff);
             buffer[offset + 3] = (byte)(sample >> 8);
 
@@ -811,12 +810,37 @@ namespace byteheaven.tamjb.Engine
          }
 
          ++ _spew;
-         if (_spew > 10)
+         if (_spew > 25)
          {
             _spew = 0;
             _Trace( "POWER: " + _decayingAveragePower
                     + ", SCALE: " + correction);
          }
+      }
+
+      double _SoftClip( double original )
+      {
+         if (original > CLIP_THRESHOLD) // Soft-clip 
+         {
+            Console.WriteLine( "CLIP-R" );
+
+            if (original > 0)
+            {
+               // Unsophisticated asympotic clipping algorithm
+               // I came up with in the living room in about 15 minutes.
+               return (CLIP_THRESHOLD +
+                       (CLIP_LEFTOVER * (1 - (CLIP_THRESHOLD / original)))); 
+            }
+            else
+            {
+               // Unsophisticated asympotic clipping algorithm
+               // I came up with in the living room in about 15 minutes.
+               return -(CLIP_THRESHOLD -
+                        (CLIP_LEFTOVER * (1 + (CLIP_THRESHOLD / original)))); 
+            }
+         }
+
+         return original;
       }
 
       ///
@@ -830,7 +854,7 @@ namespace byteheaven.tamjb.Engine
       /// Level below which we stop compressing and start
       /// expanding (if possible)
       ///
-      static readonly double GATE_LEVEL = 150.0;
+      static readonly double GATE_LEVEL = 350.0;
 
       /// 
       /// Compression ratio where for n:1 compression, 
@@ -855,6 +879,11 @@ namespace byteheaven.tamjb.Engine
 
       static readonly double DECAY_RATIO_NEW = 0.000001;
       static readonly double DECAY_RATIO_OLD = 0.999999;
+
+      // Sample value for start of soft clipping. Leftover must
+      // be 32767 - CLIP_THRESHOLD.
+      static readonly double CLIP_THRESHOLD = 17000.0;
+      static readonly double CLIP_LEFTOVER =  15768.0;
 
       ///
       /// Calculate average power of this buffer, and update any 
@@ -905,13 +934,13 @@ namespace byteheaven.tamjb.Engine
             (_decayingAveragePower * 0.9) +
             (rms * 0.1);
 
-         ++ _spew;
-         if (_spew > 10)
-         {
-            _spew = 0;
-            _Trace( "DECAY: " + _decayingAveragePower 
-                    + "RMS: " + rms );
-         }
+//          ++ _spew;
+//          if (_spew > 10)
+//          {
+//             _spew = 0;
+//             _Trace( "DECAY: " + _decayingAveragePower 
+//                     + "RMS: " + rms );
+//          }
       }
 
       ///

@@ -335,9 +335,9 @@ namespace byteheaven.id3
          case "TIT1":           // song category thingy
          case "TIT3":           // Song refinement (op3)
             // Note: "GEOB" frames include a mime type and are frequently HUGE
-            _Trace( "Desirable frame not supported :( '"
-                    + frameHeader.frameId
-                    + "'" );
+//             _Trace( "Desirable frame not supported :( '"
+//                     + frameHeader.frameId
+//                     + "'" );
             break;
 
          case "TYER":
@@ -393,9 +393,9 @@ namespace byteheaven.id3
             // 
 
          default:
-            _Trace( "ID3 frame type not supported: '"
-                    + frameHeader.frameId
-                    + "'" );
+//             _Trace( "ID3 frame type not supported: '"
+//                     + frameHeader.frameId
+//                     + "'" );
             break;
          }
       }
