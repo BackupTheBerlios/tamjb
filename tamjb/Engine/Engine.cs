@@ -251,6 +251,14 @@ namespace byteheaven.tamjb.Engine
          Backend.theBackend.StartPlaying();
       }
 
+      public bool isPlaying
+      {
+         get
+         {
+            return Backend.theBackend.isPlaying;
+         }
+      }
+
       ///
       /// Return the list of available moods (as Mood)
       ///

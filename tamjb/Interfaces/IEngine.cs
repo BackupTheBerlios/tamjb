@@ -134,6 +134,11 @@ namespace byteheaven.tamjb.Interfaces
       ///
       void StartPlaying();
 
+      ///
+      /// Is it currently plyaing?
+      ///
+      bool isPlaying { get; }
+
       //
       // Compression parameters
       //

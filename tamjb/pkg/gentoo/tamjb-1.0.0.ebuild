@@ -26,8 +26,10 @@ IUSE=""
 
 # Note: should work with .NET-style compiles/runtimes
 # Note: gtk-sharp could be optional if there were another GUI.
+# ditto glade-sharp
 DEPEND=">=dev-dotnet/mono-1.0.4
 	>=dev-dotnet/gtk-sharp-1.0.4
+	>=dev-dotnet/glade-sharp-1.0.4
 	>=dev-db/sqlite-2.8.11
 	media-sound/esound"
 

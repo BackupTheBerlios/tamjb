@@ -125,6 +125,14 @@ namespace byteheaven.tamjb.Engine
       ///
       void _CreateStatusTable()
       {
+         try
+         {
+            _ExecuteNonQuery( "drop table file_info" );
+         }
+         catch
+         {
+         }
+
 #if USE_SQLITE
          // Create a table to hold info derived from the files' own 
          // header info:
@@ -163,17 +171,17 @@ namespace byteheaven.tamjb.Engine
          // Create a table to hold info derived from the files' own 
          // header info:
          string query = 
-            "CREATE TABLE file_info ( \n" +
-            "  filekey SERIAL,\n" +
-            "  file_path TEXT,\n" +
-            "  artist VARCHAR(255),\n" +
-            "  album VARCHAR(255),\n" +
-            "  title VARCHAR(255),\n" +
-            "  track INTEGER,\n" +
-            "  genre VARCHAR(80)\n," +
-            "  length_seconds INTEGER\n," +
-            "  PRIMARY KEY ( filekey )\n" +
-            "  )";
+            @"CREATE TABLE file_info (
+              filekey SERIAL,
+              file_path TEXT,
+              artist VARCHAR(255),
+              album VARCHAR(255),
+              title VARCHAR(255),
+              track INTEGER,
+              genre VARCHAR(80),
+              length_seconds INTEGER,
+              PRIMARY KEY ( filekey )
+              )";
 
 #else
 #error No dbtype found
@@ -189,6 +197,14 @@ namespace byteheaven.tamjb.Engine
       {
          //   id - unique id (autoincrement)
          //   name - string used to log in
+
+         try
+         {
+            _ExecuteNonQuery( "drop table users" );
+         }
+         catch
+         {
+         }
 
 #if USE_SQLITE
          string query = 
@@ -220,6 +236,15 @@ namespace byteheaven.tamjb.Engine
          //     (id of user whose mood this is)
          //   name - Name of this mood
 
+         try
+         {
+            _ExecuteNonQuery( "drop table mood" );
+         }
+         catch
+         {
+         }
+
+
 #if USE_SQLITE
          string query = 
             "CREATE TABLE mood ( \n" +
@@ -244,6 +269,14 @@ namespace byteheaven.tamjb.Engine
 
       void _CreateSongSuckTable()
       {
+         try
+         {
+            _ExecuteNonQuery( "drop table song_suck" );
+         }
+         catch
+         {
+         }
+
          //
          // Store the suck value of each track on a per-user basis.
          // build indexes on the keys because this is used in joins. A lot.
@@ -272,6 +305,14 @@ namespace byteheaven.tamjb.Engine
 
       void _CreateSongMoodTable()
       {
+         try
+         {
+            _ExecuteNonQuery( "drop table song_mood" );
+         }
+         catch
+         {
+         }
+
          //
          // Store the "appropriateness" measurement of each song indexed
          // by (track + user + mood). Yeouch, that's a lot of indexing.
@@ -300,6 +341,14 @@ namespace byteheaven.tamjb.Engine
 
       void _CreateSettingsTable()
       {
+         try
+         {
+            _ExecuteNonQuery( "drop table settings" );
+         }
+         catch
+         {
+         }
+
          //
          // This table contains one row only, which contains all the
          // application state for restart. Whee.
@@ -327,21 +376,11 @@ namespace byteheaven.tamjb.Engine
          Debug.Assert( null != cred, "controlling user is required" );
          Debug.Assert( null != mood, "mood is required" );
 
-#if USE_SQLITE
-         string query = 
-            "UPDATE settings "
-            + " SET control_user = '" + _StripEvil( cred.name ) + "',"
-            + "   control_mood = '" + _StripEvil( mood.name ) + "'"
-            ;
-#elif USE_POSTGRESQL
-         string query = 
-            "UPDATE settings "
+         string query = _FixQuery(
+            "UPDATE settings"
             + " SET control_user = :user,"
-            + "   control_mood = :mood"
-            ;
-#else
-#error I am very lazy, please code this up
-#endif
+            + " control_mood = :mood"
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -351,21 +390,13 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
-#if USE_SQLITE
-// do nothing
-#elif USE_POSTGRESQL
-            IDbDataParameter param = 
-               new NpgsqlParameter( "user", DbType.String );
+            IDbDataParameter param = _NewParameter( "user", DbType.String );
             param.Value = cred.name;
             cmd.Parameters.Add( param );
             
-            param = 
-               new NpgsqlParameter( "mood", DbType.String );
+            param = _NewParameter( "mood", DbType.String );
             param.Value = mood.name;
             cmd.Parameters.Add( param );
-#else
-#error I am very lazy, please code this up
-#endif
             
             cmd.ExecuteNonQuery();
             return;
@@ -460,27 +491,10 @@ namespace byteheaven.tamjb.Engine
       ///
       public void StoreCompressSettings( string xml )
       {
-// Er, let's see, I can write a wrapper class, or use mono-specific
-// wrappers, or I can just give up. :)
-#if USE_SQLITE
-         // Postgres ":variable" instead of the more-common "@variable"
-         // Boo!
-         string query = 
-            "UPDATE settings "
-            + " SET compression = '" + _StripEvil(xml) + "'"
-            ;
-
-#elif USE_POSTGRESQL
-         // Postgres ":variable" instead of the more-common "@variable"
-         // Boo!
-         string query = 
+         string query = _FixQuery( 
             "UPDATE settings "
             + " SET compression = :compression"
-            ;
-#else
-#error I am very lazy, please code this up
-#endif
-
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -491,13 +505,11 @@ namespace byteheaven.tamjb.Engine
             cmd.CommandText = query;
 
 
-#if USE_POSTGRESQL
-            IDbDataParameter param = 
-               new NpgsqlParameter( "compression",
-                                    DbType.String );
+            // Should I be using mono's generic database wrapper?
+            IDbDataParameter param = _NewParameter( "compression",
+                                                    DbType.String );
             param.Value = xml;
             cmd.Parameters.Add( param );
-#endif
 
             cmd.ExecuteNonQuery();
             return;
@@ -523,6 +535,7 @@ namespace byteheaven.tamjb.Engine
 
          throw new ApplicationException( "not reached" );
       }
+
 
       public string GetCompressSettings()
       {
@@ -577,30 +590,101 @@ namespace byteheaven.tamjb.Engine
       public void CreateUser( string name )
       {
          // The default user: guest
-         string query =
-            "INSERT INTO users (\n" + 
-            "  name\n" +
-            " ) VALUES (\n" +
-            "  '" + _StripEvil(name) + "'\n" +
-            " )";
+         string query = _FixQuery( 
+            "INSERT INTO users ("
+            + " name"
+            + " ) VALUES ( :new_name ) "
+            );
 
-         _ExecuteNonQuery( query );
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            IDbDataParameter param = _NewParameter( "new_name",
+                                                    DbType.String );
+            param.Value = name;
+            cmd.Parameters.Add( param );
+
+            cmd.ExecuteNonQuery();
+            return;
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
       }
 
       public void CreateMood( Credentials cred,
                               string name )
       {
          // The default mood: unknown
-         string query =
-            "INSERT INTO mood (\n" + 
-            "  user_id,\n" +
-            "  name\n" +
-            " ) VALUES (\n" +
-            "  " + cred.id + ",\n" +
-            "  '" + _StripEvil(name) + "'\n" +
-            " )";
+         string query = _FixQuery( 
+            "INSERT INTO mood ( user_id, name ) "
+            + "VALUES ( :userId, :userName )"
+            );
 
-         _ExecuteNonQuery( query );
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+
+            // Should I be using mono's generic database wrapper?
+            IDbDataParameter param = _NewParameter( "userId",
+                                                    DbType.Int32 );
+            param.Value = cred.id;
+            cmd.Parameters.Add( param );
+
+            IDbDataParameter p2 = _NewParameter( "userName", DbType.String );
+            p2.Value = name;
+            cmd.Parameters.Add( p2 );
+
+            cmd.ExecuteNonQuery();
+            return;
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
       }
 
       ///
@@ -671,11 +755,11 @@ namespace byteheaven.tamjb.Engine
       public bool GetUser( string name,
                            out Credentials creds )
       {
-         string query = 
-            "SELECT id\n" +
+         string query = _FixQuery( 
+            "SELECT id"
             + " FROM users"
-            + " WHERE name = '" + _StripEvil(name) + "'";
-            ;
+            + " WHERE name = :name"
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -685,6 +769,11 @@ namespace byteheaven.tamjb.Engine
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
+
+            IDbDataParameter param = _NewParameter( "name", DbType.String );
+            param.Value = name;
+            cmd.Parameters.Add( param );
+
             reader = cmd.ExecuteReader();
 
             PlayableData returnData;
@@ -732,11 +821,11 @@ namespace byteheaven.tamjb.Engine
       ///
       public ArrayList GetMoodList( Credentials cred )
       {
-         string query = 
-            "SELECT id, name\n" +
-            + " FROM mood\n"
-            + " WHERE user_id = " + cred.id;
-            ;
+         string query = _FixQuery(
+            "SELECT id, name"
+            + " FROM mood"
+            + " WHERE user_id = :user_id"
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -746,6 +835,12 @@ namespace byteheaven.tamjb.Engine
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
+
+            IDbDataParameter param;
+            param = _NewParameter( "user_id", DbType.String );
+            param.Value = cred.id;
+            cmd.Parameters.Add( param );
+
             reader = cmd.ExecuteReader();
 
             ArrayList returnList = new ArrayList();
@@ -795,12 +890,12 @@ namespace byteheaven.tamjb.Engine
                            string name,
                            out Mood mood )
       {
-         string query = 
-            "SELECT id\n" +
-            + " FROM mood\n"
-            + " WHERE name = '" + _StripEvil(name) + "'\n"
-            + " AND user_id = " + credentials.id
-            ;
+         string query = _FixQuery( 
+            "SELECT id"
+            + " FROM mood"
+            + " WHERE name = :user_name"
+            + " AND user_id = :user_id"
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -810,6 +905,16 @@ namespace byteheaven.tamjb.Engine
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
+
+            IDbDataParameter param = _NewParameter( "user_name", 
+                                                    DbType.String );
+            param.Value = name;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "user_id", DbType.String );
+            param.Value = credentials.id;
+            cmd.Parameters.Add( param );
+
             reader = cmd.ExecuteReader();
 
             PlayableData returnData;
@@ -941,26 +1046,27 @@ namespace byteheaven.tamjb.Engine
       {
          // Create a table to hold info derived from the files' own 
          // header info:
-         string query = 
-            "INSERT INTO file_info " +
-            " ( " +
-            "  file_path," +
-            "  artist," +
-            "  album," +
-            "  title," +
-            "  track," +
-            "  genre," +
-            "  length_seconds" +
-            "  )" +
-            " VALUES ( " +
-            "  '" + _StripEvil( newData.filePath ) + "'," +
-            "  '" + _StripEvil( newData.artist ) + "'," +
-            "  '" + _StripEvil( newData.album ) + "'," +
-            "  '" + _StripEvil( newData.title ) + "'," +
-            "  '" + newData.track + "'," +
-            "  '" + _StripEvil( newData.genre ) + "'," +
-            "  0" +
-            "  )";
+         string query = _FixQuery( 
+            @"INSERT INTO file_info
+             (
+              file_path,
+              artist,
+              album,
+              title,
+              track,
+              genre,
+              length_seconds
+              )
+             VALUES ( 
+              :file_path,
+              :artist,
+              :album,
+              :title,
+              :track,
+              :genre,
+              0
+              )"
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -969,6 +1075,32 @@ namespace byteheaven.tamjb.Engine
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
+
+            IDbDataParameter param;
+            param = _NewParameter( "file_path", DbType.String );
+            param.Value = newData.filePath;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "artist", DbType.String );
+            param.Value = newData.artist;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "album", DbType.String );
+            param.Value = newData.album;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "title", DbType.String );
+            param.Value = newData.title;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "track", DbType.Int32 );
+            param.Value = newData.track;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "genre", DbType.String );
+            param.Value = newData.genre;
+            cmd.Parameters.Add( param );
+
             cmd.ExecuteNonQuery();
          }
          catch (Exception e)
@@ -991,12 +1123,18 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      // This allows single-tics ("'") because they are filtered separately
-      // by tickRegex. (this is far from inclusive, I know I know...)
+// #if USE_SQLITE
+//       // This allows single-tics ("'") because they are escaped separately
+//       // by tickRegex. (this is far from inclusive, I know I know...)
+//       //
+//       // This is a workaround for SQLITE's complaining. If the SQLITE 
+//       // wrapper adds support for parameters, we can eliminate this. 
+//       // Probably.
 //       static Regex _invalidCharRegex = 
 //          new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
 
-      // Regex _tickRegex = new Regex( "'" );
+//       Regex _tickRegex = new Regex( "'" );
+// #endif // USE_SQLITE
 
       ///
       /// Removes any special chars from the supplied string, to
@@ -1004,28 +1142,33 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Also, escape any single-tick characters.
       ///
-      /// \todo Find out why special characters (other than single-tick)
-      ///   cause SQLite to
-      ///   throw exceptions and replace this regex workaround that
-      ///   isn't very friendly to non-english-language users.
-      ///
-      string _StripEvil( string impureString )
-      {
-         // Note: regex seems to cause massive resource leak
+//       string _StripEvil( string impureString )
+//       {
+//          // Note: regex seems to cause massive resource leak
 
-         // string firstResult = _invalidCharRegex.Replace( impureString, " " );
-         // string secondResult = _tickRegex.Replace( firstResult, "''" );
+//          // string firstResult = _invalidCharRegex.Replace( impureString, " " );
+//          // string secondResult = _tickRegex.Replace( firstResult, "''" );
 
-         // First escape any escape characters in thestring
-         // string pure = _invalidCharRegex.Replace( impureString, " " );
+//          // First escape any escape characters in thestring
+//          // string pure = _invalidCharRegex.Replace( impureString, " " );
 
-         string pure = impureString.Replace( "\\", "\\\\" );
+//          string pure = impureString.Replace( "\\", "\\\\" );
 
-         // Second, escape any single ticks
-         pure = pure.Replace( "'", "''" ); 
+//          // Second, escape any single ticks
+//          pure = pure.Replace( "'", "''" ); 
 
-         return pure;
-      }
+// #if USE_SQLITE
+//          /// \todo Find out why special characters (other than single-tick)
+//          ///   cause SQLite to
+//          ///   throw exceptions and replace this regex workaround that
+//          ///   isn't very friendly to non-english-language users.
+//          ///
+//          pure = _tickRegex.Replace( pure, " " );
+
+// #endif // USE_SQLITE
+
+//          return pure;
+//       }
 
       ///
       /// selects one song at random based on the supplied playlist
@@ -1309,6 +1452,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public void SetSuck( uint userId, uint trackKey, uint newLevel )
       {
+         // TODO: use parameters here (though this is pretty safe)
          string query = 
             "UPDATE song_suck "
             + " SET value = " + newLevel
@@ -1504,10 +1648,10 @@ namespace byteheaven.tamjb.Engine
       {
          // Create a table to hold info derived from the files' own 
          // header info:
-         string query = 
-            "SELECT count(*) FROM file_info " +
-            "  WHERE file_path = '" + _StripEvil( fullPath ) + "'"
-            ;
+         string query = _FixQuery(
+            "SELECT count(*) FROM file_info"
+            + " WHERE file_path = :file_path"
+            );
 
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
@@ -1517,11 +1661,11 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
-//             IDbDataParameter param = cmd.CreateParameter();
-//             param.DbType = DbType.String;
-//             param.ParameterName = "@file_path";
-//             param.Value = fullPath;
-//             cmd.Parameters.Add( param );
+
+            IDbDataParameter param;
+            param = _NewParameter( "file_path", DbType.String );
+            param.Value = fullPath;
+            cmd.Parameters.Add( param );
 
             // Returns the first parameter, the number of rows:
             object countObj = cmd.ExecuteScalar();
@@ -1588,14 +1732,7 @@ namespace byteheaven.tamjb.Engine
       ///
       void _Rethrow( string query, Exception e )
       {
-#if USE_POSTGRESQL
-         // Avoid throwing non-serializable NpgsqlException as 
-         // InnerException
-         throw new ApplicationException( "Query failed: " + query
-                                         + "-->" + e.ToString() );
-#else
          throw new ApplicationException( "Query failed: " + query, e );
-#endif
       }
 
       ///
@@ -1626,6 +1763,47 @@ namespace byteheaven.tamjb.Engine
                "Problem connecting to database: " + _connectionString, e );
          }
       }
+
+      ///
+      /// A very hackish way of supporting postgres-style and modern named
+      /// parameters.
+      ///
+      /// I did say it was hackish, right?
+      ///
+      string _FixQuery( string atStyleQuery )
+      {
+#if USE_SQLITE
+
+         return atStyleQuery.Replace( ':', '@' );
+
+#elif USE_POSTGRESQL
+
+         return atStyleQuery;   // Nothing to fix
+
+#else
+#error not implemented
+#endif
+      }
+
+      ///
+      /// Platform-specific "NewParameter" wrapper function for 
+      /// parameteried queries.
+      ///
+      IDbDataParameter _NewParameter( string name, DbType type )
+      {
+#if USE_SQLITE
+
+         return new SqliteParameter( "@" + name, type ) ;
+
+#elif USE_POSTGRESQL
+
+         return new NpgsqlParameter( name, type );
+
+#else
+#error not implemented
+#endif
+      }
+
 
       void _Trace( string msg )
       {
