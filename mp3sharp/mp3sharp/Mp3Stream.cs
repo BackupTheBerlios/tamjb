@@ -318,8 +318,9 @@ namespace Mp3Sharp
               {
                  // Note: should be Math.Max( bufferp[0], bufferp[1]-1 ). 
                  // Heh.
+                 return bufferp[0] - _offset;
 
-                 return (OBUFFERSIZE * 2) - _offset;
+                 // return (OBUFFERSIZE * 2) - _offset;
               }
            }
 
