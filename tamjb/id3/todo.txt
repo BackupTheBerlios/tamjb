@@ -1,0 +1,4 @@
+TODO
+
+  Parse multi-string fields, like Genre, one char at a time.
+

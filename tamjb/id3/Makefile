@@ -8,9 +8,11 @@ SRCS = ID3v2.cs \
         ID3v2Header.cs \
         ID3v2FrameHeader.cs \
         ID3v2TagNotFoundException.cs \
-        Mp3StreamReader.cs
+        Mp3StreamReader.cs \
+        AssemblyInfo.cs
 
-TARGET = id3.dll
+ASSEMBLYNAME = byteheaven.id3
+TARGET = $(ASSEMBLYNAME).dll
 
 CMDLINE = id3test.exe
 
@@ -20,5 +22,5 @@ $(TARGET): $(SRCS) Makefile
 	mcs $(DEBUGFLAGS) $(LIBPATH) -target:library -out:$@ $(SRCS)
 
 
-$(CMDLINE): $(TARGET) main.cs Makefile
+$(CMDLINE): $(TARGET) main.cs
 	mcs $(DEBUGFLAGS)  -r $(TARGET) -out:$@ main.cs 
