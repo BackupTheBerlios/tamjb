@@ -1,0 +1,209 @@
+$Id$
+
+Track Attribute Manager - Jukebox
+
+
+* Running (Part 1)
+
+  If you have a binary package, see "Running (Part 2)" farther down.
+
+  To download the source code for this package, go to
+
+    http://tamjb.sourceforge.net/
+
+  And await instructions.
+
+
+* Requirements For Compilation
+
+ Initial project development is being done on a Gentoo 1.4 system with
+ linux kernel 2.6.x. The server should run on any unix-based platform 
+ (because of the temporary ESound requirement, see below). The Gtk# 
+ GUI runs on any mono platform.
+
+ Very soon(?), mono will natively support lots of cool streaming interfaces
+ in a cross-platform manner using GStreamer. Until then, we can decode the 
+ mp3 streams in managed code, using up most of the resources of a Pentium-III.
+ While gradually using more and more RAM. OK, so it's not perfect, but it 
+ works great!
+
+ To build from source, you will need these tools:
+
+
+ - GPL 
+
+   This package has been developed under the GPL version 2, and should
+   run fine with any higher version. Download a copy from www.gnu.org,
+   or use the copy included with the package (see "COPYING").
+
+
+ - C# compiler, runtime
+
+   Known good configuration:
+
+     Gentoo: mono-1.0
+
+   Should compile and/or run fine with Microsoft(TM)'s runtime, except 
+   for the esd dependency. With the Gtk# binaries, the gui frontend will
+   run with a mono backend on a remote server.
+
+
+ - Gtk, gtk-sharp
+
+   gtk-sharp is required to compile the Gtk frontend program. Unless 
+   you're planning to write a frontend using some other GUI (which should 
+   be VERY easy), you need this
+
+   Known good configuration:
+
+     Gentoo: gtk-sharp-1.0
+
+   Once again, the code and binaries
+
+
+ - SQLite OR PostgreSQL
+
+   SQLite support has been temporarily discontinued because of lack for
+   named parameters. With a bit of hacking, just about any SQL database 
+   should work though.
+
+   Known good configuration:
+
+     Gentoo: sqlite-2.8.11
+     Gentoo: postgresql-7.4.3
+
+   PostgreSQL hints:
+     Create the postgresql installation in the "normal way".
+
+     Before starting  the server, be sure that it is launched with the
+     "-i" option. The Npgsql C# wrapper uses TCP/IP connections.
+
+     Create a database and user with no password, like this:
+
+      postgres@medtom postgresql $ createdb tamjb
+      CREATE DATABASE
+      postgres@medtom postgresql $ psql tamjb
+      Welcome to psql 7.4.3, the PostgreSQL interactive terminal.
+      [...]
+      tamjb=# create user tamjb;
+      CREATE USER
+      tamjb=# grant all privileges on database tamjb to tamjb;
+      GRANT
+
+     Now you can launch tamjb using the connect string:
+      'Server=localhost;Database=tamjb;USER ID=tamjb;Password='
+
+     You should add a password to the GRANT statement and the connect
+     string if you are not in a totally safe, private network. Or you
+     can limit connections to localhost only. Etc.
+
+ - esound, Esd#
+
+   As there seem to be no stable audio api's for C# under Linux
+   at the moment, I am using the fine esd-sharp wrapper from:
+   
+     http://amy.udd.htu.se/~malte/mono/esd/
+
+   Known good: esd-sharp-0.1.3
+
+   No license is supplied. I expect this to eventually be replaced
+   with GStreamer (Gst#), but it does work quite nicely.
+
+   Update: I have asked about licensing, and the author is considering
+   choosing a license. I suppose this is progress of a sort.
+
+
+ - Mp3Sharp (What, MORE third-party managed code?)
+
+   Mp3Sharp Rules!
+
+   Available here:
+
+     http://www.mle.ie/~rob/mp3sharp/
+
+   The supplied DLL seems to work, but for some reason the code sometimes
+   goes into an infinite loop looking for sync at end-of-file. To fix this
+   problem and add some debugging messages, apply this patch:
+
+     patches/mp3sharp-rev.9mar04-eof_endless_loop.patch
+
+   This code is GPL'ed. Which is good.
+
+   The source download includes an Mp3Sharp.dll binary which works fine,
+   aside from the infinite loop problem.
+
+   You can also download my patched Mp3Sharp.dll binary, and compile the
+   rest of the code yourself.
+
+
+* Compiling
+
+  1) I assume you've already unpacked tamjb in this directory.
+
+  2a) If you want to use binaries, copy or link Mp3Sharp.dll and 
+     esd-sharp into the thirdparty/ subdirectory. 
+
+  2b) If you want to compile esd-sharp and mp3sharp, unpack them adjacent
+     to the tamjb directory.
+   
+  3) Create a link from your strong-name key to assykey.snk, or simply
+  create it there. Assemblies built by you will not be the same as
+  assemblies built by anyone else, but that's the whole point, isn't
+  it?
+
+  4) type make (The makefiles are gnumake specific...)
+
+  5) Release packages may be built using the build_package script. This
+  will probably work best as ( cd .. && tamjb/build_package ), because 
+  otherwise it won't be able to find mp3sharp and esd-sharp. For now.
+
+* Running (Part 2)
+
+ Environment
+  Put the required assemblies in your MONO_PATH, or install them into the 
+  Global Assembly Cache.
+
+  Linux:
+    You may manually install the binaries and set MONO_PATH, or use
+    install.sh to register all dll's (using gacutil). 
+
+    If you are fortunate, someone has written a package for your distro,
+    and you don't even need to think about installation. :)
+
+  Windows:
+    drag the dll's to the %WINDOWSDIR%/Assembly dir, and they will
+    be automatically installed (this is really cool, btw). Or simply
+    make sure they are in the "current directory".
+    
+    %WINDOWSDIR% is probably C:\windows.
+
+ Create the Database:
+  You will need to create the audio file database. Use tam.Server.exe's
+  --create option to do this. The command line is something like
+
+  with PostgreSQL
+    tam.Server.exe --connectString "<your connect string>"  --create
+        
+  with SQLite:     
+    tam.Server.exe --dbUrl <url> --create
+
+
+ Start the Server:
+  Launch tam.Server.exe with appropriate options.
+
+  It will start scanning for files and playing audio right
+  away. Look at the output (or log file) to see if anything went wrong
+  starting esd. If you are running it from init.d, you may need to 
+  enable esound first.
+
+
+ Client:
+  Run tam.GtkPlayer.exe. It will connect to the server, which is by
+  default localhost:6543, because this is what I typed in while prototyping. 
+  If you used a different port, you will naturally have to configure it
+  in the configuration dialog.
+
+
+* BUGS
+
+ See todo.txt for a list of bugs, etc.
