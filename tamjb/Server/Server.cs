@@ -5,6 +5,7 @@ namespace tam.Server
 {
    using System;
    using System.Diagnostics;
+   using System.IO;
    using System.Runtime.Remoting;
    using System.Runtime.Remoting.Channels;
    using System.Runtime.Remoting.Channels.Http;
@@ -36,7 +37,7 @@ namespace tam.Server
       ///
       static ArrayList _mp3RootDirs = new ArrayList();
 
-      void _Usage()
+      static void _Usage()
       {
          Console.WriteLine( "usage: " );
          Console.WriteLine( " --dbUrl <file:/path/to.db>" );
@@ -57,9 +58,12 @@ namespace tam.Server
       static TextWriter _GetLogFile( string logFileName )
       {
          if ("-" == logFileName)
-            return new StreamWriter( Console.Out ); // send logs to stdout
-         
-         return StreamWriter( new FileStream( logFileName ) );
+            return Console.Out;
+
+         return new StreamWriter( new FileStream( logFileName,
+                                                  FileMode.Create,
+                                                  FileAccess.Write,
+                                                  FileShare.Read ) );
       }
 
       ///
@@ -101,7 +105,7 @@ namespace tam.Server
             }
          }
 
-         if (port == 0)
+         if (_port == 0)
          {
             _Usage();
             return 2;
@@ -116,7 +120,6 @@ namespace tam.Server
             Trace.AutoFlush = true;
 
             _connectionString = "URI=" + args[0];
-            _port = port;
 
             for (int i = 2; i < args.Length; i++)
             {
@@ -163,7 +166,8 @@ namespace tam.Server
             }
 
             // Drop this thread's priority--this is not very important!
-            Thread.SetPriority
+            System.Threading.Thread.CurrentThread.Priority = 
+               ThreadPriority.BelowNormal;
             while (true)
             {
                // Continually scan all configured dirs for new mp3's
