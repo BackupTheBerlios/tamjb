@@ -33,6 +33,15 @@ TODO
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc.
 
+ - Front-panel checkbox to tag damaged mp3's. This way, you don't have
+  to say they suck, and later you can rewrip them. Needs a way to list
+  (and printout list?) the broken mp3's.
+
+ - When mp3's are not found, they should be flagged as missing and no
+  longer played. Then later when the file scanner finds the file again,
+  it can reinstate the file with its current settings still intact.
+  Probably needs a "purge" function, too.
+
  - If a file does not have a ID3v2 tag, it will not be played. This is
   NOT a bug. But, there should be a flag in the database so that when an 
   untagged file is found, it will be added with a provisional tag 
