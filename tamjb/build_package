@@ -5,6 +5,11 @@
 # Note: you will need to set your CVSROOT to the tamjb project's root,
 # and log in! 
 
+# Configuration: Either generate a key for buildling the byteheaven
+# packages here, or whatever:
+
+KEYFILE=$HOME/.byteheaven.snk
+
 # The last known good snapshot tag:
 
 PACKAGE_DIR=tamjb-2004-07-08
@@ -16,6 +21,7 @@ if [ -d $PACKAGE_DIR ] ; then
 fi
 
 mkdir $PACKAGE_DIR
+ln -s "$KEYFILE" "${PACKAGE_DIR}/assykey.sk"
 
 # Get the package
 ( cd $PACKAGE_DIR && cvs get -r $PACKAGE_TAG tamjb ) || exit 1

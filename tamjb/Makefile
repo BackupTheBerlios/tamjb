@@ -50,7 +50,7 @@ rel-binary: all
 # You must manually create a key. Don't check it in!
 #
 assykey.snk:
-	echo "Please link your personal keyfile to assykey.sk!"
+	echo "Please link your personal keyfile to assykey.snk!"
 	exit 1
 
 #
