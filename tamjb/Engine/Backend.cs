@@ -1022,11 +1022,15 @@ namespace byteheaven.tamjb.Engine
 
          // Root mean square. I like an acronym that actually helps.
          // Note this is the rms / (2^8). :)
-         double rms = Math.Sqrt( sum / (length / 2) );
+         // double rms = Math.Sqrt( sum / (length / 2) );
 
          // TODO: add this value in to the average for this track.
          // TODO: store the rms value on a per-track basis for later
          //       levelling efforts
+         // TODO: we don't really need to calculate the rms value of each
+         //       buffer, do we? I think we're supposed to save the 
+         //       square and count, then average and sqrt when the track
+         //       ends!
       }
 
       ///
@@ -1210,6 +1214,8 @@ namespace byteheaven.tamjb.Engine
 
                // Fix up current track pointer 
                -- _playQueueCurrentTrack;
+
+               return returnData;
             }
 
             return null;        // list empty.

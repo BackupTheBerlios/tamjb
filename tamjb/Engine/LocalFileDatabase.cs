@@ -776,7 +776,7 @@ namespace byteheaven.tamjb.Engine
 
             reader = cmd.ExecuteReader();
 
-            PlayableData returnData;
+            // PlayableData returnData;
             if (!reader.Read())
             {
                creds = null;
@@ -917,7 +917,7 @@ namespace byteheaven.tamjb.Engine
 
             reader = cmd.ExecuteReader();
 
-            PlayableData returnData;
+            // PlayableData returnData;
             if (!reader.Read()) // no data found?
             {
                mood = null;
@@ -979,7 +979,6 @@ namespace byteheaven.tamjb.Engine
             + " WHERE filekey = " + key 
             ;
 
-         uint value;
          IDbConnection dbcon = null;
          IDbCommand cmd = null;
          IDataReader reader = null;
@@ -1140,8 +1139,8 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Also, escape any single-tick characters.
       ///
-      string _StripEvil( string impureString )
-      {
+//       string _StripEvil( string impureString )
+//       {
          // Apparently the postgres wrapper doesn't catch '+'?
 //         return impureString.Replace( '+', ' ' );
 
@@ -1167,7 +1166,7 @@ namespace byteheaven.tamjb.Engine
 //          pure = _tickRegex.Replace( pure, " " );
 
 //          return pure;
-      }
+//       }
 
       ///
       /// selects one song at random based on the supplied playlist
