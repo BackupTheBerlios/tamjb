@@ -1,5 +1,10 @@
 
 TODO
+ - Fix memory leak
+  No leak when playing
+  Leak when loading new song (handle/buffer leak in Player?)
+  Leak when remoting calls occur (possible database resource leak?)
+
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
 
@@ -12,10 +17,6 @@ TODO
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc.
 
- - There is a fat memory leak in the server.
-  Mostly fixed. Still seems to leak slowly when scanning for files. 
-  Wonder if there's a file resource leak? Or maybe I'm imagining it.
-
  - If a file does not have a ID3v2 tag, it will not be played. This is
   NOT a bug. But, there should be a flag in the database so that when an 
   untagged file is found, it will be added with a provisional tag 
@@ -23,6 +24,9 @@ TODO
 
 
 DONE
+  Major performance enhancement from improvements to Mp3Sharp's
+  buffering.
+
  - Sat Jul 17 15:39:12 EDT 2004
 
   Added suck/mood percent display in track list.

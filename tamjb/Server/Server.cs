@@ -329,8 +329,10 @@ namespace byteheaven.tamjb.Server
                }
 
                Thread.Sleep( 2000 );   // wait a while
-//                Console.WriteLine( "Memory: {0}", GC.GetTotalMemory(true) );
-//                GC.Collect();
+
+               // HACK for memory leak watching. WTF is going on?
+               GC.Collect();
+               Console.WriteLine( "Memory: {0}", GC.GetTotalMemory(true) );
 //                Console.WriteLine( "Aftah:  {0}", GC.GetTotalMemory(true) );
             }
          }
@@ -366,20 +368,20 @@ namespace byteheaven.tamjb.Server
          properties.Add( "port", port );
 
          // Could use Soap or Binary formatters if we wanted... 
-         //  Will Binary work cross-platform? Soap is more reliable.
-         HttpChannel channel = 
-            new HttpChannel(properties,
-                            new BinaryClientFormatterSinkProvider(),
-                            new BinaryServerFormatterSinkProvider());
-
-         ChannelServices.RegisterChannel( channel );
-
-//          TcpChannel channel =
-//             new TcpChannel( properties,
+         //  Will Binary work cross-platform? Soap is more generic but slow.
+//          HttpChannel channel = 
+//             new HttpChannel(properties,
 //                             new BinaryClientFormatterSinkProvider(),
 //                             new BinaryServerFormatterSinkProvider());
-                         
+
 //          ChannelServices.RegisterChannel( channel );
+
+         TcpChannel channel =
+            new TcpChannel( properties,
+                            new BinaryClientFormatterSinkProvider(),
+                            new BinaryServerFormatterSinkProvider());
+                      
+         ChannelServices.RegisterChannel( channel );
       }   
    }
 }

@@ -30,10 +30,10 @@ namespace byteheaven.tamjb.GtkPlayer
    using System.Collections;
    using System.Collections.Specialized;
    using System.Diagnostics;
-   using System.Runtime.Remoting;
-   using System.Runtime.Remoting.Channels;
-   using System.Runtime.Remoting.Channels.Http;
-   using System.Runtime.Remoting.Channels.Tcp;
+//    using System.Runtime.Remoting;
+//    using System.Runtime.Remoting.Channels;
+//    using System.Runtime.Remoting.Channels.Http;
+//    using System.Runtime.Remoting.Channels.Tcp;
    using System.Threading;
    using Gtk;
    using GtkSharp;
@@ -101,7 +101,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
 
          PlayerApp.serverUrl =
-            "http://" + _settings.serverName + ":" 
+            "tcp://" + _settings.serverName + ":" 
             + _settings.serverPort + "/Engine";
 
          _SetUpControls();
@@ -454,10 +454,10 @@ namespace byteheaven.tamjb.GtkPlayer
 
          TreeIter iter;
          for (/* everything initialized already */;
-              i < _engineState.Count;
+              i < _engineState.playQueue.Length;
               i++, row++ )
          {
-            ITrackInfo info = _engineState[i];
+            ITrackInfo info = _engineState.playQueue[i];
 
             if (null == info)   // Other threads may have removed the entry.
                break;
@@ -788,7 +788,7 @@ namespace byteheaven.tamjb.GtkPlayer
                // Set the new server url
                //
                PlayerApp.serverUrl =
-                  "http://" + _settings.serverName + ":" 
+                  "tcp://" + _settings.serverName + ":" 
                   + _settings.serverPort + "/Engine";
                   
                // If we got here, nothing threw an exception. Wow!

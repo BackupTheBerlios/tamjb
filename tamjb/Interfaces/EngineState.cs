@@ -28,18 +28,23 @@ namespace byteheaven.tamjb.Interfaces
 {
    using System;
    using System.Collections;
+   using System.Diagnostics;
 
    ///
    /// Information about the state of the jukebox backend sent
    /// over the Remoting connection.
    ///
+   //
+   // Note: serialize all private member objects, not the 
+   //   public accessor properties
+   //
    [Serializable]
    public class EngineState 
    {
-      bool      _isPlaying;
-      int       _currentTrackIndex;
-      ArrayList _playQueue; // What's coming up, and what we've played.
-      long      _changeCount;
+      bool          _isPlaying;
+      int           _currentTrackIndex;
+      ITrackInfo [] _playQueue; // What's coming up, and what we've played.
+      long          _changeCount;
 
       ///
       /// Default constructor 
@@ -48,22 +53,25 @@ namespace byteheaven.tamjb.Interfaces
       {
          _isPlaying = false;
          _currentTrackIndex = -1;
-         _playQueue = new ArrayList();
+         _playQueue = new PlayableData[0]; // empty array
          _changeCount = -1;
       }
 
       public EngineState( bool isPlaying,
                           int  currentTrackIndex,
-                          ArrayList playQueue,
+                          ITrackInfo [] playQueue,
                           long changeCount )
       {
+         Debug.Assert( null != playQueue );
+
          _isPlaying = isPlaying;
          _currentTrackIndex = currentTrackIndex;
          _playQueue = playQueue; // should make a copy instead of ref?
          _changeCount = changeCount;
       }
 
-      public ArrayList playQueue
+      [NonSerialized]
+      public ITrackInfo [] playQueue
       {
          ///
          /// set-only, so the engine can update the current queue
@@ -72,8 +80,14 @@ namespace byteheaven.tamjb.Interfaces
          {
             _playQueue = value;
          }
+
+         get
+         {
+            return _playQueue;
+         }
       }
 
+      [NonSerialized]
       public long changeCount
       {
          get
@@ -86,6 +100,7 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
+      [NonSerialized]
       public bool isPlaying
       { 
          get
@@ -98,6 +113,7 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
+      [NonSerialized]
       public int currentTrackIndex
       { 
          get
@@ -110,46 +126,49 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
+      [NonSerialized]
       public int unplayedTrackCount
       { 
          get
          {
-            return _playQueue.Count - _currentTrackIndex;
+            return _playQueue.Length - _currentTrackIndex;
          }
       }
 
+      [NonSerialized]
       public ITrackInfo currentTrack
       { 
          get
          {
-            if (_playQueue.Count <= _currentTrackIndex
+            if (_playQueue.Length <= _currentTrackIndex
                 || _currentTrackIndex < 0)
             {
                throw new ApplicationException( "Not playing, no current track" );
             }
 
-            return (ITrackInfo)_playQueue[_currentTrackIndex];
+            return _playQueue[_currentTrackIndex];
          }
       }
 
-      public ITrackInfo this [int index]
-      { 
-         get
-         {
-            if (_playQueue.Count <= index)
-               return null;
+//       [NonSerialized]
+//       public ITrackInfo this [int index]
+//       { 
+//          get
+//          {
+//             if (_playQueue.Length <= index)
+//                return null;
 
-            return (ITrackInfo)_playQueue[index];
-         }
-      }
+//             return _playQueue[index];
+//          }
+//       }
 
-      public int Count
-      { 
-         get
-         {
-            return _playQueue.Count;
-         }
-      }
+//       public int Count
+//       { 
+//          get
+//          {
+//             return _playQueue.Length;
+//          }
+//       }
 
    }
 }

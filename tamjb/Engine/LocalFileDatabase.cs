@@ -1560,8 +1560,8 @@ namespace byteheaven.tamjb.Engine
       ///
       Random _rng = new Random();
 
-      uint _defaultSuckValue        = 00000; // Doesn't suck AT ALL
-      uint _defaultAppropriateValue = 10000; // "It's all good" (TM)
+      uint _defaultSuckValue        = 02000; // Doesn't suck really
+      uint _defaultAppropriateValue = 08000; // Mostly all good
    }
 }
 

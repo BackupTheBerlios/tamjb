@@ -251,9 +251,13 @@ namespace byteheaven.tamjb.Engine
             if (((EngineState)state).changeCount == _changeCount)
                return false;
 
+            _Trace( "CheckState: change occurred" );
+
             state.isPlaying = _shouldBePlaying;
             state.currentTrackIndex = _playQueueCurrentTrack;
-            state.playQueue = _playQueue; // reference to internal queue?
+            state.playQueue = 
+               (ITrackInfo[])_playQueue.ToArray(typeof(PlayableData));
+
             state.changeCount = _changeCount;
 //             state = new EngineState( _shouldBePlaying,
 //                                      _playQueueCurrentTrack,
