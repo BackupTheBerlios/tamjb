@@ -967,7 +967,8 @@ namespace byteheaven.tamjb.Engine
       /// \return Total number of tracks in this playlist. If 0, the
       ///   output string track will be empty.
       ///
-      public uint PickRandom( Credentials cred,
+      public uint PickRandom( Random rng,
+                              Credentials cred,
                               Mood mood,
                               int suckThreshold,
                               int moodThreshold,
@@ -990,7 +991,7 @@ namespace byteheaven.tamjb.Engine
          //
          // Pick an entry at random and retrieve it
          //
-         uint offset = (uint)_rng.Next( 0, (int)count );
+         uint offset = (uint)rng.Next( 0, (int)count );
 
          _Trace( "Choosing track: " + offset );
 
@@ -1554,11 +1555,6 @@ namespace byteheaven.tamjb.Engine
       /// How to connect to our database
       ///
       string _connectionString;
-
-      ///
-      /// My local rng
-      ///
-      Random _rng = new Random();
 
       uint _defaultSuckValue        = 02000; // Doesn't suck really
       uint _defaultAppropriateValue = 08000; // Mostly all good

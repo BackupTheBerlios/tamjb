@@ -8,6 +8,7 @@ SOURCES = AssemblyInfo.cs \
         Compressor.cs \
         Engine.cs \
         LocalFileDatabase.cs \
+        MyRandom.cs \
         RecursiveScanner.cs
 
 #

@@ -339,7 +339,8 @@ namespace byteheaven.tamjb.Engine
          
          // Pick a song and go.
          uint nextKey;
-         uint count = _database.PickRandom( _controllingUser, 
+         uint count = _database.PickRandom( _rng,
+                                            _controllingUser, 
                                             _controllingMood,
                                             suckThresh,
                                             moodThresh,
@@ -1551,7 +1552,7 @@ namespace byteheaven.tamjb.Engine
       ///
       Mood _controllingMood = null;
 
-      Random _rng = new Random(); // Random numbers are cool
+      Random _rng = new MyRandom(); // Random numbers are cool
 
       ///
       /// Singleton object -- the only backend object that should exist
