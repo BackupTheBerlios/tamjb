@@ -250,8 +250,9 @@ namespace javazoom.jl.decoder
 			{
 				
 				case 0: 
-                                        Trace.WriteLine( "0 bytes read == sync?", "Bitstream" );
-					sync = true;
+				        throw newBitstreamException(javazoom.jl.decoder.BitstreamErrors_Fields.STREAM_EOF, null);
+//                                         Trace.WriteLine( "0 bytes read == sync?", "Bitstream" );
+// 					sync = true;
 					break;
 				
 				case 4: 
@@ -525,14 +526,16 @@ namespace javazoom.jl.decoder
                                             || bytesread == 0) // t/DD -- .NET returns 0 at end-of-stream!
 					{
                                                 // t/DD: this really SHOULD throw an exception here...
-                                                Trace.WriteLine( "readFully -- returning success at EOF? (" + bytesread + ")", 
-                                                                 "Bitstream" );
-						while (len-- > 0)
-						{
-							b[offs++] = 0;
-						}
-						break;
-						//throw newBitstreamException(UNEXPECTED_EOF, new EOFException());
+                                                throw newBitstreamException(javazoom.jl.decoder.BitstreamErrors_Fields.STREAM_EOF, null);
+
+//                                                 Trace.WriteLine( "readFully -- returning success at EOF? (" + bytesread + ")", 
+//                                                                  "Bitstream" );
+// 						while (len-- > 0)
+// 						{
+// 							b[offs++] = 0;
+// 						}
+// 						break;
+						// throw newBitstreamException(UNEXPECTED_EOF, new EOFException());
 					}
 					
 					offs += bytesread;

@@ -302,6 +302,10 @@ namespace Mp3Sharp
            // Read offset used to read from the stream, in bytes.
            int _offset;
 
+           // end marker, one past end of array. Same as bufferp[0], but
+           // without the array bounds check.
+           int _end;
+
            // Write offset used in append_bytes
            byte [] buffer = new byte[OBUFFERSIZE * 2]; // all channels interleaved
            int [] bufferp = new int[MAXCHANNELS]; // offset in each channel not same!
@@ -318,8 +322,10 @@ namespace Mp3Sharp
               {
                  // Note: should be Math.Max( bufferp[0], bufferp[1]-1 ). 
                  // Heh.
-                 return bufferp[0] - _offset;
+                 return _end - _offset;
 
+                 // This results in a measurable performance improvement, but
+                 // is actually incorrect. Is there a trick to optimize this?
                  // return (OBUFFERSIZE * 2) - _offset;
               }
            }
@@ -393,7 +399,8 @@ namespace Mp3Sharp
 		/// </summary>
 	        public override void  clear_buffer()  
                 { 
-                   _offset = OBUFFERSIZE * 2;
+                   _offset = 0;
+                   _end = 0;
 
                    for (int i = 0; i < CHANNELS; i++)
                       bufferp[i] = i * 2; // two bytes per channel
@@ -402,10 +409,13 @@ namespace Mp3Sharp
 		public override void  set_stop_flag() { }
 		public override void  write_buffer(int val) 
                 { 
-                   // Buffer is full, right?
-                   Debug.Assert( bufferp[0] == (OBUFFERSIZE * 2) );
-                   
                    _offset = 0;
+
+                   // speed optimization - save end marker, and avoid
+                   // array access at read time. Can you believe this saves
+                   // like 1-2% of the cpu on a PIII? I guess allocating
+                   // that temporary "new int(0)" is expensive, too.
+                   _end = bufferp[0]; 
                 }
 		public override void  close() {}	
 
