@@ -4,7 +4,6 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 SRCS = MainWnd.cs \
         GtkPlayer.cs \
-        ConfigDlg.cs \
         PlayerSettings.cs
 
 DEPLIBS = ../Interfaces/tamjb.Interfaces.dll

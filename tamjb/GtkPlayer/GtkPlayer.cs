@@ -79,11 +79,12 @@ namespace byteheaven.tamjb.GtkPlayer
          //
          Glade.XML glade = new Glade.XML( null,
                                           "tam.GtkPlayer.exe.glade",
-                                          "GtkPlayer",
+                                          null /* null means all */,
                                           null );
 
          glade.Autoconnect( this );
 
+         _configWindow.TransientFor = _mainWindow;
          try
          {
             _settings = PlayerSettings.Fetch();
@@ -100,7 +101,14 @@ namespace byteheaven.tamjb.GtkPlayer
 
          _SetUpControls();
 
-         _configDlg = new ConfigDlg( _settings );
+         // Load application icon here if possible
+//          Gdk.Pixbuf icon = new Gdk.Pixbuf( Assembly.GetExecutingAssembly(), 
+//                                            "appicon.png" );
+//
+//          Debug.Assert( null != icon );
+//          _mainWidnow.Icon = icon;
+//          _configWindow.Icon = icon;
+
 
          // Background processing callback
          Gtk.Timeout.Add( 2000, new Gtk.Function( _PollingCallback ) );
@@ -790,26 +798,73 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          try
          {
-            _Trace( "Config" );
+            _Trace( "[_ConfigBtnClick]" );
 
-            if ((int)ResponseType.Ok == _configDlg.Run())
-            {
-               _Trace( "OK" );
-
-               // (re)connect to the player
-               _backend = null;
-               _backend = _ConnectToEngine( _settings.serverName,
-                                            _settings.serverPort );
-
-               // Save for future generations!
-               _settings.Store();
-            }
+            // Show the semi-modal config window
+            _configHostnameEntry.Text = _settings.serverName;
+            _configPortEntry.Text = _settings.serverPort.ToString();
+            _configWindow.Show();
+            _configWindow.Present();
          }
          catch (Exception e)
          {
             _Trace( e.ToString() );
          }
       }
+
+      ///
+      /// User has approved the new configuration--save it?
+      ///
+      void _OnConfigOk( object sender, EventArgs eventArgs )
+      {
+         try
+         {
+            _Trace( "[_OnConfigOk]" );
+
+            bool convertOk = false;
+            int port = 0;
+            try
+            {
+               port = Convert.ToInt32( _configPortEntry.Text );
+               convertOk = true;
+            }
+            catch (Exception e)
+            {
+               // I think we should prevent all invalid entry rather
+               // than catching it here after the fact.
+               _Status( "Invalid port - " + e.Message, 30 );
+               return;
+            }
+
+            // If we got here, the controls validated
+            _settings.serverName = _configHostnameEntry.Text;
+            _settings.serverPort = port;
+            _configWindow.Hide();
+
+            // (re)connect to the player
+            _backend = null;
+            _backend = _ConnectToEngine( _settings.serverName,
+                                         _settings.serverPort );
+
+            // If we got here, nothing threw an exception. Wow!
+            // Save for future generations!
+            _settings.Store();
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+      
+      ///
+      /// Changed your mind, did you?
+      ///
+      void _OnConfigCancel( object sender, EventArgs eventArgs )
+      {
+         _Trace( "[_OnConfigCancel]" );
+         _configWindow.Hide();
+      }
+
 
       void _OnLockToggled( object sender, EventArgs args )
       {
@@ -933,7 +988,6 @@ namespace byteheaven.tamjb.GtkPlayer
       // Configuration
 
       PlayerSettings _settings;
-      ConfigDlg      _configDlg;
 
       // Engine remote connection
 
@@ -1010,6 +1064,21 @@ namespace byteheaven.tamjb.GtkPlayer
       
       [Glade.Widget]
       Statusbar _statusBar;
+
+      // Configuration windows
+      [Glade.Widget]
+      Entry  _configHostnameEntry;
+
+      [Glade.Widget]
+      Entry  _configPortEntry;
+
+      // Application windows
+      [Glade.Widget]
+      Window _mainWindow;
+
+      [Glade.Widget]
+      Window _configWindow;
+
 
       int _statusBarPopTimeout = 0;
       uint _statusId = 1;        // unique id of the gtk player's status msgs
