@@ -1,4 +1,9 @@
 // $Id$
+//
+// Fri Jul 30 20:39:30 EDT 2004
+// Rewrote the buffer object to hold one frame at a time for 
+// efficiency. Commented out some functions rather than taking
+// the time to port them. --t/DD
 
 using System;
 using System.Diagnostics;
