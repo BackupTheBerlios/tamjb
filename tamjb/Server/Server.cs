@@ -72,6 +72,8 @@ namespace byteheaven.tamjb.Server
          Console.WriteLine( " --port <port>" );
          Console.WriteLine( " --logFile <logFile>" );
          Console.WriteLine( " --dir <mp3_root_dir> (multiple dirs allowed)" );
+         Console.WriteLine( " --bufferSize" );
+         Console.WriteLine( " --bufferCount" );
          Console.WriteLine( " --trace" );
       }
 
@@ -117,6 +119,8 @@ namespace byteheaven.tamjb.Server
          string dbUrl = null;
          bool doTrace = false;
          bool createDatabase = false;
+         uint bufferSize = 44100 / 4;
+         uint bufferCount = 30;
          _port = 0;
 
          for (int i = 0; i < args.Length; i++)
@@ -147,6 +151,14 @@ namespace byteheaven.tamjb.Server
 
             case "--trace":
                doTrace = true;
+               break;
+               
+            case "--bufferSize":
+               bufferSize = Convert.ToUInt32( args[++i] );
+               break;
+
+            case "--bufferCount":
+               bufferCount = Convert.ToUInt32( args[++i] );
                break;
 
             default:
@@ -237,6 +249,11 @@ namespace byteheaven.tamjb.Server
                Engine engine = 
                   (Engine) Activator.GetObject( typeof(Engine), 
                                                 serverUrl );
+
+               engine.bufferSize = bufferSize;
+               engine.bufferCount = bufferCount;
+               engine.bufferPreload = bufferCount;
+               
 
                // Continually scan all configured dirs for new mp3's
                try
