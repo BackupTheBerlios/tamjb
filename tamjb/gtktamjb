@@ -1,0 +1,8 @@
+#!/bin/sh
+# $Id$
+#
+# A wrapper to launch the standalone tamjb 
+
+installdir="/usr/local/lib/tamjb"
+
+cd "$installdir" && mono -O=all ./tamjb.GtkPlayer.exe

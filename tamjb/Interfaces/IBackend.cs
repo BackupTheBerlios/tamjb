@@ -40,5 +40,11 @@ namespace byteheaven.tamjb.Interfaces
 
       // Kills all player threads and such so the program can exit
       void ShutDown();
+
+      int desiredQueueSize { get; set; }
+      uint bufferSize{ get; set; }
+      uint bufferCount{ get; set; }
+      uint bufferPreload{ get; set; }
+
    }
 }

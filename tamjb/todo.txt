@@ -1,5 +1,15 @@
 
 TODO
+ - Standalone operation:
+
+   File browse dialogs
+
+   Test database for existance. Ask/create if does not exist.
+
+   Make client mode a command-line option
+
+   Error reporting (eek!)
+
  - Fix memory leak
   Leakage is greatly reduced with the use of postgresql and the 
   latest changes to Mp3Sharp. However, the program still leaks slowly.
@@ -17,9 +27,6 @@ TODO
 
  - Calculate average song volume and store for later level adjustment
 
- - Allow the program to run standalone, not as a client server program, 
-  for the simple case where one person is listening.
-
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc.
 
@@ -30,6 +37,9 @@ TODO
 
 
 DONE
+  Allow the program to run standalone, not as a client server program, 
+  for the simple case where one person is listening.
+
   A branch of Mp3Sharp is now located (temporarily) in the tamjb cvs
   repository.
 

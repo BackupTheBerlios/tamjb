@@ -126,6 +126,12 @@ namespace byteheaven.tamjb.GtkPlayer
                   object backend = _CreateLocalEngine();
                   _backendProxy = (IEngine)backend;
                   _backendInterface = (IBackend)backend;
+
+                  // Set up the configurable parameters. :)
+                  _backendInterface.desiredQueueSize = 6;
+                  _backendInterface.bufferCount = 20;
+                  _backendInterface.bufferPreload = 20;
+                  _backendInterface.bufferSize = 8192;
                }
                else
                {
@@ -189,7 +195,11 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          set
          {
-            _connectionString = value;
+            if (null == value)
+               _connectionString = "";
+            else
+               _connectionString = value;
+
             _backendProxy = null; // force reload of backend
          }
       }
@@ -205,6 +215,10 @@ namespace byteheaven.tamjb.GtkPlayer
          
          Type type = Type.GetType( 
             "byteheaven.tamjb.Engine.Backend,tamjb.Engine" );
+
+         if (null == type)
+            throw new ApplicationException( "Cannot load Engine.Backend" );
+
          object [] args = new object[2];
          args[0] = (int)5; //QUEUE_MIN_SIZE;
          args[1] = _connectionString;
@@ -221,6 +235,9 @@ namespace byteheaven.tamjb.GtkPlayer
 
          Type type = Type.GetType( 
             "byteheaven.tamjb.Engine.RecursiveScanner,tamjb.Engine" );
+
+         if (null == type)
+            throw new ApplicationException( "Cannot load RecursiveScanner" );
 
          object [] args = new object[1];
          args[0] = dir;
@@ -267,7 +284,8 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       public static void PollBackend()
       {
-         _backendInterface.Poll();
+         if (_runLocal && (null != _backendInterface))
+            _backendInterface.Poll();
       }
 
       ///
