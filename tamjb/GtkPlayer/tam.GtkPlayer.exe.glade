@@ -16,7 +16,7 @@
   <child>
     <widget class="GtkTable" id="topLayout">
       <property name="visible">True</property>
-      <property name="n_rows">4</property>
+      <property name="n_rows">5</property>
       <property name="n_columns">1</property>
       <property name="homogeneous">False</property>
       <property name="row_spacing">0</property>
@@ -634,6 +634,21 @@
 	  <property name="top_attach">1</property>
 	  <property name="bottom_attach">2</property>
 	  <property name="x_options">fill</property>
+	</packing>
+      </child>
+
+      <child>
+	<widget class="GtkStatusbar" id="_statusBar">
+	  <property name="visible">True</property>
+	  <property name="has_resize_grip">True</property>
+	</widget>
+	<packing>
+	  <property name="left_attach">0</property>
+	  <property name="right_attach">1</property>
+	  <property name="top_attach">4</property>
+	  <property name="bottom_attach">5</property>
+	  <property name="x_options">fill</property>
+	  <property name="y_options">fill</property>
 	</packing>
       </child>
     </widget>

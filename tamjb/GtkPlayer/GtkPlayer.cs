@@ -184,6 +184,13 @@ namespace tam.GtkPlayer
             // State changed?
             if (_backend.CheckState(ref _engineState) || _pendingUpdate )
                _UpdateNowPlayingInfo();
+
+            if (_statusBarPopTimeout > 0)
+            {
+               -- _statusBarPopTimeout;
+               if (_statusBarPopTimeout == 0)
+                  _statusBar.Pop( _statusId );
+            }
          }
          catch (Exception e)
          {
@@ -572,12 +579,13 @@ namespace tam.GtkPlayer
             string serverUrl = 
                "tcp://" + serverName + ":" + serverPort + "/Engine";
 
-            _Trace( serverUrl );
+            _Trace( serverUrl + " - Trying to connect" );
 
             // Retrieve a reference to the remote object
             IEngine engine = (IEngine) Activator.GetObject( typeof(IEngine), 
                                                             serverUrl );
 
+            _Trace( serverUrl + " - Connected" );
             return engine;
          }
          catch ( System.Net.WebException snw )
@@ -708,10 +716,12 @@ namespace tam.GtkPlayer
          }
       }
 
-
       void _Trace( string msg )
       {
          Trace.WriteLine( msg, "GtkPlayer" );
+         _statusBar.Pop( _statusId );
+         _statusBar.Push( _statusId, msg );
+         _statusBarPopTimeout = 5;    // 10 seconds
       }
 
       // Configuration
@@ -791,6 +801,11 @@ namespace tam.GtkPlayer
       [Glade.Widget]
       Button _nextBtn;
 
+      [Glade.Widget]
+      Statusbar _statusBar;
+
+      int _statusBarPopTimeout = 0;
+      uint _statusId = 1;        // unique id of the gtk player's status msgs
    }
 
 }
