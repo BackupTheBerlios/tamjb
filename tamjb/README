@@ -126,6 +126,9 @@ Track Attribute Manager - Jukebox
 
   4) type make (The makefiles are gnumake specific...)
 
+  5) Release packages may be built using the build_package script. This
+  will probably work best as ( cd .. && tamjb/build_package ), because 
+  otherwise it won't be able to find mp3sharp and esd-sharp. For now.
 
 * Running (Part 2)
 

@@ -40,7 +40,7 @@ RELEASE_BINARY_FILES = \
 
 all: assykey.snk dll_subdirs exe_subdirs doc
 
-binary: all
+rel-binary: all
 	-mkdir package 2> /dev/null
 	-mkdir package/bin 2> /dev/null
 	cp $(RELEASE_TEXT_FILES) package/.

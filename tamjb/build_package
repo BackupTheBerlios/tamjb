@@ -1,25 +1,35 @@
 #!/bin/sh
 
 # $Id$
+#
+# Note: you will need to set your CVSROOT to the tamjb project's root,
+# and log in! 
 
-# binary/source package info
-PACKAGE_DIR=tamjb-snapshot
-PACKAGE_TAG=SNAPSHOT_2004_07_07
-LIBDIR="../lib"
+# The last known good snapshot tag:
+
+PACKAGE_DIR=tamjb-2004-07-08
+PACKAGE_TAG=SNAPSHOT_2004_07_08
+
+if [ -d $PACKAGE_DIR ] ; then 
+  echo "Package dir ${PACKAGE_DIR} exists! Bailing"
+  exit 1
+fi
 
 mkdir $PACKAGE_DIR
-mkdir $PACKAGE_DIR/lib
 
-# Copy things that I'm distributing in source form and providing
-# patches+links to the original source (presumably built elsewhere)
-cp $LIBDIR/esd-sharp.dll $PACKAGE_DIR/lib/. || exit 1
-cp $LIBDIR/Mp3Sharp.dll $PACKAGE_DIR/lib/. || exit 1
-
-# Get and build tamjb
+# Get the package
 ( cd $PACKAGE_DIR && cvs get -r $PACKAGE_TAG tamjb ) || exit 1
-( cd $PACKAGE_DIR/tamjb && make  ) || exit 1
 
-# Zip it up
-zip -r $PACKAGE_DIR.zip $PACKAGE_DIR
+# Zip up the source
+zip -r $PACKAGE_DIR-src.zip $PACKAGE_DIR
+
+# Compile
+( cd $PACKAGE_DIR/tamjb && make  ) || exit 1
+( cd $PACKAGE_DIR/tamjb && make binary  ) || exit 1
+
+# Zip up the binary
+zip -r $PACKAGE_DIR-bin.zip $PACKAGE_DIR
+
+echo "Success!"
 
 
