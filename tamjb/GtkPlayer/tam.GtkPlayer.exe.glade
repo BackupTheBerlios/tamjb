@@ -31,6 +31,7 @@
 	  <child>
 	    <widget class="GtkButton" id="_prevBtn">
 	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
 	      <property name="can_focus">True</property>
 	      <property name="label">gtk-go-back</property>
 	      <property name="use_stock">True</property>
@@ -47,6 +48,7 @@
 	  <child>
 	    <widget class="GtkButton" id="_nextBtn">
 	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
 	      <property name="can_focus">True</property>
 	      <property name="label">gtk-go-forward</property>
 	      <property name="use_stock">True</property>
@@ -61,17 +63,119 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="_configBtn">
+	    <widget class="GtkHBox" id="hbox3">
 	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="label">gtk-properties</property>
-	      <property name="use_stock">True</property>
-	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <signal name="clicked" handler="_ConfigBtnClick" object="this" last_modification_time="Fri, 07 May 2004 20:24:39 GMT"/>
+	      <property name="homogeneous">True</property>
+	      <property name="spacing">0</property>
+
+	      <child>
+		<widget class="GtkButton" id="_stopBtn">
+		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">Stop</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <signal name="clicked" handler="_OnStopBtnClicked" object="this" last_modification_time="Fri, 18 Jun 2004 18:20:47 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkButton" id="_playBtn">
+		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">Play</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <signal name="clicked" handler="_OnPlayBtnClicked" object="this" last_modification_time="Fri, 18 Jun 2004 18:21:16 GMT"/>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkButton" id="_configBtn">
+		  <property name="visible">True</property>
+		  <property name="can_focus">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <signal name="clicked" handler="_ConfigBtnClick" object="this" last_modification_time="Fri, 07 May 2004 20:24:39 GMT"/>
+
+		  <child>
+		    <widget class="GtkAlignment" id="alignment2">
+		      <property name="visible">True</property>
+		      <property name="xalign">0.5</property>
+		      <property name="yalign">0.5</property>
+		      <property name="xscale">0</property>
+		      <property name="yscale">0</property>
+
+		      <child>
+			<widget class="GtkHBox" id="hbox4">
+			  <property name="visible">True</property>
+			  <property name="homogeneous">False</property>
+			  <property name="spacing">2</property>
+
+			  <child>
+			    <widget class="GtkImage" id="image2">
+			      <property name="visible">True</property>
+			      <property name="stock">gtk-properties</property>
+			      <property name="icon_size">4</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkLabel" id="label7">
+			      <property name="visible">True</property>
+			      <property name="label" translatable="yes">
+</property>
+			      <property name="use_underline">True</property>
+			      <property name="use_markup">False</property>
+			      <property name="justify">GTK_JUSTIFY_LEFT</property>
+			      <property name="wrap">False</property>
+			      <property name="selectable">False</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
-	      <property name="expand">False</property>
+	      <property name="expand">True</property>
 	      <property name="fill">True</property>
 	    </packing>
 	  </child>
@@ -446,6 +550,7 @@
 	      <child>
 		<widget class="GtkButton" id="_notAppropriateBtn">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes">_Inappropriate</property>
 		  <property name="use_underline">True</property>
@@ -464,6 +569,7 @@
 	      <child>
 		<widget class="GtkButton" id="_suckBtn">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
 		  <signal name="clicked" handler="_SuckBtnClick" object="this" last_modification_time="Fri, 07 May 2004 20:19:15 GMT"/>
@@ -536,6 +642,7 @@
 	      <child>
 		<widget class="GtkHScale" id="_appropriateSlider">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="draw_value">True</property>
 		  <property name="value_pos">GTK_POS_TOP</property>
@@ -556,6 +663,7 @@
 	      <child>
 		<widget class="GtkHScale" id="_suckSlider">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="draw_value">True</property>
 		  <property name="value_pos">GTK_POS_TOP</property>
@@ -576,6 +684,7 @@
 	      <child>
 		<widget class="GtkCheckButton" id="_isAppropriateActive1Btn">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
 		  <property name="active">False</property>
@@ -600,6 +709,7 @@
 	      <child>
 		<widget class="GtkCheckButton" id="_isSuckActiveBtn">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
 		  <property name="active">False</property>

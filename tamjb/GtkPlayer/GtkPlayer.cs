@@ -591,6 +591,48 @@ namespace tam.GtkPlayer
          }
       }
 
+      ///
+      /// Callback for the stop button. Tries to make the backend stop
+      /// playing.
+      ///
+      void _OnStopBtnClicked( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_OnStopBtnClicked]" );
+
+            if (null == _engineState)
+               return;
+
+            _backend.StopPlaying(); // Please stop! Please stop!
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      ///
+      /// Callback for the play button
+      ///
+      void _OnPlayBtnClicked( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_OnPlayBtnClicked]" );
+
+            if (null == _engineState)
+               return;
+
+            _backend.StartPlaying(); // (if not already started)
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+
       IEngine _ConnectToEngine( string serverName,
                                 int serverPort )
       {
@@ -713,26 +755,40 @@ namespace tam.GtkPlayer
       {
          _Trace( "[_UpdateButtonState]" );
 
-         // Implement me! :)
-         // check _nowPlaying, _currentTrackKey, and _pendingUpdate etc
-         if (null == _engineState || 
+         bool isConnected = (null != _engineState);
+
+         _isSuckActiveBtn.Sensitive = isConnected;
+         _isAppropriateActive1Btn.Sensitive = isConnected;
+         _nextBtn.Sensitive = isConnected;
+         _prevBtn.Sensitive = isConnected;
+
+         if (!isConnected || !_engineState.isPlaying)
+         {
+            _stopBtn.Sensitive = false;
+            _playBtn.Sensitive = true;
+         }
+         else
+         {
+            _stopBtn.Sensitive = true;
+            _playBtn.Sensitive = false;
+         }
+
+         if (!isConnected || 
              !_engineState.isPlaying || 
              _pendingUpdate)
          {
             _suckBtn.Sensitive = false;
+            _notAppropriateBtn.Sensitive = false;
             _suckSlider.Sensitive = false;
             _appropriateSlider.Sensitive = false;
-            _prevBtn.Sensitive = false;
          }
          else
          {
             _suckSlider.Sensitive = _isSuckActive;
             _suckBtn.Sensitive = _isSuckActive;
-            _isSuckActiveBtn.Active = _isSuckActive;
 
             _appropriateSlider.Sensitive = _isAppropriateActive;
             _notAppropriateBtn.Sensitive = _isAppropriateActive;
-            _isAppropriateActive1Btn.Active = _isAppropriateActive;
 
             if (_engineState.currentTrackIndex <= 0)
                _prevBtn.Sensitive = false;
@@ -832,6 +888,12 @@ namespace tam.GtkPlayer
       [Glade.Widget]
       Button _nextBtn;
 
+      [Glade.Widget]
+      Button _stopBtn;
+
+      [Glade.Widget]
+      Button _playBtn;
+      
       [Glade.Widget]
       Statusbar _statusBar;
 

@@ -111,9 +111,9 @@ namespace tam
          //    ConfigurationSettings.AppSettings ["BufferSize"];
                         
          // Set up the audio player engine
-         SimpleMp3Player.Player.bufferSize = 44100 / 2 ;
-         SimpleMp3Player.Player.buffersInQueue = 16;
-         SimpleMp3Player.Player.buffersToPreload = 16;
+         SimpleMp3Player.Player.bufferSize = 44100 / 4 ;
+         SimpleMp3Player.Player.buffersInQueue = 12;
+         SimpleMp3Player.Player.buffersToPreload = 12;
 
          // Set up callback to be called when a track finishes
          // playing:
@@ -147,7 +147,7 @@ namespace tam
                   return false;
             }
 
-            state = new EngineState( Player.isPlaying,
+            state = new EngineState( _shouldBePlaying,
                                      _playQueueCurrentTrack,
                                      _playQueue,
                                      _trackCounter,
@@ -184,7 +184,7 @@ namespace tam
                EnqueueRandomSong();
 
             // If playback has stopped, restart it now.
-            if (! this.isPlaying)
+            if (_shouldBePlaying && ( ! Player.isPlaying ))
             {
                _Trace( "Hey, we are not playing. Restarting.." );
                GotoNextFile();
@@ -314,7 +314,7 @@ namespace tam
       {
          get
          {
-            return Player.isPlaying;
+            return _shouldBePlaying;
          }
       }
 
@@ -568,7 +568,10 @@ namespace tam
          {
             PlayableData nextFile = _PlaylistGoNext();
             if (null != nextFile)
+            {
                Player.PlayFile( nextFile.filePath, nextFile.key );
+               _shouldBePlaying = true;
+            }
 
             ++_changeCount;
          }
@@ -592,7 +595,10 @@ namespace tam
             PlayableData prevFile = _PlaylistGoPrev();
             _Trace( "PREV = " + prevFile.title );
             if (null != prevFile)
+            {
                Player.PlayFile( prevFile.filePath, prevFile.key );
+               _shouldBePlaying = true;
+            }
 
             ++_changeCount;
          }
@@ -832,6 +838,46 @@ namespace tam
          }
       }
 
+      ///
+      /// Stop!
+      ///
+      public void StopPlaying()
+      {
+         _Lock();
+         try
+         {
+            _shouldBePlaying = false;
+            Player.Stop();
+            ++ _changeCount;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
+      ///
+      /// Starts playback if stopped
+      ///
+      public void StartPlaying()
+      {
+         _Lock();
+         try
+         {
+            PlayableData file = _PlaylistGetCurrent();
+            if (null != file)
+            {
+               Player.PlayFile( file.filePath, file.key );
+               _shouldBePlaying = true;
+            }
+            ++ _changeCount;
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
 
       ///
       /// Returning null here guarantees that this object will
@@ -914,6 +960,13 @@ namespace tam
       /// should be updated on the client side.
       ///
       long      _changeCount = 0;
+
+      ///
+      /// If the user presses stop, this becomes false. Etc. The
+      /// back end may stop playing if its queue runs out--this is 
+      /// separate so we know whether to restart it.
+      ///
+      bool      _shouldBePlaying = true;
 
       ///
       /// This one protects us from multithreaded access due to remoting,

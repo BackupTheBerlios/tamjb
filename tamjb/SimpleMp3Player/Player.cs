@@ -204,6 +204,22 @@ namespace tam.SimpleMp3Player
       }
 
       ///
+      /// Stops playback, etc.
+      ///
+      public static void Stop()
+      {
+         _configMutex.WaitOne();
+         try
+         {
+            _state = State.STOP;
+         }
+         finally
+         {
+            _configMutex.ReleaseMutex();
+         }
+      }
+
+      ///
       /// Starts playback of the indicated file. This clears out any
       /// existing queue of files to play and immediately starts
       /// playing this file instead.
@@ -425,23 +441,6 @@ namespace tam.SimpleMp3Player
          Thread audioThread = null;
          try
          {
-            ///
-            /// \todo Should get the sample rate from the mp3 file's header 
-            ///    info instead of fixing it at 44100.
-            ///
-            
-            Trace.WriteLine( "Starting esd", "MP3" );
-            ///
-            /// \todo Exceptions won't propagate back to the parent 
-            ///   thread. How do we indicate esd errors?
-            ///
-            _estream = _esd.PlayStream( "Generic", 
-                                        EsdChannels.Stereo,
-                                        44100,
-                                        EsdBits.Sixteen );
-
-            _estream.AllocWriteBuffer( (int)_bufferSize );
-            
             audioThread = new Thread( new ThreadStart( _AudioThread ) );
             // audioThread.Priority = ThreadPriority.BelowNormal;
             audioThread.Start();
@@ -459,6 +458,33 @@ namespace tam.SimpleMp3Player
                {
                case State.STOP:
                   Trace.WriteLine( "STOP", "MP3" );
+
+                  // In case we were playing or whatever, be sure files and
+                  // streams are closed:
+                  if (_mp3Stream != null)
+                  {
+                     _mp3Stream.Close();
+                     _mp3Stream = null;
+                  }
+
+                  // Stop the audio writer while we delete the estream.
+                  if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, 
+                                                          false ))
+                  {
+                     // If this happened, we probably want to kill the
+                     // audio thread and restart esd. :(
+                     
+                     throw new ApplicationException( 
+                        "Timed out waiting for the audio mutex" );
+                  }
+                  try
+                  {
+                     _ShutDownEstream();
+                  }
+                  finally
+                  {
+                     _audioThreadMutex.ReleaseMutex();
+                  }
                   
                   // Wait until the parent wakes us up.
                   _configMutex.ReleaseMutex();
@@ -474,30 +500,23 @@ namespace tam.SimpleMp3Player
                case State.PLAY_FILE_REQUEST:
                   Trace.WriteLine( "PLAY_FILE_REQUEST", "MP3" );
                   
-                  if (_bufferSizeChanged)
+                  if (_bufferSizeChanged ||  null == _estream)
                   {
+                     // Stop the audio writer stream to handle buffer resize. 
+                     if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, 
+                                                 false ))
+                     {
+                        // If this happened, we probably want to kill the
+                        // audio thread and restart esd. :(
+                        
+                        throw new ApplicationException( 
+                           "Timed out waiting for the audio mutex" );
+                     }
+                     
                      try
                      {
-                        // Stop the audio writer stream to handle buffer resize. 
-                        if (false == _audioThreadMutex.WaitOne( AUDIO_TIMEOUT, 
-                                                                false ))
-                        {
-                           // If this happened, we probably want to kill the
-                           // audio thread and restart esd. :(
-                           throw new ApplicationException( "Timed out waiting for the audio mutex" );
-                        }
-
-                        ///
-                        /// \todo Set sample rate here as well
-                        ///
-                        Trace.WriteLine( "creating buffers!", "MP3" );
-
-                        // esd#'s buffer must be as large or larger than 
-                        // our buffer
-                        _estream.FreeWriteBuffer();
-                        _estream.AllocWriteBuffer( (int)_bufferSize );
-
-                        _CreateBuffers();
+                        _StartUpEstream();
+                        _CreateMp3Buffers();
                         _underflowEvent.Set();
                         _bufferSizeChanged = false; // no longer
                      }
@@ -517,6 +536,8 @@ namespace tam.SimpleMp3Player
                   
                case State.PLAYING:
                   // Trace.WriteLine( "MP3> PLAYING", "MP3" );
+                  Debug.Assert( null != _estream, 
+                                "not created in PLAY_FILE_REQUEST?" );
                   
                   // Wait for a free audio buffer
                   Buffer buffer = _WaitForAndPopFreeBuffer();
@@ -588,6 +609,10 @@ namespace tam.SimpleMp3Player
                }
             }
          }
+         catch (Exception reasonForCrashing)
+         {
+            Trace.WriteLine( reasonForCrashing.ToString(), "MP3" );
+         }
          finally
          {
             if (null != audioThread)
@@ -613,8 +638,64 @@ namespace tam.SimpleMp3Player
          }
       }
 
-      static void _CreateBuffers()
+      ///
+      /// A helper for the PLAY_FILE_REQUEST state change that creates
+      /// our esound stream object, and sets an appropriate buffer size
+      ///
+      static void _StartUpEstream()
       {
+         Trace.WriteLine( "[_StartUpEstream]", "MP3" );
+
+         ///
+         /// \todo Should get the sample rate from the mp3 
+         ///    file's header info instead of fixing it at 
+         ///    44100. <:
+                           
+         ///
+         /// \todo Exceptions won't propagate back to the
+         ///   parent thread. How do we indicate esd errors?
+         ///
+         if (null == _estream)
+         {
+            _estream = _esd.PlayStream( "Generic", 
+                                        EsdChannels.Stereo,
+                                        44100,
+                                        EsdBits.Sixteen );
+         }
+         else
+         {
+            // esound already running, free the existing
+            // write buffer
+            _estream.FreeWriteBuffer();
+         }
+         
+         // esd#'s buffer must be as large or larger than 
+         // our buffer, or...boom!
+         _estream.AllocWriteBuffer( (int)_bufferSize );
+      }
+
+      ///
+      /// A helper for the STOP state that destroys our esound stream
+      ///
+      static void _ShutDownEstream()
+      {
+         Trace.WriteLine( "[_ShutDownEstream]", "MP3" );
+
+         if (null != _estream)
+         {
+            _estream.FreeWriteBuffer();
+            _estream.Close();
+            _estream = null;
+         }
+      }
+
+      ///
+      /// A helper for the PLAY_FILE_REQUEST state change
+      ///
+      static void _CreateMp3Buffers()
+      {
+         Trace.WriteLine( "[_CreateMp3Buffers]", "MP3" );
+
          _mp3QueueMutex.WaitOne();
          _mp3BufferQueue.Clear(); // empty!
          _mp3BuffersEvent.Reset(); // no buffers queued
@@ -843,32 +924,44 @@ namespace tam.SimpleMp3Player
                {
                   Trace.WriteLine( "Timed out waiting for the audio mutex",
                                    "AUD" );
-                  continue;  // keep trying
                }
-
-               try
+               else 
                {
-                  int written = 0;
-                  while (written < buffer.validBytes)
+                  try
                   {
-                     int actual = _estream.Write( buffer.mp3Buffer,
-                                                  written, 
-                                                  buffer.validBytes - written );
-
-                     if (actual <= 0)
+                     if (null == _estream)
                      {
-                        Trace.WriteLine( "Warning: EsdSharp.Write returned <= 0, ("
-                                         + actual + ")", 
-                                         "AUD" );
-                        break;
+                        // If this is null, playback is stopped. Throw 
+                        // away the retrieved buffer and wait for more.
                      }
-
-                     written += actual;
+                     else             // Nothing seems to be wrong
+                     {
+                        int written = 0;
+                        while (written < buffer.validBytes)
+                        {
+                           int actual = 
+                              _estream.Write( buffer.mp3Buffer,
+                                              written, 
+                                              buffer.validBytes - written );
+                           
+                           if (actual <= 0)
+                           {
+                              Trace.WriteLine( 
+                                 "Warning: EsdSharp.Write returned <= 0, ("
+                                 + actual + ")", 
+                                 "AUD" );
+                              
+                              break;
+                           }
+                           
+                           written += actual;
+                        }
+                     }
                   }
-               }
-               finally
-               {
-                  _audioThreadMutex.ReleaseMutex();
+                  finally
+                  {
+                     _audioThreadMutex.ReleaseMutex();
+                  }
                }
 
                // done! Well, probably. esd is strange.

@@ -102,10 +102,20 @@ namespace tam
                                        uint trackKey );
 
 
-      // These need some sort of cue as to what your application's 
-      // state is to deal with multiple concurrent requests.
+      // These need to take, as a parameter, some sort of clue as to 
+      // what your application's  state is, to deal with multiple 
+      // concurrent requests.
       void GotoNextFile();
       void GotoPrevFile();
 
+      ///
+      /// Stops playback if started
+      ///
+      void StopPlaying();
+
+      ///
+      /// Starts playback if stopped
+      ///
+      void StartPlaying();
    }
 }
