@@ -5,12 +5,13 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 SRCS = Main.cs \
         GtkPlayer.cs \
         ConfigWindow.cs \
-        LocalConfigWindow.cs \
+        DatabaseConfigWindow.cs \
         MiscSettings.cs \
         MoodWindow.cs \
         PlayerSettings.cs
 
 DEPLIBS = ../Interfaces/tamjb.Interfaces.dll
+
 
 PLAYER_REFS = -r System.Data \
         -r System.Runtime.Remoting \

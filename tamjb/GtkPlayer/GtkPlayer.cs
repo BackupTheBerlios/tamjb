@@ -100,8 +100,7 @@ namespace byteheaven.tamjb.GtkPlayer
             _settings.serverPort = 6543;
          }
 
-         PlayerApp.connectionString = 
-            "URI=file:/" + _settings.databaseFile;
+         PlayerApp.connectionString = _settings.connectString;
 
          PlayerApp.mp3RootDir = _settings.mp3RootDir;
 
@@ -245,27 +244,44 @@ namespace byteheaven.tamjb.GtkPlayer
 
          if (PlayerApp.isStandalone) // not using a remote server?
          {
+            bool shouldStop = false;
             try
             {
-               PlayerApp.PollBackend(); // keep the engine working
+               if (backend.isPlaying)
+                  PlayerApp.PollBackend(); // keep the engine working
             }
             catch (Exception e)
             {
                // dump stack trace
                _Trace( "Problem during Poll(): " + e.ToString() );
-               _Status( e.Message, 60 );
+               _Status( "Problem during Poll", 120 );
+               shouldStop = true;
             }
+
+            // TODO: only stop on fatal errors, like database connect
+            // problems. Hmmm.
+            // TODO: Make the stopping configurable, because the databvase
+            // might have temporary connectivity problems (ie, be restarted).
+
+            if (shouldStop)
+               _StopPlayback();
 
             try
             {
-               PlayerApp.ScanForFiles();
+               if (backend.isPlaying)
+                  PlayerApp.ScanForFiles();
             }
             catch (Exception e)
             {
                // dump stack trace
+               // _Complain( "Problem scanning for files", e );
                _Trace( "Problem scanning for files: " + e.ToString() );
-               _Status( "Problem scanning for files", 60 );
+               _Status( "Problem scanning for files", 120 );
+               // shouldStop = true;
             }
+
+            if (shouldStop)
+               _StopPlayback();
          }
 
          if (_statusBarPopTimeout > 0)
@@ -277,6 +293,25 @@ namespace byteheaven.tamjb.GtkPlayer
 
          return true; // keep calling
       }
+
+      ///
+      /// Try to stop playback
+      ///
+      void _StopPlayback()
+      {
+         backend.StopPlaying();
+         _UpdateTransportButtonState();
+      }
+
+      ///
+      /// Try to start playback
+      ///
+      void _StartPlayback()
+      {
+         backend.StartPlaying();
+         _UpdateTransportButtonState();
+      }
+
 
       ///
       /// Called from the PollingCallback, and also when we just changed
@@ -768,7 +803,7 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnStopBtnClicked]" );
 
-            backend.StopPlaying(); // Please stop! Please stop!
+            _StopPlayback();    // Please stop! Please stop!
          }
          catch (Exception e)
          {
@@ -785,7 +820,7 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnPlayBtnClicked]" );
 
-            backend.StartPlaying(); // (if not already started)
+            _StartPlayback();   // (if not already started)
          }
          catch (Exception e)
          {
@@ -804,40 +839,30 @@ namespace byteheaven.tamjb.GtkPlayer
 
             if (PlayerApp.isStandalone)
             {
-               LocalConfigDialog config = 
-                  new LocalConfigDialog( _mainWindow,
-                                         _settings.databaseFile,
-                                         _settings.mp3RootDir );
-               config.Run();
-               if (config.isOk)
+               // Don't mess with the database while playing!
+               _StopPlayback();
+
+               DatabaseConfigDialog configDlg = 
+                  new DatabaseConfigDialog( _mainWindow,
+                                            _settings.connectString,
+                                            _settings.mp3RootDir );
+               configDlg.Run();
+               if (configDlg.isOk)
                {
-                  _settings.databaseFile = config.database;
-                  _settings.mp3RootDir = config.mp3RootDir;
+                  _settings.connectString = configDlg.connectString;
+                  _settings.mp3RootDir = configDlg.mp3RootDir;
 
-                  // Connection string for sqlite
-                  PlayerApp.connectionString = 
-                     "URI=file:/" + config.database;
-
-                  PlayerApp.mp3RootDir = config.mp3RootDir;
+                  PlayerApp.connectionString = configDlg.connectString;
+                  PlayerApp.mp3RootDir = configDlg.mp3RootDir;
 
                   _settings.Store();
 
-                  if (config.needToCreateDatabase)
-                  {
-                     try
-                     {
-                        PlayerApp.CreateDatabase( PlayerApp.connectionString );
-                     }
-                     catch (Exception createProblem)
-                     {
-                        _Complain( "Could not create database",
-                                   createProblem );
-                     }
-                  }
                }
             }
             else
             {
+               // Run the client-server config dialog:
+
                ConfigDialog config = 
                   new ConfigDialog( _mainWindow,
                                     _settings.serverName,
@@ -1141,7 +1166,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                DialogFlags.Modal,
                                MessageType.Error,
                                ButtonsType.Ok, 
-                               msg );
+                               msg + "\n" + e.Message );
          md.Run();
          md.Destroy();
       }

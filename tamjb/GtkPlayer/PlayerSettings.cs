@@ -46,7 +46,11 @@ namespace byteheaven.tamjb.GtkPlayer
       /// Server port (defaults to, uh, what?)
       public int    serverPort;
 
-      public string databaseFile;
+      ///
+      /// Database connection config. This could possibly be divided
+      /// depending on the database type into port name pass etc.
+      ///
+      public string connectString;
 
       public string mp3RootDir;
 

@@ -53,8 +53,16 @@ namespace byteheaven.tamjb.GtkPlayer
 
          try
          {
-            // Spit all trace output to stdout if desired
-            Trace.Listeners.Add( new TextWriterTraceListener(Console.Out) );
+            BooleanSwitch traceEnableSwitch = 
+               new BooleanSwitch("TraceEnable", "Enable trace messages");
+
+
+            if (traceEnableSwitch.Enabled)
+            {
+               // Spit all trace output to stdout if desired
+               Trace.Listeners.Add( new TextWriterTraceListener(Console.Out) );
+            }
+
             Trace.AutoFlush = true;
             
             // Set up remoting services if we are using a remote server
