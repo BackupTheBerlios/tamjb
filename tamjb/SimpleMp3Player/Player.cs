@@ -84,14 +84,7 @@ namespace tam.SimpleMp3Player
       readonly static int AUDIO_TIMEOUT = 10000; // milliseconds?
       static Player()
       {
-         // This is only necessary because calling the event handler with
-         // no listeners connected causes a NullReferenceException. Easy fix:
-         // install a local listener
-         OnTrackFinished += new TrackFinishedHandler( _MyOnTrackFinished );
-      }
-      static void _MyOnTrackFinished( TrackFinishedInfo status )
-      {
-         // Really...do nothing. No, really.
+         // Do nothing?
       }
 
       /// 
@@ -366,6 +359,10 @@ namespace tam.SimpleMp3Player
          }
       }
 
+      ///
+      /// \todo Add an OnError handler to this object?
+      ///
+
       public static event TrackFinishedHandler OnTrackFinished;
       public static event TrackStartingHandler OnTrackPlayed;
 
@@ -515,7 +512,13 @@ namespace tam.SimpleMp3Player
                      
                      try
                      {
-                        _StartUpEstream();
+                        if (!_StartUpEstream())
+                        {
+                           // esound not available?
+                           _state = State.STOP; // stop!
+                           break; // * BREAK OUT **
+                        }
+
                         _CreateMp3Buffers();
                         _underflowEvent.Set();
                         _bufferSizeChanged = false; // no longer
@@ -587,7 +590,9 @@ namespace tam.SimpleMp3Player
                         info = new TrackFinishedInfo( _playingTrack.index, 
                                                       playbackException );
                      }
-                     OnTrackFinished( info );
+                     
+                     if (null != OnTrackFinished)
+                        OnTrackFinished( info );
 
                      if (_InternalStartNextFile() == false)
                         _state = State.STOP; // end of file
@@ -634,6 +639,12 @@ namespace tam.SimpleMp3Player
                _estream.Close();
             }
 
+            // Don't want to exit the thread while holding this mutex, 
+            // do we? It's possible we aren't holding it, but  certainly
+            // we don't have to worry about releasing other threads' 
+            // claim.
+            _configMutex.ReleaseMutex();
+
             Trace.WriteLine( "bye", "MP3" );
          }
       }
@@ -642,7 +653,7 @@ namespace tam.SimpleMp3Player
       /// A helper for the PLAY_FILE_REQUEST state change that creates
       /// our esound stream object, and sets an appropriate buffer size
       ///
-      static void _StartUpEstream()
+      static bool _StartUpEstream()
       {
          Trace.WriteLine( "[_StartUpEstream]", "MP3" );
 
@@ -655,23 +666,42 @@ namespace tam.SimpleMp3Player
          /// \todo Exceptions won't propagate back to the
          ///   parent thread. How do we indicate esd errors?
          ///
-         if (null == _estream)
+
+         // Retry opening the audio device several times.
+         for (int tries = 0; tries < 30; tries++)
          {
-            _estream = _esd.PlayStream( "Generic", 
-                                        EsdChannels.Stereo,
-                                        44100,
-                                        EsdBits.Sixteen );
+            try
+            {
+               if (null == _estream)
+               {
+                  _estream = _esd.PlayStream( "Generic", 
+                                              EsdChannels.Stereo,
+                                              44100,
+                                              EsdBits.Sixteen );
+               }
+               else
+               {
+                  // esound already running, free the existing
+                  // write buffer
+                  _estream.FreeWriteBuffer();
+               }
+               
+               // esd#'s buffer must be as large or larger than 
+               // our buffer, or...boom!
+               _estream.AllocWriteBuffer( (int)_bufferSize );
+
+               return true;     // success, break out of retry loop.
+            }
+            catch (Exception e)
+            {
+               Trace.WriteLine( e.ToString(), "MP3" );
+            }
+
+            Thread.Sleep( 1000 ); // Audio dev in use?
          }
-         else
-         {
-            // esound already running, free the existing
-            // write buffer
-            _estream.FreeWriteBuffer();
-         }
-         
-         // esd#'s buffer must be as large or larger than 
-         // our buffer, or...boom!
-         _estream.AllocWriteBuffer( (int)_bufferSize );
+
+         // If we got here, gave up trying to open the audio device.
+         return false;
       }
 
       ///
@@ -785,7 +815,8 @@ namespace tam.SimpleMp3Player
                   /// \todo differentiate between file-not-found errors
                   ///   and problems with the mp3 playback engine
                   ///
-                  OnTrackFinished( new TrackFinishedInfo( info.index, e ) );
+                  if (null != OnTrackFinished)
+                     OnTrackFinished( new TrackFinishedInfo( info.index, e ) );
                }
 
                // If anything went wrong, park the playback engine and 

@@ -117,8 +117,8 @@ namespace tam
 
          // Set up callback to be called when a track finishes
          // playing:
-//          SimpleMp3Player.Player.OnTrackFinished +=
-//             new TrackFinishedHandler( _TrackFinishedCallback );
+         SimpleMp3Player.Player.OnTrackFinished +=
+            new TrackFinishedHandler( _TrackFinishedCallback );
 
 //          SimpleMp3Player.Player.OnTrackPlayed +=
 //             new TrackStartingHandler( _TrackStartingCallback );
@@ -561,7 +561,7 @@ namespace tam
       ///
       public void GotoNextFile()
       {
-         _Trace( "GotoNextFile" );
+         _Trace( "[GotoNextFile]" );
 
          _Lock();
          try
@@ -614,27 +614,33 @@ namespace tam
       ///
       /// \warning Called in the context of the reader thread!
       ///
-//       void _TrackFinishedCallback(  TrackFinishedInfo info )
-//       { 
-//          // Previous track could be nothing?
-//          if (null != info)
-//          {            
-//             Trace.WriteLine( "Track Finished " + info.key );
+      void _TrackFinishedCallback(  TrackFinishedInfo info )
+      { 
+         // Previous track could be nothing?
+         if (null != info)
+         {            
+            Trace.WriteLine( "Track Finished " + info.key );
 
-//             // Because of the threading, I don't know we can guarantee
-//             // this will never happen, but let's find out:
-//             Debug.Assert( info.key == currentTrack.key,
-//                           "finished track != playing track" );
-//          }
+            // Because of the threading, I don't know we can guarantee
+            // this will never happen. Let's find out:
+            Debug.Assert( info.key == currentTrack.key,
+                          "finished track != playing track" );
+         }
 
-//          // Advance the playlist
-//          PlayableData nextInfo = _PlaylistGoNext();
-//          if (null != nextInfo)
-//          {
-//             // Tell the player to play this track next
-//             Player.SetNextFile( nextInfo.filePath, nextInfo.key );
-//          }
-//       }
+         if (_shouldBePlaying)  // don't bother if we should be stopped
+         {
+            // Don't acquire the _serializer mutex here, because this could
+            // cause a deadlock!
+
+            // Advance the playlist (_Playlist* functions are threadsafe)
+            PlayableData nextInfo = _PlaylistGoNext();
+            if (null != nextInfo)
+            {
+               // Tell the player to play this track next
+               Player.SetNextFile( nextInfo.filePath, nextInfo.key );
+            }
+         }
+      }
    
       ///
       /// Called by the mp3 reader when a track starts playing.
@@ -912,19 +918,16 @@ namespace tam
       ///
       void _Lock()
       {
-         // _Trace( " ?Wait" );
-         if (false == _serializer.WaitOne( 3000, // 5 seconds long enough?
+         if (false == _serializer.WaitOne( 3000,
                                            false ))
          {
             throw new ApplicationException( 
                "_serializer Timed out waiting for lock" );
          }
-         // _Trace( " >Lock" );
       }
 
       void _Unlock()
       {
-         // _Trace( " <Unlock" );
          _serializer.ReleaseMutex();
       }
 
