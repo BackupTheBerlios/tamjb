@@ -81,7 +81,7 @@ Track Attribute Manager - Jukebox
 
    Known good: esd-sharp-0.1.2, with patch
 
-   No license is supplied. I expect this to eventually be replace
+   No license is supplied. I expect this to eventually be replaced
    with GStreamer (Gst#).
 
 
@@ -106,14 +106,10 @@ Track Attribute Manager - Jukebox
      http://www.mle.ie/~rob/mp3sharp/
 
    The supplied DLL seems to work, but for some reason the code sometimes
-   goes into an infinite loop looking for sync at end-of-file, so use this
-   patch:
+   goes into an infinite loop looking for sync at end-of-file. To fix this
+   problem and add some debugging messages, apply this patch:
 
-     patches/mp3sharp-rev.9mar04-throwonsync.patch
-
-   This class does not understand the ID3 tag at the end of a file, and
-   can sometimes play a bit if noise or go into an infinite loop at the
-   end of a file. Which is bad.
+     patches/mp3sharp-rev.9mar04-eof_endless_loop.patch
 
    This code is GPL'ed. Which is good.
 
