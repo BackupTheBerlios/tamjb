@@ -136,7 +136,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                       "text",
                                       TrackListOffset.SUCK );
 
-         column.Sizing = TreeViewColumnSizing.Autosize; // Autosize, GrowOnly
+         column.Sizing = TreeViewColumnSizing.GrowOnly; // Autosize, GrowOnly
          column.MinWidth = 25;
          // column.Toggled = new ToggledHandler( _OnSuckToggled );
          _trackListView.AppendColumn( column );
@@ -147,7 +147,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                       "text",
                                       TrackListOffset.MOOD );
 
-         column.Sizing = TreeViewColumnSizing.Autosize; // Autosize, GrowOnly
+         column.Sizing = TreeViewColumnSizing.GrowOnly; // Autosize, GrowOnly
          column.MinWidth = 25;
          // column.Toggled = new ToggledHandler( _OnSuckToggled );
          _trackListView.AppendColumn( column );
@@ -387,9 +387,21 @@ namespace byteheaven.tamjb.GtkPlayer
                            out double suckPercent,
                            out double moodPercent )
       {
-         // HACK
-         suckPercent = 50.0;
-         moodPercent = 49.1;
+         if (null == _backend)
+         {
+            suckPercent = 0.0;
+            moodPercent = 0.0;
+            return;
+         }
+
+         _backend.GetAttributes( _credentials,
+                                 _mood,
+                                 trackKey,
+                                 out suckPercent,
+                                 out moodPercent );
+
+         suckPercent /= 100;
+         moodPercent /= 100;
       }
 
       ///

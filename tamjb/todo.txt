@@ -3,21 +3,12 @@ TODO
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects.
 
- - Redesign interface & database to 
-
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc.
 
- - Bug: If a playlist is enabled (say, the "Suck" button is enabled) and a new
-  file is found by the file scanner, that file is never played until the
-  Suck playlist is disabled and then reenabled. (Because it is not in the
-  track_attribute table yet.) 
- 
-  To fix, add files to all track_attribute types that exist when adding.
-  This implies that the TRACK_ATTRIBUTE types should be normalized. Which
-  would certainly be a good thing(TM).
- 
  - There is a fat memory leak in the server.
+  Mostly fixed. Still seems to leak slowly when scanning for files. 
+  Wonder if there's a file resource leak? Or maybe I'm imagining it.
 
  - If a file does not have a ID3v2 tag, it will not be played. This is
   technically NOT a bug. Truncated ID3v1 song names are really sad, and
@@ -32,6 +23,8 @@ TODO
 
 
 DONE
+  Interface / database redesign to accomodate users and moods instead
+  of track attributes.
 
  - Thu Jul  8 17:55:50 EDT 2004
  
