@@ -544,7 +544,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                   break;
                   
                case State.PLAYING:
-                  Trace.WriteLine( "  State.PLAYING", "MP3" );
+                  //  Trace.WriteLine( "  State.PLAYING", "MP3" );
                   Debug.Assert( null != _estream, 
                                 "not created in PLAY_FILE_REQUEST?" );
                   

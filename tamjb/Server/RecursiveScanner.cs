@@ -165,7 +165,7 @@ namespace byteheaven.tamjb.Server
       {
          // Get ID3 tags from the file
 
-         ID3v2 tag = new ID3v2( path );
+         ID3v2 tag = new ID3v2( path, false );
          if (!tag.isValid)
          {
             _Trace( "Note: No id3v2 tag found in file: '"

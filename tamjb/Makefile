@@ -34,6 +34,7 @@ RELEASE_BINARY_FILES = \
   thirdparty/esd-sharp.dll \
   thirdparty/Mp3Sharp.dll \
   id3/byteheaven.id3.dll \
+  id3/id3helper.exe \
   SimpleMp3Player/tamjb.SimpleMp3Player.dll \
   Interfaces/tamjb.Interfaces.dll \
   Engine/tamjb.Engine.dll \
