@@ -63,7 +63,20 @@ don't quote me on that.
    
      http://amy.udd.htu.se/~malte/mono/esd/
 
-   Known good: esd-sharp 0.1.2
+   Known good: esd-sharp-0.1.2, with this patch. 
+
+--- ../esd-sharp.cs     2004-05-01 03:17:23.969082064 -0400
++++ esd-sharp.cs        2004-03-20 12:51:58.000000000 -0500
+@@ -200,7 +200,7 @@
+                        ptr = Marshal.AllocHGlobal(buffer.Length);
+ 
+                        Marshal.Copy(buffer, offset, ptr, length);
+-                       length = Esd.write(id, ptr, length);
++                       length = Esd.write(id, ptr, length - offset);
+ 
+                        Marshal.FreeHGlobal(ptr);
+                        return length;
+
 
 
  - mp3id3tagkonverter
