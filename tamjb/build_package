@@ -21,20 +21,21 @@ if [ -d $PACKAGE_DIR ] ; then
 fi
 
 mkdir $PACKAGE_DIR
-ln -s "$KEYFILE" "${PACKAGE_DIR}/assykey.sk"
 
 # Get the package
-( cd $PACKAGE_DIR && cvs get -r $PACKAGE_TAG tamjb ) || exit 1
+( cvs get -r $PACKAGE_TAG -d ${PACKAGE_DIR} tamjb ) || exit 1
 
 # Zip up the source
-zip -r $PACKAGE_DIR-src.zip $PACKAGE_DIR
+zip -r $PACKAGE_DIR-src.zip $PACKAGE_DIR || exit 1
 
 # Compile
-( cd $PACKAGE_DIR/tamjb && make  ) || exit 1
-( cd $PACKAGE_DIR/tamjb && make binary  ) || exit 1
+ln -s "$KEYFILE" "${PACKAGE_DIR}/assykey.snk" || exit 1
+( cd $PACKAGE_DIR && make  ) || exit 1
+( cd $PACKAGE_DIR && make rel-binary  ) || exit 1
 
 # Zip up the binary
-zip -r $PACKAGE_DIR-bin.zip $PACKAGE_DIR
+mv $PACKAGE_DIR/package $PACKAGE_DIR-bin
+zip -r $PACKAGE_DIR-bin.zip $PACKAGE_DIR-bin || exit 1
 
 echo "Success!"
 
