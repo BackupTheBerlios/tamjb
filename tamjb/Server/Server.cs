@@ -45,6 +45,7 @@ namespace tam.Server
    ///   referenced here
    ///
    using tam.SimpleMp3Player;
+   using tam.LocalFileDatabase;
 
    ///
    /// Server for client-server mode
@@ -67,6 +68,7 @@ namespace tam.Server
       {
          Console.WriteLine( "usage: " );
          Console.WriteLine( " --dbUrl <file:/path/to.db>" );
+         Console.WriteLine( " --create (create empty database and exit)" );
          Console.WriteLine( " --port <port>" );
          Console.WriteLine( " --logFile <logFile>" );
          Console.WriteLine( " --dir <mp3_root_dir> (multiple dirs allowed)" );
@@ -114,6 +116,7 @@ namespace tam.Server
          string logFile = "-";
          string dbUrl = null;
          bool doTrace = false;
+         bool createDatabase = false;
          _port = 0;
 
          for (int i = 0; i < args.Length; i++)
@@ -122,6 +125,10 @@ namespace tam.Server
 				
             switch (arg)
             {
+            case "--create":
+               createDatabase = true;
+               break;
+
             case "--port":
                _port = Convert.ToInt32( args[++i] );
                break;
@@ -149,16 +156,22 @@ namespace tam.Server
             }
          }
 
-         if (_port == 0)
+         if (null == dbUrl)
          {
-            Console.WriteLine( "--port required" );
+            Console.WriteLine( "--dbUrl required" );
             _Usage();
             return 2;
          }
 
-         if (null == dbUrl)
+         if (createDatabase)
          {
-            Console.WriteLine( "--dbUrl required" );
+            _CreateDatabase( dbUrl );
+            return 0;
+         }
+
+         if (_port == 0)
+         {
+            Console.WriteLine( "--port required" );
             _Usage();
             return 2;
          }
@@ -276,6 +289,13 @@ namespace tam.Server
          // Unreachable?
          // return 3;
       }
+
+      static void _CreateDatabase( string dburl )
+      {
+         StatusDatabase db = new StatusDatabase( "URI=" + dburl );
+         db.CreateTablesIfNecessary();
+      }
+
 
       ///
       /// Set up our client-server channel
