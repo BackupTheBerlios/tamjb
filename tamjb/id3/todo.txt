@@ -2,3 +2,9 @@ TODO
 
   Parse multi-string fields, like Genre, one char at a time.
 
+DONE
+
+  ID3v2.2, .3, and .4 basic song info fields (id3v1 compat fields)
+
+  unsynchronization
+

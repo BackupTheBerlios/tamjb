@@ -130,12 +130,27 @@ namespace byteheaven.id3
       ///
       public ID3v2( string path )
       {
-         _stream = new FileStream( path, FileMode.Open );
+         _stream = new FileStream( path, 
+                                   FileMode.Open,
+                                   FileAccess.Read,
+                                   FileShare.Read );
          _reader = new Mp3StreamReader( _stream );
          try
          {
             // Find the start of the ID3v2 tag in our stream:
             _header = _FindHeader( false );
+            Debug.Assert( null != _header );
+
+#if VERBOSE_DUMP
+            _Trace( "  isValid: " + _header.isValid );
+            _Trace( "  version: " + _header.version );
+            _Trace( "  flags: " + _header.flags );
+            _Trace( "  isUnsynchronized: " + _header.isUnsynchronized );
+            _Trace( "  hasExtendedHeader: " + _header.hasExtendedHeader );
+            _Trace( "  isExperimental: " + _header.isExperimental );
+            _Trace( "  hasFooter: " + _header.hasFooter );
+            _Trace( "  size: " + _header.size );
+#endif
 
             // For now, forget about it
             _SkipExtendedHeader(); // skip to the meat
@@ -144,6 +159,10 @@ namespace byteheaven.id3
             // stream.
             _ReadFrames();
 
+         }
+         catch (ID3TagNotFoundException nfe)
+         {
+            _header = null;     // not found. Boo!
          }
          finally
          {
@@ -156,34 +175,72 @@ namespace byteheaven.id3
 
       void _ReadFrames()
       {
-         byte [] headerBuffer = new byte[ID3v2FrameHeader.SIZE_BYTES];
+         // Allocate a buffer for reading in the frame headers
+
+         int frameHeaderSize;
+         switch (_header.version)
+         {
+         case 2:
+            frameHeaderSize = ID3v2_2FrameHeader.SIZE_BYTES;
+            break;
+
+         case 3:
+         case 4:
+            frameHeaderSize = ID3v2_4FrameHeader.SIZE_BYTES;
+            break;
+
+         default:
+            throw new ApplicationException( 
+               "Sorry, don't know what to do with ID3v"
+               + _header.version
+               + " frames!" );
+         }
+
+         byte [] headerBuffer = new byte[frameHeaderSize];
 
          // Keep reading frames until they're all gone
          while (true)
          {
-            if (_reader.Position >=
-                ((long)_header.size + ID3v2FrameHeader.SIZE_BYTES))
+            if (_reader.Position >= ((long)_header.size + frameHeaderSize))
             {
                break;           // Out of ID3 data
             }
 
-            // Console.WriteLine( "POSITION: {0}", _reader.Position );
+#if VERBOSE_DUMP
+            _Trace( "  Reading frame at position: " + _reader.Position );
+#endif
 
-            _reader.Read( headerBuffer, ID3v2FrameHeader.SIZE_BYTES );
+            _reader.Read( headerBuffer, frameHeaderSize );
 
-            ID3v2FrameHeader frameHeader = 
-               new ID3v2FrameHeader( headerBuffer );
+            ID3v2FrameHeader frameHeader;
+            switch (_header.version)
+            {
+            case 2:
+               frameHeader = new ID3v2_2FrameHeader( headerBuffer );
+               break;
+               
+            case 3:
+            case 4:
+               frameHeader = new ID3v2_4FrameHeader( headerBuffer );
+               break;
+
+            default:
+               throw new ApplicationException( "Unexpected case in switch" );
+            }
 
             if (!frameHeader.isValid) // reached the end of the frames, I guess
                break;
 
             // Limit the size of a frame to something "reasonable"
-            if (frameHeader.size > 1000000)
+            if (frameHeader.size > 1000000) // like, 1 million bytes? Right.
             {
                // skip frame
-               Console.WriteLine( "Warning: frame is unusually large: " 
-                                  + frameHeader.size );
-               Console.WriteLine( " (skipping frame)" );
+               _Trace( "Note: this '"
+                       + frameHeader.frameId
+                       + "' frame is unusually large: "
+                       + frameHeader.size );
+
+               _Trace( " (skipping frame)" );
                _reader.Skip( frameHeader.size );
                continue;        // **NEXT FRAME**
             }
@@ -197,8 +254,9 @@ namespace byteheaven.id3
             }
             catch (Exception e)
             {
-               Console.WriteLine( "Problem reading frame ({0})",
-                                  frameHeader.frameId );
+               _Trace( "Problem reading frame '"
+                       + frameHeader.frameId
+                       + "'" );
                // Just keep going
             }
          }
@@ -210,16 +268,27 @@ namespace byteheaven.id3
       void _OnFoundFrame( ID3v2FrameHeader frameHeader,
                           byte [] contentBuffer )
       {
+#if VERBOSE_DUMP
+         _Trace( "[_OnFoundFrame]" );
+         _Trace( "  isValid: " + frameHeader.isValid );
+         _Trace( "  size: " + frameHeader.size );
+         _Trace( "  isCompressed: " + frameHeader.isCompressed );
+         _Trace( "  isEncrypted: " + frameHeader.isEncrypted );
+         _Trace( "  isUnsynchronized: " + frameHeader.isUnsynchronized );
+         _Trace( "  hasDataLength: " + frameHeader.hasDataLength );
+         _Trace( "  frameId: " + frameHeader.frameId );
+#endif
+
          if (frameHeader.isEncrypted)
          {
             // skip frame
-            Console.WriteLine( "Note: Skipping encrypted frame" );
+            _Trace( "Note: Skipping encrypted frame" );
             return;
          }
 
          if (frameHeader.isCompressed)
          {
-            Console.WriteLine( "Fixme: Skipping compressed frame" );
+            _Trace( "Fixme: Skipping compressed frame" );
             return;
          }
 
@@ -243,6 +312,11 @@ namespace byteheaven.id3
             contentSize = frameHeader.size;
          }
 
+#if VERBOSE_DUMP
+         _Trace( "Found Frame <"
+                 + frameHeader.frameId
+                 + ">" );
+#endif
 
          switch (frameHeader.frameId)
          {
@@ -250,44 +324,55 @@ namespace byteheaven.id3
          case "RVA2":           // Relative volume adjustment
          case "EQU2":           // Relative eq adjustment
          case "TBPM":           // bpm
+         case "TBM":            // ""
          case "TCOM":           // composer (useful for classical)
          case "TCOP":           // copyright (yeah, I do care)
          case "TLEN":           // Length in...milliseconds
+         case "TLE":            // ""
          case "TPE2":           // performed-by (band/supporting artist)
          case "TPE3":           // performed-by (condustor, etc)
          case "TRSN":           // Internet radio station...
          case "TIT1":           // song category thingy
          case "TIT3":           // Song refinement (op3)
-            Console.WriteLine( "Desirable frame not supported :( - {0} -", 
-                               frameHeader.frameId );
+            // Note: "GEOB" frames include a mime type and are frequently HUGE
+            _Trace( "Desirable frame not supported :( '"
+                    + frameHeader.frameId
+                    + "'" );
             break;
 
          case "TYER":
+         case "TYE":
             tyer = _DecodeTextFrame( contentBuffer, frameHeader.size );
             break;
 
          case "MCDI":           // Music CD identifier -- oh yeah.
+         case "MCI":
             mcdi = contentBuffer; // binary data
             break;
 
          case "TCON":           // content type (ROCK/Classical)
+         case "TCO":            // content type (ROCK/Classical)
             tcon = _DecodeTextFrame( contentBuffer, frameHeader.size );
             // Important--get all values from null-separated list here.
             break;
 
          case "TIT2":           // song title
+         case "TT2":
             tit2 = _DecodeTextFrame( contentBuffer, frameHeader.size );
             break;
 
          case "TPE1":           // performed-by (lead performer)
+         case "TP1":            // performed-by (lead performer)
             tpe1 = _DecodeTextFrame( contentBuffer, frameHeader.size );
             break;
 
          case "TALB":           // album title
+         case "TAL":            // album title
             talb = _DecodeTextFrame( contentBuffer, frameHeader.size );
             break;
 
          case "TRCK":           // track number
+         case "TRK":
             string TRCK = _DecodeTextFrame( contentBuffer, frameHeader.size );
             string [] parts = TRCK.Split( '/' );
             if (parts.Length > 0)
@@ -299,12 +384,18 @@ namespace byteheaven.id3
             break;
 
          case "COMM":           // tag comment (ID3v1 style)
+         case "COM":
             comm = _DecodeTextFrame( contentBuffer, frameHeader.size );
             break;
 
+            //
+            // ID3v2.2 and earlier frames are decoded here!
+            // 
+
          default:
-            Console.WriteLine( "ID3 frame type not supported: - {0} -", 
-                               frameHeader.frameId );
+            _Trace( "ID3 frame type not supported: '"
+                    + frameHeader.frameId
+                    + "'" );
             break;
          }
       }
@@ -312,10 +403,22 @@ namespace byteheaven.id3
       ///
       /// Modifies buffer in-place, removing unsynchronization codes.
       ///
+      /// "The only purpose of the 'unsychronisation scheme' is to make 
+      /// the ID3v2 tag as compatible as possible with existing software
+      /// [at the time the ID3v2.2 standard was drafted]"
+      ///
+      /// This is stupid! Obviously the mp3 format is a transport stream!
+      /// Therefore, players should be able to find and use those all-
+      /// important sync bytes, and a stupid tagging format that is not
+      /// properly embedded in mpeg frames should make every effort to 
+      /// avoid causing problems. Therefore, I think every ID3 tag program
+      /// should unsynchronize frames as necessary to remove sync patterns!
+      ///
       void _FixUnsynchronized( byte [] buffer, 
                                int length,
                                out int newLength )
       {
+         _Trace( "[FixUnsynchronized]" );
 
          // And I quote:
          // "
@@ -370,10 +473,14 @@ namespace byteheaven.id3
             ++left;
             ++right;
          }
+
+         _Trace( "  Old Length: " + length );
+         _Trace( "  New Length: " + length );
       }
 
       ///
-      /// Helper that retrieves the text value of a TXXX type frame.
+      /// Helper (for the v2.3/4 frame classes) that retrieves the text 
+      /// value of a TXXX or similar frame, using the appropriate encoding.
       ///
       /// \param buffer contains the content after the type header.
       ///
@@ -473,7 +580,12 @@ namespace byteheaven.id3
 
          ID3v2Header header = new ID3v2Header( buffer, true );
          if (header.isValid)
+         {
+#if VERBOSE_DUMP
+            _Trace( "  Found header at start" );
+#endif
             return header;
+         }
 
          if (!tryTheEnd)
          {
@@ -484,7 +596,7 @@ namespace byteheaven.id3
          }
 
          // Seek to end of file (new for 2.4)
-         Console.WriteLine( "FIXME: look for ID3v2.4 tag at EOF" );
+         _Trace( "FIXME: look for ID3v2.4 tag at EOF" );
          throw new ID3TagNotFoundException();
       }
 
@@ -501,9 +613,10 @@ namespace byteheaven.id3
          // Just get the size and ignore it
          if (_header.hasExtendedHeader)
          {
-            byte [] buffer = new byte[ID3v2Header.SIZE_BYTES];
-            _reader.Read( buffer, ID3v2Header.SIZE_BYTES );
+            _Trace( "  Extended header found--skipping" );
 
+            byte [] buffer = new byte[4];
+            _reader.Read( buffer, 4 );
             int extHeaderSize = DecodeSyncsafeInt( buffer, 0 );
 
             if (extHeaderSize < 6)
@@ -514,9 +627,9 @@ namespace byteheaven.id3
                   );
             }
 
-            // We've already read the first 6 bytes, skip the rest
-            // of the ext header:
-            _reader.Skip( extHeaderSize - 6 );
+            // We've already read the first 4 bytes (size), skip the rest
+            // of the ext header too!
+            _reader.Skip( extHeaderSize - 4 );
          }
       }
 
@@ -537,6 +650,11 @@ namespace byteheaven.id3
                         );
 
          return decoded;
+      }
+
+      static void _Trace( string msg )
+      {
+         Trace.WriteLine( msg, "ID3v2" );
       }
 
       // The file or other device that contains the id3 data

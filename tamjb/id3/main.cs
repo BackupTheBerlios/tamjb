@@ -75,6 +75,13 @@ namespace byteheaven.id3
             return 1;
          }
 
+         // Dump trace output if verbose
+         if (verbosity > 0)
+         {
+            Trace.Listeners.Add( new TextWriterTraceListener(Console.Out) );
+            Trace.AutoFlush = true;
+         }
+
          ID3v2 tag = null;
          try
          {
@@ -82,20 +89,22 @@ namespace byteheaven.id3
             ID3v2Header header = tag.header;
             if (header == null)
             {
+               Console.WriteLine( "File: {0}", file );
                Console.WriteLine( "No ID3v2 header found" );
                return 2;
             }
          }
          catch (Exception e)
          {
+            Console.WriteLine( "File: {0}", file );
             Console.WriteLine( e.ToString() );
             return 1;
          }
 
-         Console.WriteLine( "File: {0}", file );
          if (verbosity > 0)
          {
-            Console.WriteLine( "Found Tag: ID3v{0}", 
+            Console.WriteLine( "File: {0}", file );
+            Console.WriteLine( "Found Tag: ID3v2.{0}", 
                                tag.header.version );
          }
 
