@@ -128,8 +128,10 @@ namespace byteheaven.id3
       ///
       /// Reads a subset of the id3 information
       ///
-      public ID3v2( string path )
+      public ID3v2( string path, bool verboseDump )
       {
+         _debugDump = verboseDump;
+
          _stream = new FileStream( path, 
                                    FileMode.Open,
                                    FileAccess.Read,
@@ -141,16 +143,23 @@ namespace byteheaven.id3
             _header = _FindHeader( false );
             Debug.Assert( null != _header );
 
-#if VERBOSE_DUMP
-            _Trace( "  isValid: " + _header.isValid );
-            _Trace( "  version: " + _header.version );
-            _Trace( "  flags: " + _header.flags );
-            _Trace( "  isUnsynchronized: " + _header.isUnsynchronized );
-            _Trace( "  hasExtendedHeader: " + _header.hasExtendedHeader );
-            _Trace( "  isExperimental: " + _header.isExperimental );
-            _Trace( "  hasFooter: " + _header.hasFooter );
-            _Trace( "  size: " + _header.size );
-#endif
+            if (_debugDump)
+            {
+               _Trace( "  isValid: " + _header.isValid );
+               _Trace( "  version: " + _header.version );
+               _Trace( "  flags: " + _header.flags );
+               _Trace( "  isUnsynchronized: " + _header.isUnsynchronized );
+               _Trace( "  hasExtendedHeader: " + _header.hasExtendedHeader );
+               _Trace( "  isExperimental: " + _header.isExperimental );
+               _Trace( "  hasFooter: " + _header.hasFooter );
+               _Trace( "  size: " + _header.size );
+            }
+
+            if (_header.isUnsynchronized)
+            {
+               throw new ApplicationException(
+                  "Sorry, whole-tag unsynchronization not yet implemented" );
+            }
 
             // For now, forget about it
             _SkipExtendedHeader(); // skip to the meat
@@ -185,6 +194,9 @@ namespace byteheaven.id3
             break;
 
          case 3:
+            frameHeaderSize = ID3v2_3FrameHeader.SIZE_BYTES;
+            break;
+
          case 4:
             frameHeaderSize = ID3v2_4FrameHeader.SIZE_BYTES;
             break;
@@ -203,12 +215,16 @@ namespace byteheaven.id3
          {
             if (_reader.Position >= ((long)_header.size + frameHeaderSize))
             {
+               if (_debugDump)
+               {
+                  _Trace( "  Done with frames at position: " 
+                          + _reader.Position );
+               }
                break;           // Out of ID3 data
             }
 
-#if VERBOSE_DUMP
-            _Trace( "  Reading frame at position: " + _reader.Position );
-#endif
+            if (_debugDump)
+               _Trace( "  Reading frame at position: " + _reader.Position );
 
             _reader.Read( headerBuffer, frameHeaderSize );
 
@@ -220,6 +236,9 @@ namespace byteheaven.id3
                break;
                
             case 3:
+               frameHeader = new ID3v2_3FrameHeader( headerBuffer );
+               break;
+
             case 4:
                frameHeader = new ID3v2_4FrameHeader( headerBuffer );
                break;
@@ -229,18 +248,41 @@ namespace byteheaven.id3
             }
 
             if (!frameHeader.isValid) // reached the end of the frames, I guess
-               break;
+            {
+               if (_debugDump)
+                  _Trace( "  Found invalid frame header" );
+
+               // Try to skip the freame
+               if (frameHeader.size <= 0)
+               {
+                  if (_debugDump)
+                     _Trace( "  Size == 0, bailing out" );
+
+                  return;
+               }
+               else
+               {
+                  if (_debugDump)
+                     _Trace( "  Skipping" );
+
+                  _reader.Skip( frameHeader.size );
+               }
+            }
 
             // Limit the size of a frame to something "reasonable"
             if (frameHeader.size > 1000000) // like, 1 million bytes? Right.
             {
                // skip frame
-//                _Trace( "Note: this '"
-//                        + frameHeader.frameId
-//                        + "' frame is unusually large: "
-//                        + frameHeader.size );
+               if (_debugDump)
+               {
+                  _Trace( "Note: this '"
+                          + frameHeader.frameId
+                          + "' frame is unusually large: "
+                          + frameHeader.size );
 
-//                _Trace( " (skipping frame)" );
+                  _Trace( " (skipping frame)" );
+               }
+
                _reader.Skip( frameHeader.size );
                continue;        // **NEXT FRAME**
             }
@@ -268,16 +310,17 @@ namespace byteheaven.id3
       void _OnFoundFrame( ID3v2FrameHeader frameHeader,
                           byte [] contentBuffer )
       {
-#if VERBOSE_DUMP
-         _Trace( "[_OnFoundFrame]" );
-         _Trace( "  isValid: " + frameHeader.isValid );
-         _Trace( "  size: " + frameHeader.size );
-         _Trace( "  isCompressed: " + frameHeader.isCompressed );
-         _Trace( "  isEncrypted: " + frameHeader.isEncrypted );
-         _Trace( "  isUnsynchronized: " + frameHeader.isUnsynchronized );
-         _Trace( "  hasDataLength: " + frameHeader.hasDataLength );
-         _Trace( "  frameId: " + frameHeader.frameId );
-#endif
+         if (_debugDump)
+         {
+            _Trace( "[_OnFoundFrame]" );
+            _Trace( "  isValid: " + frameHeader.isValid );
+            _Trace( "  size: " + frameHeader.size );
+            _Trace( "  isCompressed: " + frameHeader.isCompressed );
+            _Trace( "  isEncrypted: " + frameHeader.isEncrypted );
+            _Trace( "  isUnsynchronized: " + frameHeader.isUnsynchronized );
+            _Trace( "  hasDataLength: " + frameHeader.hasDataLength );
+            _Trace( "  frameId: " + frameHeader.frameId );
+         }
 
          if (frameHeader.isEncrypted)
          {
@@ -300,8 +343,7 @@ namespace byteheaven.id3
          // be set if the tag has a frame which is not unsynchronised."
 
          int contentSize;
-         if (frameHeader.isUnsynchronized ||
-             _header.isUnsynchronized)
+         if (frameHeader.isUnsynchronized)
          {
             _FixUnsynchronized( contentBuffer, 
                                 frameHeader.size,
@@ -312,11 +354,12 @@ namespace byteheaven.id3
             contentSize = frameHeader.size;
          }
 
-#if VERBOSE_DUMP
-         _Trace( "Found Frame <"
-                 + frameHeader.frameId
-                 + ">" );
-#endif
+         if (_debugDump)
+         {
+            _Trace( "Found Frame <"
+                     + frameHeader.frameId
+                     + ">" );
+         }
 
          switch (frameHeader.frameId)
          {
@@ -581,9 +624,9 @@ namespace byteheaven.id3
          ID3v2Header header = new ID3v2Header( buffer, true );
          if (header.isValid)
          {
-#if VERBOSE_DUMP
-            _Trace( "  Found header at start" );
-#endif
+            if (_debugDump)
+               _Trace( "  Found header at start" );
+
             return header;
          }
 
@@ -665,5 +708,11 @@ namespace byteheaven.id3
       // Things found in the mp3 file.
       //
       ID3v2Header _header = null;
+
+      //
+      // Set to true to get internal debugging _Trace output during
+      // frame parsing
+      //
+      bool _debugDump = false;
    }
 }

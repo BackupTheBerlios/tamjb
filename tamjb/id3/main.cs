@@ -42,37 +42,46 @@ namespace byteheaven.id3
    {
       static void _Usage()
       {
-         Console.WriteLine( "Usage: id3test <-v -v ...> filename.mp3" );
+         Console.WriteLine( "Usage: id3helper <options> <--> filename <...>" );
+         Console.WriteLine( " --verbose     Be verbose (repeat for more)" );
+         Console.WriteLine( " -v" );
+         Console.WriteLine( " --list        List all tags found in file" );
+         Console.WriteLine( " -l" );
       }
 
       public static int Main( string [] args )
       {
-         string file = null;
          int verbosity = 0;
+         bool noMoreOptions = false;
+         bool doListAction = false;
+
+         ArrayList fileList = new ArrayList();
 
          foreach (string arg in args)
          {
-            switch (arg)
+            if (noMoreOptions)
             {
-            case "-v":
-               ++ verbosity;
-               break;
-               
-            default:
-               if (null != file)
-               {
-                  _Usage();
-                  return 1;
-               }
-               file = arg;
-               break;
+               fileList.Add( arg );
             }
-         }
+            else
+            {
+               switch (arg)
+               {
+               case "-v":
+               case "--verbose":
+                  ++ verbosity;
+                  break;
 
-         if (null == file)
-         {
-            _Usage();
-            return 1;
+               case "-l":
+               case "--list":
+                  doListAction = true;
+                  break;
+               
+               default:
+                  fileList.Add( arg );
+                  break;
+               }
+            }
          }
 
          // Dump trace output if verbose
@@ -82,62 +91,81 @@ namespace byteheaven.id3
             Trace.AutoFlush = true;
          }
 
-         ID3v2 tag = null;
-         try
+         foreach (string file in fileList)
          {
-            tag = new ID3v2( file );
-            ID3v2Header header = tag.header;
-            if (header == null)
+            ID3v2 tag = null;
+            try
+            {
+               bool dumpDebugInfo = false;
+               if (verbosity > 2)
+                  dumpDebugInfo = true;
+
+               tag = new ID3v2( file, dumpDebugInfo );
+               ID3v2Header header = tag.header;
+               if (header == null)
+               {
+                  Console.WriteLine( "File: {0}", file );
+                  Console.WriteLine( "No ID3v2 header found" );
+                  continue;     // ** Next File Please **
+               }
+               
+            }
+            catch (Exception e)
             {
                Console.WriteLine( "File: {0}", file );
-               Console.WriteLine( "No ID3v2 header found" );
-               return 2;
+               Console.WriteLine( e.ToString() );
+               return 1;
             }
-         }
-         catch (Exception e)
-         {
-            Console.WriteLine( "File: {0}", file );
-            Console.WriteLine( e.ToString() );
-            return 1;
-         }
 
-         if (verbosity > 0)
-         {
-            Console.WriteLine( "File: {0}", file );
-            Console.WriteLine( "Found Tag: ID3v2.{0}", 
-                               tag.header.version );
-         }
+            if (verbosity > 0)
+            {
+               Console.WriteLine( "File: {0}", file );
+               Console.WriteLine( "Found Tag: ID3v2.{0}", 
+                                  tag.header.version );
+            }
 
-         if (verbosity > 1)
-         {
-            Console.WriteLine( "HasExtHeader: {0}", 
-                               tag.header.hasExtendedHeader );
-            Console.WriteLine( "IsExperimental: {0}", 
-                               tag.header.isExperimental );
-            Console.WriteLine( "HasFooter: {0}", 
-                               tag.header.hasFooter );
-         }
+            if (verbosity > 1)
+            {
+               Console.WriteLine( "Size: {0}", tag.header.size );
+               Console.WriteLine( "IsUnsynchronized: {0}",
+                                  tag.header.isUnsynchronized );
+               Console.WriteLine( "HasExtHeader: {0}", 
+                                  tag.header.hasExtendedHeader );
+               Console.WriteLine( "IsExperimental: {0}", 
+                                  tag.header.isExperimental );
+               Console.WriteLine( "HasFooter: {0}", 
+                                  tag.header.hasFooter );
+            }
 
-         if (verbosity > 0)
-         {
-            if (tag.tcon != null)
-               Console.WriteLine( "TCON: {0}", tag.tcon );
+            if (verbosity > 0)
+            {
+               if (tag.tit2 != null)
+                  Console.WriteLine( "TIT2: {0}", tag.tit2 );
 
-            if (tag.tit2 != null)
-               Console.WriteLine( "TIT2: {0}", tag.tit2 );
+               if (tag.tpe1 != null)
+                  Console.WriteLine( "TPE1: {0}", tag.tpe1 );
 
-            if (tag.tpe1 != null)
-               Console.WriteLine( "TPE1: {0}", tag.tpe1 );
+               if (tag.trck != null)
+                  Console.WriteLine( "TRCK: {0}", tag.trck );
 
-            if (tag.trck != null)
-               Console.WriteLine( "TRCK: {0}", tag.trck );
+               if (tag.comm != null)
+                  Console.WriteLine( "TCON: {0}", tag.comm );
 
-            if (tag.comm != null)
-               Console.WriteLine( "TCON: {0}", tag.comm );
+               if (tag.comm != null)
+                  Console.WriteLine( "TYER: {0}", tag.tyer );
 
-//             if (tag.mcdi != null)
-//             {
-//             }
+               if (tag.tcon != null)
+                  Console.WriteLine( "TCON: {0}", tag.tcon );
+
+               if (tag.mcdi != null)
+                  Console.WriteLine( "MCDI found (what do I do with it?)" );
+
+               if (tag.trackIndex > 0)
+                  Console.WriteLine( "Index: {0}", tag.trackIndex );
+
+               if (tag.trackCount > 0)
+                  Console.WriteLine( "TrackCount: {0}", tag.trackCount );
+            }
          }
 
          return 0;

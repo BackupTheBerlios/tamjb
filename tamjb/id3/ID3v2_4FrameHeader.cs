@@ -123,14 +123,14 @@ namespace byteheaven.id3
 
          _isValid = false;
 
-         _frameId = _DecodeFrameId( buffer );
-         if (_frameId.Length < 4) // found a null or invalid char
-            return;
-         
          _size = ID3v2.DecodeSyncsafeInt( buffer, 4 ); // size offset 4
          if (_size <= 0)
             return;
 
+         _frameId = _DecodeFrameId( buffer );
+         if (_frameId.Length < 4) // found a null or invalid char
+            return;
+         
          flags1 = buffer[8];
          flags2 = buffer[9];
          
