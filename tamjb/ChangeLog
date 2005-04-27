@@ -1,7 +1,80 @@
-$Id$
+2005-04-27  tekHedd <tekhedd@byteheaven.net>
 
-ChangeLog for the TamJB project.
+	* all: (No need to) Fix memory leak. All of the memory bloat is gone 
+	with mono 1.1.6. On my system, the memory stabilizes at about 56M. 
+	Guess it was just the runtime.
 
-The more things change, the more they stay the same.
+	* Engine: Added a predelay option to the compressor to make the 
+	attacks a bit less "pop" prone on faster attack settings. Works OK.
+
+	* all: Build against mono 1.1.6 and latest gtk-sharp/glade-sharp
+
+2004-12-07 tekhedd <tekhedd@byteheaven.net>
+
+	* Engine: Now saves the current logged in user in the database
+
+	* all: The program can now run standalone, not as a client server 
+	program, for the simple case where one person is listening.
+
+	* Mp3Sharp: A branch of Mp3Sharp is now located (temporarily) in the 
+	tamjb cvs repository.
+
+	* SimpleMp3Player: Mono files no longer play back at double speed, but 
+	now they play back only in the left channel. I _guess_ this is an 
+	improvement!
+
+	* Engine: Changed the default suck/mood values back to 20%/80%
+
+	* Engine: Add user controls for the compression and limiting. 
+	Settings are stored in the database so you don't have to reset 
+	them on every reboot.
+
+	* Cut CPU usage by more than half, by rewriting Mp3Sharp's buffering.
+
+2004-07-17
+
+	* GtkPlayer: Added suck/mood percent display in track list.
+
+	* GtkPlayer: You can now modify the attributes of a song that is 
+	not playing by selecting it in the list
+
+	* GtkPlayer: New, improved controls layout.
+
+	* Engine: Added compression and soft limiting to even out that 
+	listening experience. (May not be suitable for music with long, 
+	quiet passages: ie classical. Your mileage may vary.)
+
+	* Engine: PostgreSQL support. SQLite seems to lock the filesystem or 
+	something, causing dropouts. Postgres seems better about this.
+
+	* all: Added per-user and per-mood song attributes. (Log in: how do 
+	you feel?)
+
+	* all: Interface / database redesign to accomodate users and moods 
+	instead of track attributes.
+
+2004-07-08
+ 
+	* id3: Added Unsynchronization support to the id3 tag reader
+
+	* all: Added strong-signing for all assemblies, including third-party 
+	assemblies
+
+	* all: Rearranged the project
+
+	* all: Added id3 tag reader, removed dependency on unknown-license 
+	id3 tag reader
+
+2004-07-07
+
+	* all: created snapshot-2004-05-14
+
+	* Mp3Sharp: Updated the patch for mp3sharp to fix that infinite loop 
+	problem.
+
+	* snapshot: Reversed the name so the year comes first. This makes 
+	more sense, right?
+
+	* ID: $Id$
 
 	

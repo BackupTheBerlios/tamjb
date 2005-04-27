@@ -10,7 +10,7 @@ SRCS = Main.cs \
         MoodWindow.cs \
         PlayerSettings.cs
 
-DEPLIBS = ../Interfaces/tamjb.Interfaces.dll
+DEPLIBS = ../bin/tamjb.Interfaces.dll
 
 
 PLAYER_REFS = -r System.Data \
@@ -21,9 +21,11 @@ PLAYER_REFS = -r System.Data \
 
 RESOURCES = -resource:tam.GtkPlayer.exe.glade
 
-all: tamjb.GtkPlayer.exe 
+PLAYER = ../bin/tamjb.GtkPlayer.exe 
 
-tamjb.GtkPlayer.exe: $(SRCS) $(DEPLIBS) tam.GtkPlayer.exe.glade Makefile
+all: $(PLAYER)
+
+$(PLAYER): $(SRCS) $(DEPLIBS) tam.GtkPlayer.exe.glade Makefile
 	mcs $(DEBUGFLAGS) $(LIBPATH) $(PLAYER_REFS) $(RESOURCES) \
                 -out:$@ $(SRCS)
 

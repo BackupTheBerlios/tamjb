@@ -94,7 +94,6 @@ namespace byteheaven.tamjb.GtkPlayer
 
          // Convert from samples to seconds. Note that this assumes
          // 44.1 samples per second. Approximately. :)
-         _Trace( " backend:" + _backend.compressPredelay );
          _predelayScale.Value = 
             ((double)_backend.compressPredelay) / 44.0;
       }

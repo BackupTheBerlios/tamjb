@@ -17,9 +17,9 @@ SRCS = ID3v2.cs \
         AssemblyInfo.cs
 
 ASSEMBLYNAME = byteheaven.id3
-TARGET = $(ASSEMBLYNAME).dll
+TARGET = ../bin/$(ASSEMBLYNAME).dll
 
-CMDLINE = id3helper.exe
+CMDLINE = ../bin/id3helper.exe
 
 all: $(TARGET) $(CMDLINE)
 

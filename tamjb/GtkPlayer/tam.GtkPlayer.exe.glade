@@ -11,6 +11,11 @@
   <property name="modal">False</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <signal name="delete_event" handler="_OnDelete" object="this" last_modification_time="Tue, 13 Jul 2004 18:31:14 GMT"/>
 
   <child>
@@ -38,6 +43,7 @@
 		  <property name="label" translatable="yes">(unknown)</property>
 		  <property name="use_underline">True</property>
 		  <property name="relief">GTK_RELIEF_NONE</property>
+		  <property name="focus_on_click">True</property>
 		  <signal name="clicked" handler="_UserBtnClick" object="this" last_modification_time="Fri, 16 Jul 2004 00:37:51 GMT"/>
 		</widget>
 		<packing>
@@ -60,7 +66,11 @@
 		      <property name="xalign">0.5</property>
 		      <property name="yalign">0.5</property>
 		      <property name="xscale">1</property>
-		      <property name="yscale">0.05</property>
+		      <property name="yscale">0.0500000007451</property>
+		      <property name="top_padding">0</property>
+		      <property name="bottom_padding">0</property>
+		      <property name="left_padding">0</property>
+		      <property name="right_padding">0</property>
 
 		      <child>
 			<widget class="GtkVBox" id="SuckRuleVbox">
@@ -75,6 +85,7 @@
 			      <property name="label" translatable="yes">_Suck</property>
 			      <property name="use_underline">True</property>
 			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="focus_on_click">True</property>
 			      <signal name="clicked" handler="_SuckBtnClick" object="this" last_modification_time="Wed, 14 Jul 2004 19:14:58 GMT"/>
 			    </widget>
 			    <packing>
@@ -91,6 +102,7 @@
 			      <property name="label" translatable="yes">_Rule</property>
 			      <property name="use_underline">True</property>
 			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="focus_on_click">True</property>
 			      <signal name="clicked" handler="_RuleBtnClick" object="this" last_modification_time="Wed, 14 Jul 2004 19:15:59 GMT"/>
 			    </widget>
 			    <packing>
@@ -133,6 +145,7 @@
 			  <property name="label" translatable="yes">(neutral)</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NONE</property>
+			  <property name="focus_on_click">True</property>
 			  <signal name="clicked" handler="_MoodBtnClick" object="this" last_modification_time="Sat, 17 Jul 2004 19:00:54 GMT"/>
 			</widget>
 			<packing>
@@ -149,6 +162,7 @@
 			  <property name="label" translatable="yes">_No</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
+			  <property name="focus_on_click">True</property>
 			  <signal name="clicked" handler="_MoodNoBtnClick" object="this" last_modification_time="Wed, 14 Jul 2004 19:16:16 GMT"/>
 			</widget>
 			<packing>
@@ -165,6 +179,7 @@
 			  <property name="label" translatable="yes">_Yes!</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
+			  <property name="focus_on_click">True</property>
 			  <signal name="clicked" handler="_MoodYesBtnClick" object="this" last_modification_time="Wed, 14 Jul 2004 19:16:33 GMT"/>
 			</widget>
 			<packing>
@@ -195,6 +210,10 @@
 		  <property name="yalign">0.5</property>
 		  <property name="xscale">1</property>
 		  <property name="yscale">1</property>
+		  <property name="top_padding">0</property>
+		  <property name="bottom_padding">0</property>
+		  <property name="left_padding">0</property>
+		  <property name="right_padding">0</property>
 
 		  <child>
 		    <widget class="GtkCheckButton" id="_nowPlayingCheck">
@@ -204,6 +223,7 @@
 		      <property name="label" translatable="yes">_Lock To Now-Playing</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <property name="active">True</property>
 		      <property name="inconsistent">False</property>
 		      <property name="draw_indicator">True</property>
@@ -251,6 +271,8 @@
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">False</property>
+			      <property name="overwrite">False</property>
+			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
 			      <property name="wrap_mode">GTK_WRAP_NONE</property>
 			      <property name="cursor_visible">True</property>
@@ -289,6 +311,8 @@
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">False</property>
+			      <property name="overwrite">False</property>
+			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
 			      <property name="wrap_mode">GTK_WRAP_NONE</property>
 			      <property name="cursor_visible">True</property>
@@ -423,6 +447,8 @@
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">False</property>
+			      <property name="overwrite">False</property>
+			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
 			      <property name="wrap_mode">GTK_WRAP_NONE</property>
 			      <property name="cursor_visible">True</property>
@@ -461,6 +487,8 @@
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">False</property>
+			      <property name="overwrite">False</property>
+			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
 			      <property name="wrap_mode">GTK_WRAP_NONE</property>
 			      <property name="cursor_visible">True</property>
@@ -504,6 +532,7 @@
 		      <property name="sensitive">False</property>
 		      <property name="can_focus">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <signal name="clicked" handler="_PrevBtnClick" object="this" last_modification_time="Fri, 07 May 2004 20:20:13 GMT"/>
 
 		      <child>
@@ -531,6 +560,7 @@
 		      <property name="sensitive">False</property>
 		      <property name="can_focus">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <signal name="clicked" handler="_NextBtnClick" object="this" last_modification_time="Fri, 07 May 2004 20:20:51 GMT"/>
 
 		      <child>
@@ -560,6 +590,7 @@
 		      <property name="label" translatable="yes">Stop</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <signal name="clicked" handler="_OnStopBtnClicked" object="this" last_modification_time="Fri, 18 Jun 2004 18:20:47 GMT"/>
 		    </widget>
 		    <packing>
@@ -577,6 +608,7 @@
 		      <property name="label" translatable="yes">Play</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <signal name="clicked" handler="_OnPlayBtnClicked" object="this" last_modification_time="Fri, 18 Jun 2004 18:21:16 GMT"/>
 		    </widget>
 		    <packing>
@@ -593,6 +625,7 @@
 		      <property name="label" translatable="yes">_Aud</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <signal name="clicked" handler="_AudioBtnClick" object="this" last_modification_time="Sun, 18 Jul 2004 02:21:58 GMT"/>
 		    </widget>
 		    <packing>
@@ -607,6 +640,7 @@
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
 		      <signal name="clicked" handler="_ConfigBtnClick" object="this" last_modification_time="Fri, 07 May 2004 20:24:39 GMT"/>
 
 		      <child>
@@ -616,6 +650,10 @@
 			  <property name="yalign">0.5</property>
 			  <property name="xscale">0</property>
 			  <property name="yscale">0</property>
+			  <property name="top_padding">0</property>
+			  <property name="bottom_padding">0</property>
+			  <property name="left_padding">0</property>
+			  <property name="right_padding">0</property>
 
 			  <child>
 			    <widget class="GtkHBox" id="hbox16">
@@ -758,6 +796,11 @@
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">True</property>
   <signal name="response" handler="_OnUserResponse" object="this" last_modification_time="Fri, 16 Jul 2004 22:16:53 GMT"/>
 
@@ -780,6 +823,7 @@
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
 	    </widget>
 	  </child>
@@ -792,6 +836,7 @@
 	      <property name="label">gtk-ok</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-5</property>
 	    </widget>
 	  </child>
@@ -870,6 +915,7 @@
 	      <property name="label">gtk-copy</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="_OnMoodCopy" object="this" last_modification_time="Sat, 17 Jul 2004 01:58:25 GMT"/>
 	    </widget>
 	    <packing>
@@ -890,6 +936,7 @@
 	      <property name="label">gtk-copy</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="_OnUserCopy" object="this" last_modification_time="Sat, 17 Jul 2004 01:58:16 GMT"/>
 	    </widget>
 	    <packing>
@@ -910,6 +957,7 @@
 	      <property name="label">gtk-delete</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="_OnUserDelete" object="this" last_modification_time="Sat, 17 Jul 2004 01:57:21 GMT"/>
 	    </widget>
 	    <packing>
@@ -930,6 +978,7 @@
 	      <property name="label">gtk-delete</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="_OnMoodDelete" object="this" last_modification_time="Sat, 17 Jul 2004 01:57:31 GMT"/>
 	    </widget>
 	    <packing>
@@ -960,7 +1009,7 @@
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">False</property>
 		  <signal name="changed" handler="_OnMoodChanged" object="this" last_modification_time="Sat, 17 Jul 2004 18:52:12 GMT"/>
 		</widget>
@@ -1000,7 +1049,7 @@
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">False</property>
 		  <signal name="changed" handler="_OnUserChanged" object="this" last_modification_time="Sat, 17 Jul 2004 18:13:52 GMT"/>
 		</widget>
@@ -1040,6 +1089,11 @@
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="response" handler="_OnUserResponse" object="this" last_modification_time="Sat, 17 Jul 2004 19:18:49 GMT"/>
 
@@ -1062,6 +1116,7 @@
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
 	    </widget>
 	  </child>
@@ -1074,6 +1129,7 @@
 	      <property name="label">gtk-ok</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-5</property>
 	    </widget>
 	  </child>
@@ -1161,7 +1217,7 @@
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">False</property>
 		</widget>
 		<packing>
@@ -1182,7 +1238,7 @@
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">False</property>
 		</widget>
 		<packing>
@@ -1233,6 +1289,11 @@
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">True</property>
 
   <child internal-child="vbox">
@@ -1247,13 +1308,14 @@
 	  <property name="layout_style">GTK_BUTTONBOX_END</property>
 
 	  <child>
-	    <widget class="GtkButton" id="closebutton1">
+	    <widget class="GtkButton" id="CloseButton">
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="label">gtk-close</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-7</property>
 	      <signal name="clicked" handler="_OnClose" object="this" last_modification_time="Sun, 18 Jul 2004 02:31:20 GMT"/>
 	    </widget>
@@ -1654,7 +1716,7 @@ Threshold</property>
 			  <property name="wrap">False</property>
 			  <property name="selectable">False</property>
 			  <property name="xalign">1</property>
-			  <property name="yalign">0.96</property>
+			  <property name="yalign">0.959999978542</property>
 			  <property name="xpad">0</property>
 			  <property name="ypad">0</property>
 			</widget>
@@ -1739,6 +1801,11 @@ Threshold</property>
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="response" handler="_OnUserResponse" object="this" last_modification_time="Sat, 17 Jul 2004 19:18:49 GMT"/>
 
@@ -1761,6 +1828,7 @@ Threshold</property>
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
 	    </widget>
 	  </child>
@@ -1773,6 +1841,7 @@ Threshold</property>
 	      <property name="label">gtk-ok</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-5</property>
 	    </widget>
 	  </child>
@@ -1860,7 +1929,7 @@ Threshold</property>
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">True</property>
 		</widget>
 		<packing>
@@ -1877,6 +1946,7 @@ Threshold</property>
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
 		  <signal name="clicked" handler="_OnDatabaseBtnClick" object="this" last_modification_time="Wed, 25 Aug 2004 02:44:57 GMT"/>
 
 		  <child>
@@ -1886,6 +1956,10 @@ Threshold</property>
 		      <property name="yalign">0.5</property>
 		      <property name="xscale">0</property>
 		      <property name="yscale">0</property>
+		      <property name="top_padding">0</property>
+		      <property name="bottom_padding">0</property>
+		      <property name="left_padding">0</property>
+		      <property name="right_padding">0</property>
 
 		      <child>
 			<widget class="GtkHBox" id="hbox19">
@@ -1933,6 +2007,7 @@ Threshold</property>
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
 		  <signal name="clicked" handler="_OnMp3BtnClick" object="this" last_modification_time="Wed, 25 Aug 2004 03:26:24 GMT"/>
 
 		  <child>
@@ -1942,6 +2017,10 @@ Threshold</property>
 		      <property name="yalign">0.5</property>
 		      <property name="xscale">0</property>
 		      <property name="yscale">0</property>
+		      <property name="top_padding">0</property>
+		      <property name="bottom_padding">0</property>
+		      <property name="left_padding">0</property>
+		      <property name="right_padding">0</property>
 
 		      <child>
 			<widget class="GtkHBox" id="hbox18">
@@ -1993,7 +2072,7 @@ Threshold</property>
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">True</property>
 		</widget>
 		<packing>
@@ -2044,6 +2123,11 @@ Threshold</property>
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="has_separator">False</property>
   <signal name="response" handler="_OnUserResponse" object="this" last_modification_time="Sat, 17 Jul 2004 19:18:49 GMT"/>
 
@@ -2066,6 +2150,7 @@ Threshold</property>
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
 	    </widget>
 	  </child>
@@ -2078,6 +2163,7 @@ Threshold</property>
 	      <property name="label">gtk-ok</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-5</property>
 	    </widget>
 	  </child>
@@ -2166,7 +2252,7 @@ Threshold</property>
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">True</property>
 		</widget>
 		<packing>
@@ -2183,6 +2269,7 @@ Threshold</property>
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
 		  <signal name="clicked" handler="_OnMp3BtnClick" object="this" last_modification_time="Wed, 25 Aug 2004 03:26:24 GMT"/>
 
 		  <child>
@@ -2192,6 +2279,10 @@ Threshold</property>
 		      <property name="yalign">0.5</property>
 		      <property name="xscale">0</property>
 		      <property name="yscale">0</property>
+		      <property name="top_padding">0</property>
+		      <property name="bottom_padding">0</property>
+		      <property name="left_padding">0</property>
+		      <property name="right_padding">0</property>
 
 		      <child>
 			<widget class="GtkHBox" id="hbox21">
@@ -2243,7 +2334,7 @@ Threshold</property>
 		  <property name="max_length">0</property>
 		  <property name="text" translatable="yes"></property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
+		  <property name="invisible_char">*</property>
 		  <property name="activates_default">True</property>
 		</widget>
 		<packing>
@@ -2260,6 +2351,7 @@ Threshold</property>
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
 		  <signal name="clicked" handler="_OnCreateDatabaseBtnClick" object="this" last_modification_time="Fri, 24 Dec 2004 20:00:05 GMT"/>
 
 		  <child>
@@ -2269,6 +2361,10 @@ Threshold</property>
 		      <property name="yalign">0.5</property>
 		      <property name="xscale">0</property>
 		      <property name="yscale">0</property>
+		      <property name="top_padding">0</property>
+		      <property name="bottom_padding">0</property>
+		      <property name="left_padding">0</property>
+		      <property name="right_padding">0</property>
 
 		      <child>
 			<widget class="GtkHBox" id="hbox22">

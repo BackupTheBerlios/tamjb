@@ -1,7 +1,7 @@
 # $Id$
 #
 
-TARGET = tamjb.Engine.dll
+TARGET = ../bin/tamjb.Engine.dll
 
 SOURCES = AssemblyInfo.cs \
         Backend.cs \
@@ -32,11 +32,11 @@ DBREFS = -r Npgsql
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 # libs for dependency checking during dev:
-DEPLIBS = ../id3/byteheaven.id3.dll \
-        ../thirdparty/Mp3Sharp.dll \
-        ../thirdparty/esd-sharp.dll \
-        ../Interfaces/tamjb.Interfaces.dll \
-        ../SimpleMp3Player/tamjb.SimpleMp3Player.dll
+DEPLIBS = ../bin/byteheaven.id3.dll \
+        ../bin/Mp3Sharp.dll \
+        ../bin/esd-sharp.dll \
+        ../bin/tamjb.Interfaces.dll \
+        ../bin/tamjb.SimpleMp3Player.dll
 
 
 REFS = -r System.Data \

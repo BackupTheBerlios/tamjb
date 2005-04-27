@@ -70,7 +70,6 @@ namespace byteheaven.tamjb.Interfaces
          _changeCount = changeCount;
       }
 
-      [NonSerialized]
       public ITrackInfo [] playQueue
       {
          ///
@@ -87,7 +86,6 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
-      [NonSerialized]
       public long changeCount
       {
          get
@@ -100,7 +98,6 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
-      [NonSerialized]
       public bool isPlaying
       { 
          get
@@ -113,7 +110,6 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
-      [NonSerialized]
       public int currentTrackIndex
       { 
          get
@@ -126,7 +122,6 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
-      [NonSerialized]
       public int unplayedTrackCount
       { 
          get
@@ -135,7 +130,6 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
-      [NonSerialized]
       public ITrackInfo currentTrack
       { 
          get
@@ -150,7 +144,6 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
-//       [NonSerialized]
 //       public ITrackInfo this [int index]
 //       { 
 //          get

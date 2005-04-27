@@ -4,14 +4,14 @@
 
 DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
-TARGET = tamjb.SimpleMp3Player.dll
+TARGET = ../bin/tamjb.SimpleMp3Player.dll
 
 SOURCES = AssemblyInfo.cs \
         Player.cs \
         TrackFinishedInfo.cs
 
-REF_LIBS = ../thirdparty/Mp3Sharp.dll \
-        ../thirdparty/esd-sharp.dll
+REF_LIBS = ../bin/Mp3Sharp.dll \
+        ../bin/esd-sharp.dll
         
 REFS = $(addprefix -r:, $(REF_LIBS))
 

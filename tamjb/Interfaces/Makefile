@@ -4,7 +4,7 @@ DEBUGFLAGS = -g -define:DEBUG -define:TRACE
 
 REFS = 
 
-INTERFACE_DLL = tamjb.Interfaces.dll
+INTERFACE_DLL = ../bin/tamjb.Interfaces.dll
 
 all: $(INTERFACE_DLL)
 

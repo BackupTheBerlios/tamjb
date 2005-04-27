@@ -80,6 +80,8 @@ namespace byteheaven.tamjb.GtkPlayer
                // Create a channel for communicating w/ the remote object
                // Should not have to explicitly state BinaryClient, should I?
 
+               _Trace( "Setting up remoting stuff" );
+
                ListDictionary properties = new ListDictionary();
                HttpChannel channel = 
                   new HttpChannel(properties,
@@ -96,19 +98,42 @@ namespace byteheaven.tamjb.GtkPlayer
             {
                ; // nothing to do...
             }
-            
+
+            _Trace( "Initializing" );
             Application.Init ();
 
             // New:
+            _Trace( "Creating GtkPlayer" );
             GtkPlayer gtkPlayer = new GtkPlayer();
 
+            _Trace( "Application.Run time" );
             Application.Run ();
          }
          catch ( Exception e )
          {
-            // help, this is ugly! Ideas?
+            _Trace( "Something is horribly wrong" );
 
-            Console.WriteLine( "Unexpected Exception: {0}", e.ToString() );
+            // Deal with unexpected exception by printing a message. Note 
+            // that it is possible to generate an excption while printing
+            // the exception, so wrap that sucker too!
+            string errorMsg = null;
+            try
+            {
+               errorMsg = e.ToString();
+            }
+            catch (Exception nestedEx)
+            {
+               // Hmm. Now what?
+            }
+
+            if (null == errorMsg)
+            {
+               errorMsg = "An exception occurred while trying to decipher the exception! :<";
+            }
+
+            Console.WriteLine( "Unexpected Exception: {0}", errorMsg);
+            Console.WriteLine( "Exiting" );
+            return;             // ** quick exit to avoid additional exceptions **
 
             // This doesn't work right. Apparently since the application
             // is not running, the OK button won't work either. :(
@@ -121,7 +146,8 @@ namespace byteheaven.tamjb.GtkPlayer
      
 //             int result = md.Run ();
          }
-         Trace.WriteLine( "exiting" );
+
+         _Trace( "exiting" );
 
          // If any stray threads are around, deal with it here.
          if (_runLocal)
@@ -306,7 +332,7 @@ namespace byteheaven.tamjb.GtkPlayer
             if (null == _scanner)
             {
                string nextDir = _mp3RootDir;
-               Trace.WriteLine( "Now scanning: " + nextDir );
+               _Trace( "Now scanning: " + nextDir );
                
                _scanner = _CreateRecursiveScanner( nextDir );
             }
@@ -316,7 +342,7 @@ namespace byteheaven.tamjb.GtkPlayer
             if (_scanner.DoNextFile(5, backendInterface) 
                 == ScanStatus.FINISHED)
             {
-               Trace.WriteLine( "Scan Finished" );
+               _Trace( "Scan Finished" );
                _scanner = null;
             }
          }
@@ -325,6 +351,11 @@ namespace byteheaven.tamjb.GtkPlayer
       public static void CreateDatabase( string connectionString )
       {
          backendInterface.CreateDatabase( connectionString );
+      }
+
+      static void _Trace( string msg )
+      {
+         Trace.WriteLine( "Main: " + msg );
       }
 
       ///

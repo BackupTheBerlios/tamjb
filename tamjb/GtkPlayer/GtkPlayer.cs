@@ -72,6 +72,8 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       public GtkPlayer()
       {
+         _Trace( "Loading Glade.XML" );
+
          //
          // With the null first parameter, this callw ill try to load
          // our resources as if they were compiled in. Which they are.
@@ -82,10 +84,12 @@ namespace byteheaven.tamjb.GtkPlayer
                                           "_mainWindow",
                                           null );
 
+         _Trace( "autoconnect" );
          glade.Autoconnect( this );
          _mainWindow = (Gtk.Window)glade.GetWidget( "_mainWindow" );
          Debug.Assert( null != _mainWindow );
 
+         _Trace( "fetching settings" );
          try
          {
             _settings = PlayerSettings.Fetch();
@@ -248,7 +252,7 @@ namespace byteheaven.tamjb.GtkPlayer
             bool shouldStop = false;
             try
             {
-               if (backend.isPlaying)
+               // if (backend.isPlaying)
                   PlayerApp.PollBackend(); // keep the engine working
             }
             catch (Exception e)
@@ -256,6 +260,7 @@ namespace byteheaven.tamjb.GtkPlayer
                // dump stack trace
                _TraceError( "Problem during Poll(): " + e.ToString() );
                _Status( "Problem during Poll", 120 );
+               _Complain( "Problem during Poll()", e );
                shouldStop = true;
             }
 

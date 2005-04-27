@@ -32,17 +32,17 @@ RELEASE_TEXT_FILES = \
   gtktamjb
 
 RELEASE_BINARY_FILES = \
-  thirdparty/esd-sharp.dll \
-  thirdparty/Mp3Sharp.dll \
-  id3/byteheaven.id3.dll \
-  id3/id3helper.exe \
-  SimpleMp3Player/tamjb.SimpleMp3Player.dll \
-  Interfaces/tamjb.Interfaces.dll \
-  Engine/tamjb.Engine.dll \
-  Server/tamjb.Server.exe \
-  GtkPlayer/tamjb.GtkPlayer.exe \
+  bin/esd-sharp.dll \
+  bin/Mp3Sharp.dll \
+  bin/byteheaven.id3.dll \
+  bin/id3helper.exe \
+  bin/tamjb.SimpleMp3Player.dll \
+  bin/tamjb.Interfaces.dll \
+  bin/tamjb.Engine.dll \
+  bin/tamjb.Server.exe \
+  bin/tamjb.GtkPlayer.exe \
 
-all: assykey.snk dll_subdirs exe_subdirs doc
+all: assykey.snk dll_subdirs exe_subdirs
 
 rel-binary: all
 	-mkdir package 2> /dev/null

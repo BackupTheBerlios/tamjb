@@ -6,7 +6,7 @@
 
 MP3SHARPDIR = ../../../mp3sharp/mp3sharp
 
-TARGET = ../Mp3Sharp.dll
+TARGET = ../../bin/Mp3Sharp.dll
 
 # Should the engine throw an exception when it loses sync?
 #   -define:THROW_ON_SYNC_LOSS

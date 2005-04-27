@@ -6,7 +6,7 @@
 #
 ESDSHARPDIR = ../../../esd-sharp-0.1.3
 
-TARGET = ../esd-sharp.dll
+TARGET = ../../bin/esd-sharp.dll
 
 SRCS = esd-sharp.cs
 

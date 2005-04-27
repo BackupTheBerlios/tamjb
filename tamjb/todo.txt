@@ -1,6 +1,15 @@
 
 TODO
- - Build against mono/gtk-sharp/glade-sharp 1.1.5
+ - Rewrite track consideration/elimination to be more visible so it
+  is better eye candy. 
+
+   - Choose ANY track randomly from the database
+   - Retrieve its info
+   - Decide randomly whether to play the track. 
+   - Flag it as play/not play in the backend 
+   - Graphically show the track being considered/eliminated in the
+     gui. (Can't have the GUI deciding which to play, or multi-client
+     will not work.)
 
  - Drop songs from future part of playlist if they are flagged as suck or
   something. Perhaps rework the way songs are chosen to be more visually
@@ -15,6 +24,9 @@ TODO
 
  - Add track browser dialogs, so that you can adjust song suck on blocks
   of songs, perhaps selecting by artist, etc.
+
+ - Display audio player status on error. Right now, if the mp3player
+  thread can't start, nothing happens!
 
  - Test database for existance. Ask/create if does not exist.
 
@@ -42,12 +54,6 @@ TODO
   The damn thing is very technical. This is good, if you're me, but probably
   bad if you're not. :) Must add presets so I can share my favorite settings
   with the two other people in the world that use this program.
-
- - Fix memory leak
-
-  Much of the memory bloat and leakage seems to have gone away with
-  a build against mono 1.1.4. Perhaps it isn't the tamjb code after
-  all. Supposedly 1.1.5 fixes the "growing heap" problem...
 
  - Move all engine state into the database, and convert remoting 
   interfaces to use one-shot objects. Should improve scalability, and
@@ -103,72 +109,3 @@ TODO
   OR gnutalla-2 OR freenet/entropy or whatever you can find.
 
 
-DONE
-  Added a predelay option to the compressor to make the attacks a bit less
-  "pop" prone on faster attack settings. Works OK.
-
- - Tue Dec  7 18:07:55 PST 2004
-
-  Save the current logged in user in the database (should remember who was
-  the last user. Really.
-
-  Allow the program to run standalone, not as a client server program, 
-  for the simple case where one person is listening.
-
-  A branch of Mp3Sharp is now located (temporarily) in the tamjb cvs
-  repository.
-
-  Mono files no longer play back at double speed, but now they play back
-  only in the left channel. I _guess_ this is an improvement!
-
-  Memory leakage greatly reduced.
-
-  Changed the default suck/mood values back to 20%/80%
-
-  Add user controls for the compression and limiting. Settings are stored
-  in the database so you don't have to reset them on every reboot.
-
-  Cut CPU usage by more than half, by rewriting Mp3Sharp's buffering.
-
- - Sat Jul 17 15:39:12 EDT 2004
-
-  Added suck/mood percent display in track list.
-
-  You can now modify the attributes of a song that is not playing by
-  selecting it in the list
-
-  New, improved controls layout.
-
-  Compression and soft limiting to even out that listening experience.
-  (May not be suitable for music with long, quiet passages: ie 
-  classical. Your mileage may vary.)
-
-  PostgreSQL support. SQLite seems to lock the filesystem or something,
-  causing dropouts. Postgres seems better about this.
-
-  Added per-user and per-mood song attributes. (Log in: how do you feel?)
-
-  Interface / database redesign to accomodate users and moods instead
-  of track attributes.
-
- - Thu Jul  8 17:55:50 EDT 2004
- 
-  Added Unsynchronization support to the id3 tag reader
-
-  Added strong-signing for all assemblies, including third-party assemblies
-
-  Rearranged the project
-
-  Added id3 tag reader, removed dependency on unknown-license id3 tag reader
-
- - Wed Jul  7 19:29:49 EDT 2004
-
- - snapshot-2004-05-14
-
-  Updated the patch for mp3sharp to fix that infinite loop problem.
-
-  Reversed the name so the year comes first. This makes more sense, right?
-
- - snapshot-12-05-2004
-
-  Initial release.
