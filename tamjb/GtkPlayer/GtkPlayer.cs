@@ -220,7 +220,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                       "text",
                                       TrackListOffset.TRACK_NAME );
          column.Sizing = TreeViewColumnSizing.Fixed;
-         column.MinWidth = 100;
+         column.MinWidth = 120;
          _trackListView.AppendColumn( column );
 
          _trackListView.Model = _trackListStore;
@@ -522,6 +522,9 @@ namespace byteheaven.tamjb.GtkPlayer
             i = 0;
          }
 
+         // Ye gods, this is complicated. Have to properly initialize and
+         // skip the unused rows. And stuff. Ouch.
+
          TreeIter iter;
          for (/* everything initialized already */;
               i < _engineState.playQueue.Length;
@@ -547,13 +550,24 @@ namespace byteheaven.tamjb.GtkPlayer
                _trackListStore.SetValue( iter, 
                                          (int)(int)TrackListOffset.TRACK_NAME, 
                                          _FixTitle(info) );
+
+               // Add a bang ("!") to the suck or mood if the track was
+               // just rejected because of that:
+               string suckStr = suckLevel.ToString( "f0" );
+               if (TrackEvaluation.SUCK_TOO_MUCH == info.evaluation)
+                  suckStr = suckStr + "!";
+
                _trackListStore.SetValue( iter, 
                                          (int)TrackListOffset.SUCK, 
-                                         suckLevel.ToString( "f0" ) );
+                                         suckStr );
+
+               string moodStr = moodLevel.ToString( "f0" );
+               if (TrackEvaluation.WRONG_MOOD == info.evaluation)
+                  moodStr = moodStr + "!";
 
                _trackListStore.SetValue( iter, 
                                          (int)TrackListOffset.MOOD,
-                                         moodLevel.ToString( "f0" ) );
+                                         moodStr );
 
                _trackListStore.SetValue( iter, 
                                          (int)TrackListOffset.TRACK_INFO,

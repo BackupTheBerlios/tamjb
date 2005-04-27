@@ -234,6 +234,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          Queue synced = Queue.Synchronized( _playFilesQueue );
          synced.Clear();
          synced.Enqueue( new TrackInfo( path, index ) );
+         synced = null;
 
          ///
          /// Wait for the buffer thread to finish its current operation:
@@ -328,7 +329,6 @@ namespace byteheaven.tamjb.SimpleMp3Player
          {
             _configMutex.ReleaseMutex();
          }
-
       }
 
       ///
@@ -520,7 +520,6 @@ namespace byteheaven.tamjb.SimpleMp3Player
                      {
                         if (!_StartUpEstream())
                         {
-                           // esound not available?
                            _state = State.STOP; // stop!
                            break; // * BREAK OUT **
                         }

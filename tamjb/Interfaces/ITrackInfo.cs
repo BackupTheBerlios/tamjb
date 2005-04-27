@@ -28,6 +28,13 @@
 
 namespace byteheaven.tamjb.Interfaces
 {
+   public enum TrackEvaluation
+   {
+      ALL_GOOD,              ///< Track is fine to play
+      SUCK_TOO_MUCH,         ///< Rejected because it sucks
+      WRONG_MOOD             ///< Rejected because not in the mood
+   }
+
    public interface ITrackInfo
    {
       ///
@@ -73,5 +80,10 @@ namespace byteheaven.tamjb.Interfaces
       /// frequently than, say, mix tapes).
       long   lengthInSeconds{ get; }
 
+      ///
+      /// The possible reasons why a track is being played or not played
+      /// by the system.
+      ///
+      TrackEvaluation evaluation{ get; }
    }
 }

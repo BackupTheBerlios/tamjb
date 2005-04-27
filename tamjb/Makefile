@@ -22,7 +22,7 @@
 
 RELEASE_TEXT_FILES = \
   COPYING \
-  CHANGELOG \
+  ChangeLog \
   README \
   todo.txt \
   scripts/tamjb.init \

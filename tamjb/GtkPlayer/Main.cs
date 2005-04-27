@@ -264,7 +264,8 @@ namespace byteheaven.tamjb.GtkPlayer
             
             // Set up the configurable parameters. :) Should not be
             // hardcoded, OK?
-            _backendInterface.desiredQueueSize = 6;
+            // _backendInterface.desiredQueueSize = 6;
+            _backendInterface.desiredQueueSize = 8;
             _backendInterface.bufferCount = 20;
             _backendInterface.bufferPreload = 20;
             _backendInterface.bufferSize = 8192;

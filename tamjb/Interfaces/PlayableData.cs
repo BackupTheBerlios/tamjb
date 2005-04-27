@@ -29,6 +29,8 @@ namespace byteheaven.tamjb.Interfaces
    using System;
 
    ///
+   /// Implements ITrackInfo interfaces. 
+   ///
    /// Information about the state of a local,
    /// playable file, or a references to remote streams.
    ///
@@ -167,6 +169,19 @@ namespace byteheaven.tamjb.Interfaces
          set
          {
             _lengthInSeconds = value;
+         }
+      }
+
+      TrackEvaluation _reason = TrackEvaluation.ALL_GOOD;
+      public TrackEvaluation evaluation
+      {
+         get
+         {
+            return _reason;
+         }
+         set
+         {
+            _reason = value;
          }
       }
 

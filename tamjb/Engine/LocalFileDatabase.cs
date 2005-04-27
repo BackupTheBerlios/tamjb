@@ -1169,6 +1169,97 @@ namespace byteheaven.tamjb.Engine
 //       }
 
       ///
+      /// Chooses a random track without considering mood or suck
+      /// 
+      /// \return count of tracks in the file_info table
+      ///
+      public uint PickRandom( Random rng,
+                              out PlayableData trackData )
+      {
+         string query = "";
+         trackData = new PlayableData();
+         uint count = 0;
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+
+            query = "SELECT count(*) FROM file_info";
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            // Returns the first parameter, the number of rows:
+            object countObj = cmd.ExecuteScalar();
+            count = Convert.ToUInt32( countObj );
+
+            if (count < 1)
+               return count;       // ** quick exit **
+
+            //
+            // Pick an entry at random and retrieve it
+            //
+            uint offset = (uint)rng.Next( 0, (int)count );
+            
+            _Trace( "Choosing track: " + offset );
+
+            query =
+               "SELECT file_path, artist, album, title, track," +
+               + " genre, length_seconds, filekey" 
+               + " FROM file_info"
+               + " LIMIT 1 OFFSET " + offset;
+               
+            // _Trace( query );
+
+            cmd.Dispose();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+
+            reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+               // Nothing returned. This is bad!
+               throw new Exception( "No data returned from query" );
+            }
+
+            trackData.filePath = reader.GetString(0); // works for TEXT fld
+            trackData.artist = reader.GetValue(1).ToString();
+            trackData.album = reader.GetValue(2).ToString();
+            trackData.title = reader.GetValue(3).ToString();
+            trackData.track = reader.GetInt32(4);
+            trackData.genre = reader.GetValue(5).ToString();
+            trackData.lengthInSeconds = reader.GetInt32(6);
+            trackData.key = (uint)reader.GetInt32(7);
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+               cmd.Dispose();
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         return count;
+      }
+
+      ///
       /// selects one song at random based on the supplied playlist
       /// limitations:
       ///
@@ -1181,6 +1272,9 @@ namespace byteheaven.tamjb.Engine
       ///
       /// \return Total number of tracks in this playlist. If 0, the
       ///   output string track will be empty.
+      ///
+      /// \note This may be broken. I have had it return songs with
+      ///   a suck value > the max possible threshold. Hmmm.
       ///
       public uint PickRandom( Random rng,
                               Credentials cred,
@@ -1217,7 +1311,7 @@ namespace byteheaven.tamjb.Engine
          IDataReader reader = null;
          try
          {
-            _Trace( query );
+            // _Trace( query );
 
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
@@ -1273,7 +1367,7 @@ namespace byteheaven.tamjb.Engine
          IDbCommand cmd = null;
          try
          {
-            _Trace( query );
+            // _Trace( query );
 
             dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();

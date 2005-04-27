@@ -365,18 +365,9 @@ namespace byteheaven.tamjb.Engine
 
          ++_changeCount;
 
-         // Pick a random suck and mood threshold
-         int suckThresh = _rng.Next( 00500, 09500 );
-         int moodThresh = _rng.Next( 00500, 09500 );
-         
          // Pick a song and go.
-         uint nextKey;
-         uint count = _database.PickRandom( _rng,
-                                            _controllingUser, 
-                                            _controllingMood,
-                                            suckThresh,
-                                            moodThresh,
-                                            out nextKey );
+         PlayableData nextTrack;
+         uint count = _database.PickRandom( _rng, out nextTrack );
 
          if (0 == count)
          {
@@ -384,8 +375,7 @@ namespace byteheaven.tamjb.Engine
             return false;    // No songs found
          }
 
-         PlayableData next = _database.GetFileInfo( nextKey );
-         _PlaylistAppend( next );
+         _PlaylistAppend( nextTrack );
 
          return true;
       }
@@ -680,12 +670,30 @@ namespace byteheaven.tamjb.Engine
 
          ++_changeCount;
 
-         PlayableData nextFile = _PlaylistGoNext();
-         if (null != nextFile)
+         //
+         // Loop to keep advancing until we reach a track that's worthy
+         //
+         while (true)           
          {
-            _Trace( "  NEXT = " + nextFile.title );
-            _player.PlayFile( nextFile.filePath, nextFile.key );
-            _shouldBePlaying = true;
+            PlayableData nextFile = _PlaylistGoNext();
+            if (null == nextFile)
+            {
+               _player.Stop(); 
+               break;           // nothing to play, break out.
+            }
+
+            // If this track is cool, we are done.
+            if (_WantToPlayTrack(nextFile) )
+            {
+               _Trace( "  NEXT = " + nextFile.title );
+               _player.PlayFile( nextFile.filePath, nextFile.key );
+               _shouldBePlaying = true;
+               break;
+            }
+            else
+            {
+               _Trace( "  REJECTED = " + nextFile.title );
+            }
          }
       }
 
@@ -730,6 +738,7 @@ namespace byteheaven.tamjb.Engine
       ///
       void _TrackFinishedCallback(  TrackFinishedInfo info )
       { 
+         _Trace( "[_TrackFinishedCallback]" );
          ++ _changeCount;
 
          // Previous track could be nothing?
@@ -749,12 +758,15 @@ namespace byteheaven.tamjb.Engine
             // cause a deadlock!
 
             // Advance the playlist (_Playlist* functions are threadsafe)
-            PlayableData nextInfo = _PlaylistGoNext();
-            if (null != nextInfo)
-            {
-               // Tell the player to play this track next
-               _player.SetNextFile( nextInfo.filePath, nextInfo.key );
-            }
+            GotoNext();
+
+            // Redundant: same as code in GotoNext. Nearly.
+//             PlayableData nextInfo = _PlaylistGoNext();
+//             if (null != nextInfo)
+//             {
+//                // Tell the player to play this track next
+//                _player.SetNextFile( nextInfo.filePath, nextInfo.key );
+//             }
          }
       }
    
@@ -1173,16 +1185,16 @@ namespace byteheaven.tamjb.Engine
          {
             Debug.Assert( _playQueueCurrentTrack >= -1,
                           "-1 indicates no previously-played tracks" );
-
+            
             int left = _playQueue.Count - _playQueueCurrentTrack - 1;
             if (left <= 0)
                return null;
-
+            
             // If we've got all the played-song history we want,
             //   Pop the head off the list and throw it away
             // Otherwise
             //   Just increment the offset
-
+            
             if (_playQueueCurrentTrack >= _maxFinishedPlaying)
                _PlaylistPop();
 
@@ -1283,6 +1295,52 @@ namespace byteheaven.tamjb.Engine
             _playQueueMutex.ReleaseMutex();
          }
       }
+
+      ///
+      /// This is sort of random. We sometimes play tracks even if
+      /// they suck.
+      ///
+      /// \return true if this track doesn't suck too much
+      ///
+      bool _WantToPlayTrack( PlayableData info )
+      {
+         uint trackKey = info.key;
+
+         // Now, decide whether we are going to actually PLAY this
+         // track. 
+
+         uint suck = _database.GetSuck( _controllingUser.id,
+                                        trackKey );
+
+         uint suckThresh = (uint)_rng.Next( 01000, 09000 );
+         if (suck > suckThresh)
+         {
+            _Trace( " Rejected. suck:" + suck
+                    + " suckThresh:" + suckThresh );
+
+            info.evaluation = TrackEvaluation.SUCK_TOO_MUCH;
+            return false;       // methinks it sucketh too much
+         }
+
+         uint mood = _database.GetAppropriate( _controllingUser.id,
+                                               _controllingMood.id,
+                                               trackKey );
+
+         uint moodThresh = (uint)_rng.Next( 01000, 09000 );
+         if (mood < moodThresh)
+         {
+            _Trace( " Rejected. mood:" + mood
+                    + " moodThresh:" + moodThresh );
+
+            info.evaluation = TrackEvaluation.WRONG_MOOD;
+            return false;       // not in the mood
+         }
+
+         info.evaluation = TrackEvaluation.ALL_GOOD;
+         return true;           // good enough
+      }
+         
+
 
       ///
       /// \return true if the file pointed to by fullPath is already
