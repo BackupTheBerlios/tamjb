@@ -657,11 +657,17 @@ namespace byteheaven.tamjb.GtkPlayer
             uint suckTrackKey = _selectedTrackInfo.key;
 
             // Stop playing this track if it is the current track
-            if (_engineState.currentTrack.key == suckTrackKey)
-               backend.GotoNextFile( _credentials, suckTrackKey );
+            // (do it now, because we hate the track?)
+//             if (_engineState.currentTrack.key == suckTrackKey)
+//                backend.GotoNextFile( _credentials, suckTrackKey );
 
             // Flag the previously playing track as suck
             backend.IncreaseSuckZenoStyle( _credentials, suckTrackKey );
+
+            // Reevaluate this track based on its new suck level, if
+            // it is currently playing.
+            if (_engineState.currentTrack.key == suckTrackKey)
+               backend.ReevaluateCurrentTrack();
 
             _SetPendingUpdate(); // update state to match backend
          }
@@ -718,13 +724,17 @@ namespace byteheaven.tamjb.GtkPlayer
             }
                
             // Send the player to the next file first.
-            if (_engineState.currentTrack.key == _selectedTrackInfo.key)
-               backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
+//             if (_engineState.currentTrack.key == _selectedTrackInfo.key)
+//                backend.GotoNextFile( _credentials, _selectedTrackInfo.key );
 
             // Now that it's no longer playing, update the track.
             backend.DecreaseAppropriateZenoStyle( _credentials, 
                                                    _mood,
                                                    _selectedTrackInfo.key );
+
+            // Consider not playing this file any longer...
+            if (_engineState.currentTrack.key == _selectedTrackInfo.key)
+               backend.ReevaluateCurrentTrack();
 
             _SetPendingUpdate(); // update to match backend
          }

@@ -697,6 +697,28 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
+      ///
+      /// If the current track is rejected, this calls GotoNext
+      ///
+      public void ReevaluateCurrentTrack()
+      {
+         _Trace( "[Reevaluate]" );
+         _Lock();
+         try
+         {
+            PlayableData currentTrack = _PlaylistGetCurrent();
+            if (null != currentTrack
+                && (!_WantToPlayTrack(currentTrack)))
+            {
+               GotoNext();
+            }
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
       public void GotoPrevFile( Credentials cred, uint currentTrackKey )
       {
          _Trace( "[GotoPrevFile]" );

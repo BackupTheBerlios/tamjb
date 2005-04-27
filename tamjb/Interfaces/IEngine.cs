@@ -117,6 +117,12 @@ namespace byteheaven.tamjb.Interfaces
                                          Mood mood,
                                          uint trackKey );
 
+      /// Forces the backend to reconsider the currently playing track.
+      /// Which gives it another chance of being randomly removed. Useful
+      /// after increasing the suck value (if you don't want to FORCE
+      /// the next track, that is.
+      void ReevaluateCurrentTrack();
+
 
       // These need to take, as a parameter, some sort of clue as to 
       // what your application's  state is, to deal with multiple 

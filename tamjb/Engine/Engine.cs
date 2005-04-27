@@ -145,6 +145,10 @@ namespace byteheaven.tamjb.Engine
          Backend.theBackend.GotoPrevFile( cred, currentTrackKey );
       }
 
+      public void ReevaluateCurrentTrack()
+      {
+         Backend.theBackend.ReevaluateCurrentTrack( );
+      }
    
       //
       // Attack ratio per-sample. Hmmm.
