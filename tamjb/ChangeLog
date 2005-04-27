@@ -9,6 +9,13 @@
 
 	* all: Build against mono 1.1.6 and latest gtk-sharp/glade-sharp
 
+	* Changed behavior when "Suck" is clicked. Previously the next track 
+	was always selected. Now the current track is reevaluated at its new 
+	suck level, and may or may not be stopped.
+
+	* Rewrote track consideration/elimination to be more visible. 
+	Now, tracks are not rejected until it is actually time to play them.
+
 2004-12-07 tekhedd <tekhedd@byteheaven.net>
 
 	* Engine: Now saves the current logged in user in the database

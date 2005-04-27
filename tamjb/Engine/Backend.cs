@@ -319,7 +319,7 @@ namespace byteheaven.tamjb.Engine
             if (_shouldBePlaying && ( ! _player.isPlaying ))
             {
                _Trace( "Hey, we are not playing. Restarting.." );
-               GotoNext();
+               GotoNext( true );
             }
          }
 #if USE_POSTGRESQL
@@ -653,7 +653,7 @@ namespace byteheaven.tamjb.Engine
          _Lock();
          try
          {
-            GotoNext();
+            GotoNext( true );
          }
          finally
          {
@@ -662,9 +662,10 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Start playing the next file in the queue
+      /// Set the next track in the mp3 player, and optionally start it
+      /// right now.
       ///
-      void GotoNext()
+      void GotoNext( bool startNow )
       {
          _Trace( "[GotoNext]" );
 
@@ -686,7 +687,11 @@ namespace byteheaven.tamjb.Engine
             if (_WantToPlayTrack(nextFile) )
             {
                _Trace( "  NEXT = " + nextFile.title );
-               _player.PlayFile( nextFile.filePath, nextFile.key );
+               if (startNow)
+                  _player.PlayFile( nextFile.filePath, nextFile.key );
+               else
+                  _player.SetNextFile( nextFile.filePath, nextFile.key );
+
                _shouldBePlaying = true;
                break;
             }
@@ -710,7 +715,7 @@ namespace byteheaven.tamjb.Engine
             if (null != currentTrack
                 && (!_WantToPlayTrack(currentTrack)))
             {
-               GotoNext();
+               GotoNext( true );
             }
          }
          finally
@@ -780,15 +785,7 @@ namespace byteheaven.tamjb.Engine
             // cause a deadlock!
 
             // Advance the playlist (_Playlist* functions are threadsafe)
-            GotoNext();
-
-            // Redundant: same as code in GotoNext. Nearly.
-//             PlayableData nextInfo = _PlaylistGoNext();
-//             if (null != nextInfo)
-//             {
-//                // Tell the player to play this track next
-//                _player.SetNextFile( nextInfo.filePath, nextInfo.key );
-//             }
+            GotoNext( false );
          }
       }
    

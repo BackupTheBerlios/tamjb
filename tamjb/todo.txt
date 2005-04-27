@@ -1,15 +1,6 @@
 
 TODO
- - Rewrite track consideration/elimination to be more visible so it
-  is better eye candy. 
-
-   - Choose ANY track randomly from the database
-   - Retrieve its info
-   - Decide randomly whether to play the track. 
-   - Flag it as play/not play in the backend 
-   - Graphically show the track being considered/eliminated in the
-     gui. (Can't have the GUI deciding which to play, or multi-client
-     will not work.)
+ - Add gratuitous eye candy
 
  - Drop songs from future part of playlist if they are flagged as suck or
   something. Perhaps rework the way songs are chosen to be more visually

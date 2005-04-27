@@ -280,6 +280,11 @@ namespace byteheaven.tamjb.SimpleMp3Player
             case State.PLAY_FILE_REQUEST: // do nothing
                break;
 
+            case State.STOP:
+               _state = State.PLAY_FILE_REQUEST;
+               _fileToPlayEvent.Set();
+               break;
+
             default:
                /// \todo Handle advancing in the playlist when stopped
                ///
