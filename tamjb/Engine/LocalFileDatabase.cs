@@ -1908,8 +1908,12 @@ namespace byteheaven.tamjb.Engine
       ///
       string _connectionString;
 
-      uint _defaultSuckValue        = 02000; // Doesn't suck really
-      uint _defaultAppropriateValue = 08000; // Mostly all good
+      //
+      // These are chosen to mostly match the max/min that will be 
+      // 100% accepted. For now
+      //
+      uint _defaultSuckValue        = 01000; // Doesn't suck really
+      uint _defaultAppropriateValue = 09000; // Mostly all good
    }
 }
 

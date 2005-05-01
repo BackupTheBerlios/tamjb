@@ -811,7 +811,34 @@ namespace byteheaven.tamjb.Engine
          _audioMutex.WaitOne(); 
          try
          {
-            _compressor.Process( buffer, length );
+            Debug.Assert( length % 4 == 0, 
+                          "I could have sworn this was 16 bit stereo" );
+            
+            if (length < 4)
+               return;
+
+            int offset = 0;
+            while (offset + 3 < length)
+            {
+               
+               double left = (((long)(sbyte)buffer[offset + 1] << 8) |
+                              ((long)buffer[offset] ));
+               
+               double right = (((long)(sbyte)buffer[offset + 3] << 8) |
+                               ((long)buffer[offset + 2] ));
+               
+               _compressor.Process( ref left, ref right );
+
+               long sample = (long)left;
+               buffer[offset]     = (byte)(sample & 0xff);
+               buffer[offset + 1] = (byte)(sample >> 8);
+
+               sample = (long)right;
+               buffer[offset + 2] = (byte)(sample & 0xff);
+               buffer[offset + 3] = (byte)(sample >> 8);
+
+               offset += 4;
+            }
          }
          finally
          {
@@ -1115,7 +1142,7 @@ namespace byteheaven.tamjb.Engine
 
          // Create a serializer, and serialize to rom
          XmlSerializer serializer = 
-            new XmlSerializer( typeof(Compressor) );
+            new XmlSerializer( typeof(TwoBandCompressor) );
          
          StringWriter str = new StringWriter();
          serializer.Serialize( str, _compressor );
@@ -1127,19 +1154,19 @@ namespace byteheaven.tamjb.Engine
       /// load a compressor using the settings in the database, or a default
       /// one if the settings are not found/valid
       ///
-      Compressor _LoadCompressor()
+      TwoBandCompressor _LoadCompressor()
       {
-         Compressor compressor = null;
+         TwoBandCompressor compressor = null;
          try
          {
             string settings = _database.GetCompressSettings();
             if (null != settings)
             {
                XmlSerializer serializer = 
-                  new XmlSerializer( typeof( Compressor ) );
+                  new XmlSerializer( typeof( TwoBandCompressor ) );
 
                StringReader str = new StringReader( settings );
-               compressor = (Compressor)serializer.Deserialize( str );
+               compressor = (TwoBandCompressor)serializer.Deserialize( str );
             }
          }
          catch (Exception e)
@@ -1150,7 +1177,7 @@ namespace byteheaven.tamjb.Engine
          if (null == compressor)
          {
             _Trace( "Note: compression settings not found, using defaults" );
-            compressor = new Compressor(); // load with defaults
+            compressor = new TwoBandCompressor(); // load with defaults
          }
          
          return compressor;
@@ -1735,7 +1762,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Our main audio processor: the level manager
       ///
-      Compressor _compressor;
+      TwoBandCompressor _compressor;
 
       ///
       /// A mutex to prevent audio from being mangled when settings

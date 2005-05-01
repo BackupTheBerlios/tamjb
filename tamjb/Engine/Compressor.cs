@@ -31,21 +31,12 @@ namespace byteheaven.tamjb.Engine
    using System.Configuration;
    using System.IO;
 
-   using byteheaven.tamjb.Interfaces;
-
-   ///
-   /// Is this the cheesiest plugin architecture in the world or what?
-   ///
-   interface IAudioProcessor
-   {
-      void Process( byte [] buffer, int length );
-   }
+   // using byteheaven.tamjb.Interfaces;
 
    ///
    /// A simple average-power based compressor using exponential
    /// decay based attack/release (so it tends to click if it's
-   /// too aggressive). With soft clipping based on antilog (1/x)
-   /// based nonlinearity. ("Asympote!" "What did you just call me?")
+   /// too aggressive). 
    ///
    public class Compressor
       : IAudioProcessor
@@ -63,126 +54,78 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Process this buffer.
+      /// Implements IAudioProcessor. Process this buffer.
       ///
-      public void Process( byte [] buffer, int length )
+      public void Process( ref double left,
+                           ref double right )
       {
-         Debug.Assert( length % 4 == 0, 
-                       "I could have sworn this was 16 bit stereo" );
+         // Approximate the average power of both channels by summing
+         // them (yes, phase differences are a problem but whatever)
+         // And exponentially decay or release the level:
+               
+         // Fast attack, slow decay
+         double magnitude;
+         magnitude = Math.Abs(left);
+         if (magnitude > _decayingAveragePower)
+         {
+            _decayingAveragePower = 
+               ((_decayingAveragePower * _attackRatioOld) +
+                (magnitude * _attackRatioNew));
+         }
+         else
+         {
+            _decayingAveragePower = 
+               ((_decayingAveragePower * _decayRatioOld) +
+                (magnitude * _decayRatioNew));
+         }
 
-         if (length < 4)
-            return;
+         magnitude = Math.Abs(right);
+         if (magnitude > _decayingAveragePower)
+         {
+            _decayingAveragePower = 
+               ((_decayingAveragePower * _attackRatioOld) +
+                (magnitude * _attackRatioNew));
+         }
+         else
+         {
+            _decayingAveragePower = 
+               ((_decayingAveragePower * _decayRatioOld) +
+                (magnitude * _decayRatioNew));
+         }
 
-         /// 
-         /// \bug Should not be hardcoded 16-bit stereo
-         ///
-
-         // Assumes the buffer is 16-bit little-endian stereo.
-
-         int offset = 0;
+         // How far off from the target power are we?
          double correction;
-         while (offset + 3 < length)
-         {
-            double magnitude;
+         if (_decayingAveragePower < _gateLevel)
+            correction = _targetPowerLevel / _gateLevel;
+         else
+            correction = _targetPowerLevel / _decayingAveragePower;
 
-            // Approximate the average power of both channels by summing
-            // them (yes, phase differences are a problem but whatever)
-            // And exponentially decay or release the level:
+         // For inf:1 compression, use "offset", otherwise
+         // use this ratio to get other ratios:
+         correction = (correction * _compressRatio) 
+            + (1.0 - _compressRatio);
 
-            double left = (((long)(sbyte)buffer[offset + 1] << 8) |
-                           ((long)buffer[offset] ));
+         // Store samples to circular buffer, and save here.
+         // Note that the lookahead is hardcoded and you're stuck
+         // with it. :) 
+         // Use the returned value from the circular buffer as the
+         // current value. This introduces a delay, naturally.
 
-            // Fast attack, slow decay
-            magnitude = Math.Abs(left);
-            if (magnitude > _decayingAveragePower)
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _attackRatioOld) +
-                   (magnitude * _attackRatioNew));
-            }
-            else
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _decayRatioOld) +
-                   (magnitude * _decayRatioNew));
-            }
+         // Write new values to the samples: left
 
-            double right = (((long)(sbyte)buffer[offset + 3] << 8) |
-                            ((long)buffer[offset + 2] ));
+         left = left * correction;
+         left = _leftFifo.Push( left );
 
-            magnitude = Math.Abs(right);
-            if (magnitude > _decayingAveragePower)
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _attackRatioOld) +
-                   (magnitude * _attackRatioNew));
-            }
-            else
-            {
-               _decayingAveragePower = 
-                  ((_decayingAveragePower * _decayRatioOld) +
-                   (magnitude * _decayRatioNew));
-            }
+         // Now the right!
 
-            // How far off from the target power are we?
-            if (_decayingAveragePower < _gateLevel)
-               correction = _targetPowerLevel / _gateLevel;
-            else
-               correction = _targetPowerLevel / _decayingAveragePower;
+         right = right * correction;
+         right = _rightFifo.Push( right );
 
-            // For inf:1 compression, use "offset", otherwise
-            // use this ratio to get other ratios:
-            correction = (correction * _compressRatio) 
-               + (1.0 - _compressRatio);
-
-            // Store samples to circular buffer, and save here.
-            // Note that the lookahead is hardcoded and you're stuck
-            // with it. :) 
-            // Use the returned value from the circular buffer as the
-            // current value. This introduces a delay, naturally.
-
-            // Write new values to the samples: left
-
-            long sample = (long)_SoftClip( left * correction );
-            sample = _leftFifo.Push( sample );
-            buffer[offset]     = (byte)(sample & 0xff);
-            buffer[offset + 1] = (byte)(sample >> 8);
-
-            // Now the right!
-
-            sample = (long)_SoftClip( right * correction );
-            sample = _rightFifo.Push( sample );
-            buffer[offset + 2] = (byte)(sample & 0xff);
-            buffer[offset + 3] = (byte)(sample >> 8);
-
-            // Now your left!
-
-            // No, that's your right.
-
-            // (Aqua Teen Rules!)
-
-            offset += 4;
-         }
-      }
-
-      double _SoftClip( double original )
-      {
-         if (original > _clipThreshold) // Soft-clip 
-         {
-            // Unsophisticated asympotic clipping algorithm
-            // I came up with in the living room in about 15 minutes.
-            return (_clipThreshold +
-                    (_clipLeftover * (1 - (_clipThreshold / original)))); 
-         }
-         else if (original < (- _clipThreshold))
-         {
-            // Unsophisticated asympotic clipping algorithm
-            // I came up with in the living room in about 15 minutes.
-            return ((-_clipThreshold) -
-                    (_clipLeftover * (1 + (_clipThreshold / original)))); 
-         }
-
-         return original;
+         // Now your left!
+         
+         // No, that's your right.
+         
+         // (Aqua Teen Rules!)
       }
 
       //
@@ -307,29 +250,6 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      ///
-      /// Compress threshold as a 16-bit unsigned int. 
-      ///
-      public int clipThreshold
-      {
-         get
-         {
-            return (int)_clipThreshold;
-         }
-         set
-         {
-            _clipThreshold = (double)value;
-            
-            if (_clipThreshold >= 32766.0)
-               _clipThreshold = 32766.0;
-               
-            if (_clipThreshold < 1.0) // Uh, you WANT complete silence?
-               _clipThreshold = 1.0;
-               
-            _clipLeftover = 32767.0 - _clipThreshold;
-         }
-      }
-
 
       ///
       /// Target power level for compression/expansion.
@@ -369,11 +289,6 @@ namespace byteheaven.tamjb.Engine
 
       double _decayRatioNew = 0.00000035;
       double _decayRatioOld = 0.99999965;
-
-      // Sample value for start of soft clipping. Leftover must
-      // be 32767 - _clipThreshold.
-      double _clipThreshold = 18000.0;
-      double _clipLeftover =  14767.0;
 
       //
       // This is the average rms power of the current track decaying

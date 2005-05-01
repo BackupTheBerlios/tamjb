@@ -31,7 +31,7 @@ namespace byteheaven.tamjb.Engine
    using System.IO;
 
    ///
-   /// A short delay that works as a fifo. For long integers.
+   /// A short delay that works as a fifo. For doubles.
    ///
    public class SampleFifo
    {
@@ -41,13 +41,13 @@ namespace byteheaven.tamjb.Engine
       ///    >= 1. (However, the delay may be set to 0, see below.)
       /// \param initialValue initial value with which the fifo will be filled.
       ///
-      public SampleFifo( uint maxSize, long initialValue )
+      public SampleFifo( uint maxSize, double initialValue )
       {
          Debug.Assert( maxSize > 0, "Bad parameter" );
 
          // Create and initialize the buffer to 0's
 
-         _buffer = new long[ maxSize ];
+         _buffer = new double[ maxSize ];
          for (int i = 0; i < maxSize; i++)
             _buffer[i] = initialValue;
 
@@ -86,7 +86,7 @@ namespace byteheaven.tamjb.Engine
       /// Puts the new value on the top of the stack, returning
       /// the value from the bottom. Simple
       ///
-      public long Push( long newValue )
+      public double Push( double newValue )
       {
          if (0 == _delay)       // No delay!
             return newValue;
@@ -97,12 +97,12 @@ namespace byteheaven.tamjb.Engine
          if (_bufptr >= _delay)
             _bufptr = 0;
 
-         long prev = _buffer[ _bufptr ];
+         double prev = _buffer[ _bufptr ];
          _buffer[ _bufptr ] = newValue;
          return prev;
       }
 
-      long [] _buffer;
+      double [] _buffer;
       uint    _bufptr;
       uint    _delay;
    }

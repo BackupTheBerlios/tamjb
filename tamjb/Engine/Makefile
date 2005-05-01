@@ -7,10 +7,15 @@ SOURCES = AssemblyInfo.cs \
         Backend.cs \
         Compressor.cs \
         Engine.cs \
+        HighpassFilter.cs \
+        IAudioProcessor.cs \
         LocalFileDatabase.cs \
+        LowpassFilter.cs \
         MyRandom.cs \
         RecursiveScanner.cs \
-        SampleFifo.cs
+        SampleFifo.cs \
+        SoftClipper.cs \
+        TwoBandCompressor.cs
 
 #
 # Choose your database
