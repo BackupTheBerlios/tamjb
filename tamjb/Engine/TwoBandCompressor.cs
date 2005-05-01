@@ -80,7 +80,7 @@ namespace byteheaven.tamjb.Engine
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
          _highPass.Process( ref trebleLeft, ref trebleRight );
-         _trebleCompress.Process( ref bassLeft, ref bassRight );
+         _trebleCompress.Process( ref trebleLeft, ref trebleRight );
 
          // Is this an adequate mixing algorithm?
          left = bassLeft + trebleLeft;
@@ -124,7 +124,7 @@ namespace byteheaven.tamjb.Engine
          set
          {
             _bassCompress.compressThreshold = value;
-            _trebleCompress.compressThreshold = value;
+            _trebleCompress.compressThreshold = (int)((double)value * 0.8); // just a little less
          }
       }
 

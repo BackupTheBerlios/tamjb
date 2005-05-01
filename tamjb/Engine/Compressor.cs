@@ -258,7 +258,7 @@ namespace byteheaven.tamjb.Engine
       /// like -3dB from the absolute max level. Oh well, might 
       /// as well match that.
       ///
-      double _targetPowerLevel = 16000.0;
+      double _targetPowerLevel = 10000.0;
 
       ///
       /// Level below which we stop compressing and start
