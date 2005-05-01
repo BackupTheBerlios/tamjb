@@ -34,12 +34,9 @@ namespace byteheaven.tamjb.Engine
    // using byteheaven.tamjb.Interfaces;
 
    ///
-   /// A simple average-power based compressor using exponential
-   /// decay based attack/release (so it tends to click if it's
-   /// too aggressive). With soft clipping based on antilog (1/x)
-   /// based nonlinearity. ("Asympote!" "What did you just call me?")
+   /// A multi-band compressor. Yeah. What a useful comment.
    ///
-   public class TwoBandCompressor
+   public class MultiBandCompressor
       : IAudioProcessor
    {
       ///
@@ -47,20 +44,35 @@ namespace byteheaven.tamjb.Engine
       ///
       public readonly static uint MAX_PREDELAY = 88;
 
-      public TwoBandCompressor()
+      public MultiBandCompressor()
       {
+         crossoverFrequencyOne = 220; // hz
+         crossoverFrequencyTwo = 5800; // hz
       }
 
-      double crossoverFrequency
+      public double crossoverFrequencyOne
       {
          get
          {
-            return _lowPass.cutoff;
+            return _lowPassOne.cutoff;
          }
          set
          {
-            _lowPass.cutoff = value;
-            _highPass.cutoff = value;
+            _lowPassOne.cutoff = value;
+            _highPassOne.cutoff = value;
+         }
+      }
+
+      public double crossoverFrequencyTwo
+      {
+         get
+         {
+            return _lowPassTwo.cutoff;
+         }
+         set
+         {
+            _lowPassTwo.cutoff = value;
+            _highPassTwo.cutoff = value;
          }
       }
 
@@ -73,18 +85,24 @@ namespace byteheaven.tamjb.Engine
 
          double bassLeft = left;
          double bassRight = right;
+         double midLeft = left;
+         double midRight = right;
          double trebleLeft = left;
          double trebleRight = right;
 
-         _lowPass.Process( ref bassLeft, ref bassRight );
+         _lowPassOne.Process( ref bassLeft, ref bassRight );
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
-         _highPass.Process( ref trebleLeft, ref trebleRight );
+         _highPassOne.Process( ref midLeft, ref midRight );
+         _lowPassTwo.Process( ref midLeft, ref midRight );
+         _midCompress.Process( ref midLeft, ref midRight );
+
+         _highPassTwo.Process( ref trebleLeft, ref trebleRight );
          _trebleCompress.Process( ref trebleLeft, ref trebleRight );
 
          // Is this an adequate mixing algorithm?
-         left = bassLeft + trebleLeft;
-         right = bassRight + trebleRight;
+         left = bassLeft + midLeft + trebleLeft;
+         right = bassRight + midLeft + trebleRight;
 
          _softClipper.Process( ref left, ref right );
       }
@@ -98,6 +116,7 @@ namespace byteheaven.tamjb.Engine
          set
          {
             _bassCompress.compressAttack = value;
+            _midCompress.compressAttack = value;
             _trebleCompress.compressAttack = value;
          }
       }
@@ -111,6 +130,7 @@ namespace byteheaven.tamjb.Engine
          set
          {
             _bassCompress.compressDecay = value;
+            _midCompress.compressDecay = value;
             _trebleCompress.compressDecay = value;
          }
       }
@@ -123,8 +143,13 @@ namespace byteheaven.tamjb.Engine
          }
          set
          {
+            ///
+            /// \todo The levels here are a hack based on crossover freqs
+            ///   at 220 and 5500 hz. Fix?
+            ///
             _bassCompress.compressThreshold = value;
-            _trebleCompress.compressThreshold = (int)((double)value * 0.8); // just a little less
+            _midCompress.compressThreshold = (int)((double)value * 0.75);
+            _trebleCompress.compressThreshold = (int)((double)value * 0.28);
          }
       }
 
@@ -137,6 +162,7 @@ namespace byteheaven.tamjb.Engine
          set
          {
             _bassCompress.gateThreshold = value;
+            _midCompress.gateThreshold = value;
             _trebleCompress.gateThreshold = value;
          }
       }
@@ -153,6 +179,7 @@ namespace byteheaven.tamjb.Engine
          set
          {
             _bassCompress.compressRatio = value;
+            _midCompress.compressRatio = value;
             _trebleCompress.compressRatio = value;
          }
       }
@@ -170,6 +197,7 @@ namespace byteheaven.tamjb.Engine
          set
          {
             _bassCompress.compressPredelay = value;
+            _midCompress.compressPredelay = value;
             _trebleCompress.compressPredelay = value;
          }
       }
@@ -189,10 +217,18 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      SoftClipper _softClipper = new SoftClipper();
       Compressor _bassCompress = new Compressor();
+
+      LowpassFilter _lowPassOne = new LowpassFilter();
+      HighpassFilter _highPassOne = new HighpassFilter();
+
+      Compressor _midCompress = new Compressor();
+
+      LowpassFilter _lowPassTwo = new LowpassFilter();
+      HighpassFilter _highPassTwo = new HighpassFilter();
+
       Compressor _trebleCompress = new Compressor();
-      LowpassFilter _lowPass = new LowpassFilter();
-      HighpassFilter _highPass = new HighpassFilter();
+
+      SoftClipper _softClipper = new SoftClipper();
    }
 }

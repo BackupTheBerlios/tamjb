@@ -1142,7 +1142,7 @@ namespace byteheaven.tamjb.Engine
 
          // Create a serializer, and serialize to rom
          XmlSerializer serializer = 
-            new XmlSerializer( typeof(TwoBandCompressor) );
+            new XmlSerializer( typeof(MultiBandCompressor) );
          
          StringWriter str = new StringWriter();
          serializer.Serialize( str, _compressor );
@@ -1154,19 +1154,19 @@ namespace byteheaven.tamjb.Engine
       /// load a compressor using the settings in the database, or a default
       /// one if the settings are not found/valid
       ///
-      TwoBandCompressor _LoadCompressor()
+      MultiBandCompressor _LoadCompressor()
       {
-         TwoBandCompressor compressor = null;
+         MultiBandCompressor compressor = null;
          try
          {
             string settings = _database.GetCompressSettings();
             if (null != settings)
             {
                XmlSerializer serializer = 
-                  new XmlSerializer( typeof( TwoBandCompressor ) );
+                  new XmlSerializer( typeof( MultiBandCompressor ) );
 
                StringReader str = new StringReader( settings );
-               compressor = (TwoBandCompressor)serializer.Deserialize( str );
+               compressor = (MultiBandCompressor)serializer.Deserialize( str );
             }
          }
          catch (Exception e)
@@ -1177,7 +1177,9 @@ namespace byteheaven.tamjb.Engine
          if (null == compressor)
          {
             _Trace( "Note: compression settings not found, using defaults" );
-            compressor = new TwoBandCompressor(); // load with defaults
+            compressor = new MultiBandCompressor(); // load with defaults
+            compressor.crossoverFrequencyOne = 220.0; // Hz
+            compressor.crossoverFrequencyTwo = 5500.0; // Hz
          }
          
          return compressor;
@@ -1762,7 +1764,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Our main audio processor: the level manager
       ///
-      TwoBandCompressor _compressor;
+      MultiBandCompressor _compressor;
 
       ///
       /// A mutex to prevent audio from being mangled when settings
