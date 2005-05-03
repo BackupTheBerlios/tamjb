@@ -102,7 +102,7 @@ namespace byteheaven.tamjb.Engine
 
          // Is this an adequate mixing algorithm?
          left = bassLeft + midLeft + trebleLeft;
-         right = bassRight + midLeft + trebleRight;
+         right = bassRight + midRight + trebleRight;
 
          _softClipper.Process( ref left, ref right );
       }
