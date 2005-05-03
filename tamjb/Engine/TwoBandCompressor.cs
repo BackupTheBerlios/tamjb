@@ -148,8 +148,8 @@ namespace byteheaven.tamjb.Engine
             ///   at 220 and 5500 hz. Fix?
             ///
             _bassCompress.compressThreshold = value;
-            _midCompress.compressThreshold = (int)((double)value * 0.75);
-            _trebleCompress.compressThreshold = (int)((double)value * 0.28);
+            _midCompress.compressThreshold = (int)((double)value * 0.50);
+            _trebleCompress.compressThreshold = (int)((double)value * 0.14);
          }
       }
 
