@@ -56,8 +56,8 @@ namespace byteheaven.tamjb.Engine
       ///
       public HighpassFilter()
       {
-         _leftFilter = new MonoHighpass();
-         _rightFilter = new MonoHighpass();
+         _leftFilter = new MonoHighpassFilter();
+         _rightFilter = new MonoHighpassFilter();
 
          cutoff = 150.0;        // hz
       }
@@ -94,42 +94,8 @@ namespace byteheaven.tamjb.Engine
 
       double _cutoff = 100.0;    // Not used in calculations
 
-      MonoHighpass _leftFilter;
-      MonoHighpass _rightFilter;
-
-      class MonoHighpass
-      {
-         public void Initialize( double cutoff,
-                                 double sampleRate )
-         {
-            _prev = 0.0;
-
-            // with x = 2*pi*cutoff/samplerate
-            double x = 2.0 * 3.14159265 * cutoff / sampleRate;
-
-            // coefficient: p = (2+cos(x)) - sqrt((2+cos(x))^2 - 1) 
-            _co = (2.0+Math.Cos(x))
-               - Math.Sqrt( Math.Pow( (2.0+Math.Cos(x)), 2) - 1.0 );
-
-            Debug.Assert( _co <= 1.0 && _co >= 0.0,
-                          "Should not be inverting or amplifying! _co:" 
-                          + _co );
-
-            // Alternate method:
-            // coeficient approximation: p = (1 - 2*cutoff/samplerate)^2
-         }
-
-         public double Process( double input )
-         {
-            // recursion: tmp = (p-1)*in - p*tmp with output = tmp
-
-            _prev = ((_co - 1.0) * input) - (_co * _prev);
-            return _prev;
-         }
-
-         double _co = 0.0;       // coeffecient a
-         double _prev = 0.0;        // previous output
-      }
+      IMonoFilter _leftFilter;
+      IMonoFilter _rightFilter;
    }
 
 }

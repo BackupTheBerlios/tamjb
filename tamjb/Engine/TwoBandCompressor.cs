@@ -46,6 +46,9 @@ namespace byteheaven.tamjb.Engine
 
       public MultiBandCompressor()
       {
+         // Note: default crossover frequencies are related to
+         // the compressThreshold adjustment!
+
          crossoverFrequencyOne = 220; // hz
          crossoverFrequencyTwo = 5800; // hz
       }

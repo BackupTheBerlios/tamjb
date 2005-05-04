@@ -32,7 +32,9 @@ using System.IO;                // Directory functions
 using System.Text.RegularExpressions;
 using System.Text;
 
-#if USE_SQLITE
+#if USE_FIREBIRD
+using FirebirdSql.Data.Firebird;
+#elif USE_SQLITE
 using Mono.Data.SqliteClient;
 #elif USE_POSTGRESQL
 using Npgsql;

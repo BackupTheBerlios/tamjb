@@ -7,8 +7,11 @@ SOURCES = AssemblyInfo.cs \
         Backend.cs \
         Compressor.cs \
         Engine.cs \
+        FirstOrderLowpassFilter.cs \
+        FirstOrderHighpassFilter.cs \
         HighpassFilter.cs \
         IAudioProcessor.cs \
+        IMonoFilter.cs \
         LocalFileDatabase.cs \
         LowpassFilter.cs \
         MyRandom.cs \
