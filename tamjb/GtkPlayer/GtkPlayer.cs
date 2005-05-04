@@ -30,10 +30,6 @@ namespace byteheaven.tamjb.GtkPlayer
    using System.Collections;
    using System.Collections.Specialized;
    using System.Diagnostics;
-//    using System.Runtime.Remoting;
-//    using System.Runtime.Remoting.Channels;
-//    using System.Runtime.Remoting.Channels.Http;
-//    using System.Runtime.Remoting.Channels.Tcp;
    using System.Threading;
    using Gtk;
    using GtkSharp;
@@ -96,7 +92,8 @@ namespace byteheaven.tamjb.GtkPlayer
          }
          catch (Exception e)
          {
-            _Status( "Note: Could not load settings, using defaults: " + e.Message,
+            _Status( "Note: Could not load settings, using defaults: " 
+                     + e.Message,
                      35 );
 
             _settings = new PlayerSettings();
@@ -249,45 +246,52 @@ namespace byteheaven.tamjb.GtkPlayer
 
          if (PlayerApp.isStandalone) // not using a remote server?
          {
-            bool shouldStop = false;
             try
             {
-               // if (backend.isPlaying)
-                  PlayerApp.PollBackend(); // keep the engine working
+               PlayerApp.PollBackend(); // keep the engine working
+               _isProblemDuringPoll = false;
             }
             catch (Exception e)
             {
                // dump stack trace
                _TraceError( "Problem during Poll(): " + e.ToString() );
                _Status( "Problem during Poll", 120 );
-               _Complain( "Problem during Poll()", e );
-               shouldStop = true;
+
+               if (!_isProblemDuringPoll)
+               {
+                  _isProblemDuringPoll = true;
+                  _Complain( "Problem during Poll()", e );
+               }
+               
+               // Do we really need to do this?
+               // _StopPlayback();
             }
 
-            // TODO: only stop on fatal errors, like database connect
-            // problems. Hmmm.
-            // TODO: Make the stopping configurable, because the databvase
-            // might have temporary connectivity problems (ie, be restarted).
+            /// \todo only stop on fatal errors, like database connect
+            /// problems. Hmmm.
 
-            if (shouldStop)
-               _StopPlayback();
+            if (_isProblemDuringPoll)
 
             try
             {
                if (backend.isPlaying)
+               {
                   PlayerApp.ScanForFiles();
+                  _isProblemScanning = false;
+               }
             }
             catch (Exception e)
             {
                // dump stack trace
-               // _Complain( "Problem scanning for files", e );
-               _TraceError( "Problem scanning for files: " + e.ToString() );
-               _Status( "Problem scanning for files", 120 );
-               // shouldStop = true;
-            }
+               if (! _isProblemScanning)
+               {
+                  _isProblemScanning = true;
+                  // _Complain( "Problem scanning for files", e );
+               }
 
-            if (shouldStop)
-               _StopPlayback();
+               _TraceError( "Problem scanning for files: " + e.ToString() );
+               _Status( "Problem scanning files", 120 );
+            }
          }
 
          if (_statusBarPopTimeout > 0)
@@ -1196,7 +1200,7 @@ namespace byteheaven.tamjb.GtkPlayer
                                DialogFlags.Modal,
                                MessageType.Error,
                                ButtonsType.Ok, 
-                               msg + "\n" + e.Message );
+                               msg + "\n" + e.ToString() );
          md.Run();
          md.Destroy();
       }
@@ -1235,6 +1239,11 @@ namespace byteheaven.tamjb.GtkPlayer
       // Misc
 
       bool _pendingUpdate = true;
+
+      // To avoid multiple popups, remember whether we have problems
+      // here:
+      bool _isProblemDuringPoll = false;
+      bool _isProblemScanning = false;
 
       //
       // -- Widgets that are attached to Glade

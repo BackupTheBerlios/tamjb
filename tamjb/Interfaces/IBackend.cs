@@ -30,7 +30,7 @@ namespace byteheaven.tamjb.Interfaces
 {
    ///
    /// Super secret internal interfaces to the backend that are
-   /// exposed to local users of hte dll. Hmmm.
+   /// exposed to local users of the dll. Hmmm.
    ///
    public interface IBackend
    {

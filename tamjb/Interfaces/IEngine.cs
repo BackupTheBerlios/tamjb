@@ -146,7 +146,8 @@ namespace byteheaven.tamjb.Interfaces
       bool isPlaying { get; }
 
       //
-      // Compression parameters
+      // Compression parameters for the multi-band 
+      // compressor.
       //
       double compressAttack { get; set; }
       double compressDecay { get; set; }

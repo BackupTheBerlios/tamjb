@@ -68,7 +68,12 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-
+      ///
+      /// This function clips based on the current settings. Note
+      /// that sevral audio streams can share this, because the 
+      /// SoftClip maintains no state between calls. (aside from the 
+      /// threshold).
+      ///
       double _SoftClip( double original )
       {
          if (original > _clipThreshold) // Soft-clip 

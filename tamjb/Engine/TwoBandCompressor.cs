@@ -96,6 +96,11 @@ namespace byteheaven.tamjb.Engine
          _lowPassOne.Process( ref bassLeft, ref bassRight );
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
+         // Clip the bass separately, because it is most likely
+         // to clip bounds (this will create interesting
+         // harmonics if it clips :)
+         _softClipper.Process( ref bassLeft, ref bassRight );
+
          _highPassOne.Process( ref midLeft, ref midRight );
          _lowPassTwo.Process( ref midLeft, ref midRight );
          _midCompress.Process( ref midLeft, ref midRight );
@@ -151,8 +156,10 @@ namespace byteheaven.tamjb.Engine
             ///   at 220 and 5500 hz. Fix?
             ///
             _bassCompress.compressThreshold = value;
-            _midCompress.compressThreshold = (int)((double)value * 0.50);
-            _trebleCompress.compressThreshold = (int)((double)value * 0.14);
+            _midCompress.compressThreshold = (int)((double)value * 0.75);
+            _trebleCompress.compressThreshold = (int)((double)value * 0.28);
+//             _midCompress.compressThreshold = (int)((double)value * 0.50);
+//             _trebleCompress.compressThreshold = (int)((double)value * 0.14);
          }
       }
 
