@@ -32,7 +32,7 @@ namespace byteheaven.tamjb.Engine
    ///
    /// One pole lowpass.
    /// 
-   /// References : Posted by mistert[AT]inwind[DOT]it
+   /// From http://www.musicdsp.org/. Posted by mistert[AT]inwind[DOT]it.
    ///
    public class FirstOrderLowpassFilter
       : IMonoFilter
@@ -74,54 +74,5 @@ namespace byteheaven.tamjb.Engine
       double _b1 = 0.0; 
       double _prevInput = 0.0;  
       double _prevOutput = 0.0;  
-   }
-
-   ///
-   /// This implementation is based on Bram's 
-   /// lowpass from www.musicdsp.org, which just uses
-   /// exponential decay. The cool part of this is the code to calculate
-   /// the decay coefficient, which works nicely for lower frequencies.
-   /// Unfortunately, it's not very high order. :o
-   ///
-   /// \code 
-   /// References : Posted by Bram
-   /// recursion: tmp = (1-p)*in + p*tmp with output = tmp
-   /// coefficient: p = (2-cos(x)) - sqrt((2-cos(x))^2 - 1) 
-   ///   with x = 2*pi*cutoff/samplerate
-   /// coeficient approximation: p = (1 - 2*cutoff/samplerate)^2
-   ///
-   /// note: in recursion, tmp starts as the prev output.
-   /// \endcode
-   ///
-   public class BramsLowpass
-   {
-      public void Initialize( double cutoff,
-                              double sampleRate )
-      {
-         _prev = 0.0;
-
-         //   with x = 2*pi*cutoff/samplerate
-         double x = 2.0 * 3.14159265 * cutoff / sampleRate;
-
-         // coefficient: p = (2-cos(x)) - sqrt((2-cos(x))^2 - 1) 
-         _co = (2.0-Math.Cos(x))
-            - Math.Sqrt( Math.Pow( (2.0-Math.Cos(x)), 2) - 1.0 );
-         
-         Debug.Assert( _co <= 1.0 && _co >= 0.0,
-                       "Should not be inverting or amplifying!" );
-         
-         // Alternate method:
-         // coeficient approximation: p = (1 - 2*cutoff/samplerate)^2
-      }
-
-      public double Process( double input )
-      {
-         //  with output = tmp
-         _prev = ((1.0 - _co) * input) + (_co * _prev);
-         return _prev;
-      }
-      
-      double _co = 0.0;       // coeffecient a
-      double _prev = 0.0;        // previous output
    }
 }

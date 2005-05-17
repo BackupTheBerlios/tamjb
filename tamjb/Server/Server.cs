@@ -109,6 +109,9 @@ namespace byteheaven.tamjb.Server
       /// \param args Now what, exactly, do you THINK is getting passed to
       ///   our static Main function? Hmmm?
       ///
+      /// \todo As of mono 1.1.7, we could actually register as a system
+      ///   service using standard api's. Should we?
+      ///
       [MTAThread]
       public static int Main(string [] args) 
       {

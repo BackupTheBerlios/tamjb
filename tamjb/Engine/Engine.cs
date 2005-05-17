@@ -250,22 +250,6 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Compress threshold as a 16-bit unsigned int. 
-      ///
-      public int clipThreshold
-      {
-         get
-         {
-            return Backend.theBackend.clipThreshold;
-         }
-         set
-         {
-            Backend.theBackend.clipThreshold = value;
-         }
-      }
-
-
-      ///
       /// Stop!
       ///
       public void StopPlaying()

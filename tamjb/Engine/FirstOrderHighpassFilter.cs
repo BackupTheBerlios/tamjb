@@ -36,7 +36,7 @@ namespace byteheaven.tamjb.Engine
    /// 
    /// One pole first order.
    /// 
-   /// References : Posted by mistert[AT]inwind[DOT]it
+   /// From http://www.musicdsp.org/. Posted by mistert[AT]inwind[DOT]it.
    ///
    public class MonoHighpassFilter 
       : IMonoFilter
@@ -73,42 +73,5 @@ namespace byteheaven.tamjb.Engine
       double _b1 = 0.0; 
       double _prevInput = 0.0;  
       double _prevOutput = 0.0;  
-   }
-
-
-   ///
-   /// This is a low-overhead filter, but it only approximates
-   /// a highpass, it actaully passes a lot of lows. :) Still, 
-   /// it is kinda cool.
-   ///
-   public class BramsHighpass : IMonoFilter
-   {
-      public void Initialize( double cutoff,
-                              double sampleRate )
-      {
-         _prev = 0.0;
-         
-         // with x = 2*pi*cutoff/samplerate
-         double x = 2.0 * 3.14159265 * cutoff / sampleRate;
-         
-         // coefficient: p = (2+cos(x)) - sqrt((2+cos(x))^2 - 1) 
-         _co = (2.0+Math.Cos(x))
-            - Math.Sqrt( Math.Pow( (2.0+Math.Cos(x)), 2) - 1.0 );
-         
-         Debug.Assert( _co <= 1.0 && _co >= 0.0,
-                       "Should not be inverting or amplifying! _co:" 
-                       + _co );
-      }
-
-      public double Process( double input )
-      {
-         // recursion: tmp = (p-1)*in - p*tmp with output = tmp
-         
-         _prev = ((_co - 1.0) * input) - (_co * _prev);
-         return _prev;
-      }
-
-      double _co = 0.0;       // coeffecient a
-      double _prev = 0.0;        // previous output
    }
 }

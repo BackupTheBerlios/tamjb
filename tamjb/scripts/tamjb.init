@@ -7,15 +7,18 @@ depend() {
 
 start() {
         ebegin "Starting tamjb"
-	# (Note raised priority--don't want anything interrupting my groove!
+
+	# (For raised priority, add this:)
+        #   -N $TAMJB_NICE_LEVEL \
 	#  --make-pidfile --pidfile $TAMJB_PIDFILE 
         #  --background 
 	#  --make-pidfile 
         start-stop-daemon \
-	  -N $TAMJB_NICE_LEVEL \
 	  --start \
 	  --pidfile=$TAMJB_PIDFILE \
-          --exec $TAMJB -- $TAMJBOPTIONS --connectionString "$TAMJB_CONNECTSTRING"
+          --exec $TAMJB -- $TAMJBOPTIONS \
+          --connectionString "$TAMJB_CONNECTSTRING"
+
         eend $?
 }
 

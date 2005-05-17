@@ -90,8 +90,6 @@ namespace byteheaven.tamjb.GtkPlayer
          _ratioScale.Value = _backend.compressRatio;
          _gateThresholdScale.Value = _backend.gateThreshold;
 
-         _clipThresholdScale.Value = _backend.clipThreshold;
-
          // Convert from samples to seconds. Note that this assumes
          // 44.1 samples per second. Approximately. :)
          _predelayScale.Value = 
@@ -222,20 +220,6 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnClipChanged( object sender, EventArgs args )
-      {
-         try
-         {
-            _Trace( "[_OnClipThresholdChanged]" );
-            if (_backend.clipThreshold != (int)_clipThresholdScale.Value)
-               _backend.clipThreshold = (int)_clipThresholdScale.Value;
-         }
-         catch (Exception e)
-         {
-            _Trace( e.ToString() );
-         }
-      }
-
       void _OnPredelayChanged( object sender, EventArgs args )
       {
          try
@@ -305,9 +289,6 @@ namespace byteheaven.tamjb.GtkPlayer
 
       [Glade.Widget]
       Scale  _gateThresholdScale; 
-
-      [Glade.Widget]
-      Scale  _clipThresholdScale;   
 
       [Glade.Widget]
       Scale  _predelayScale;

@@ -1,3 +1,13 @@
+2005-05-17  tekHedd  <tekhedd@byteheaven.net>
+
+	* GtkPlayer: Added a client-mode command-line option.
+
+2005-05-04  My Login  <tekhedd@byteheaven.net>
+
+	* Engine: Created multiband compression, so the overall audio level
+	can stay relatively stable no matter what your bass/treble settings.
+	Is good.
+
 2005-04-27  tekHedd <tekhedd@byteheaven.net>
 
 	* all: (No need to) Fix memory leak. All of the memory bloat is gone 

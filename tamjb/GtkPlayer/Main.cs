@@ -47,7 +47,7 @@ namespace byteheaven.tamjb.GtkPlayer
    public class PlayerApp
    {
       [MTAThread]
-      static void Main( string [] args )
+      static int Main( string [] args )
       {
          _runLocal = true;
 
@@ -73,31 +73,22 @@ namespace byteheaven.tamjb.GtkPlayer
             }
 
             Trace.AutoFlush = true;
+
+            // Parse args:
+            for (int i = 0; i < args.Length; i++)
+            {
+               if ("/client" == args[i])
+               {
+                  _runLocal = false;
+               }
+               else
+               {
+                  _PrintUsage();
+                  return 1;
+               }
+            }
             
-            // Set up remoting services if we are using a remote server
-            if (! _runLocal)
-            {
-               // Create a channel for communicating w/ the remote object
-               // Should not have to explicitly state BinaryClient, should I?
-
-               _Trace( "Setting up remoting stuff" );
-
-               ListDictionary properties = new ListDictionary();
-               HttpChannel channel = 
-                  new HttpChannel(properties,
-                                  new BinaryClientFormatterSinkProvider(),
-                                  new BinaryServerFormatterSinkProvider());
-
-               ChannelServices.RegisterChannel( channel );
-
-               // Yeah, we support Tcp too.
-               TcpChannel tcpChannel = new TcpChannel();
-               ChannelServices.RegisterChannel( tcpChannel );
-            }
-            else                // running locally
-            {
-               ; // nothing to do...
-            }
+            _SetUpRemoting();
 
             _Trace( "Initializing" );
             Application.Init ();
@@ -117,34 +108,10 @@ namespace byteheaven.tamjb.GtkPlayer
             // that it is possible to generate an excption while printing
             // the exception, so wrap that sucker too!
             string errorMsg = null;
-            try
-            {
-               errorMsg = e.ToString();
-            }
-            catch (Exception nestedEx)
-            {
-               // Hmm. Now what?
-            }
-
-            if (null == errorMsg)
-            {
-               errorMsg = "An exception occurred while trying to decipher the exception! :<";
-            }
-
+            errorMsg = e.ToString();
             Console.WriteLine( "Unexpected Exception: {0}", errorMsg);
             Console.WriteLine( "Exiting" );
-            return;             // ** quick exit to avoid additional exceptions **
-
-            // This doesn't work right. Apparently since the application
-            // is not running, the OK button won't work either. :(
-//             MessageDialog md = 
-//                new MessageDialog( null, 
-//                                   DialogFlags.Modal,
-//                                   MessageType.Error,
-//                                   ButtonsType.Close, 
-//                                   msg );
-     
-//             int result = md.Run ();
+            return 1;           // ** quick exit **
          }
 
          _Trace( "exiting" );
@@ -156,8 +123,43 @@ namespace byteheaven.tamjb.GtkPlayer
          _scanner = null;
          _backendProxy = null;
          _backendInterface = null;
+
+         return 0;              // success
       }
 
+      static void _PrintUsage()
+      {
+         Console.WriteLine( "Usage: GtkClient <flags>" );
+         Console.WriteLine( "Flags:" );
+         Console.WriteLine( "  /client        run client/server" );
+      }
+
+      ///
+      /// Sets up remoting services, if we are using a remote server.
+      ///
+      static void _SetUpRemoting()
+      {
+         if (! _runLocal)
+         {
+            // Create a channel for communicating w/ the remote object
+            // Should not have to explicitly state BinaryClient, should I?
+            
+            _Trace( "Setting up remoting stuff" );
+            
+            ListDictionary properties = new ListDictionary();
+            HttpChannel channel = 
+               new HttpChannel(properties,
+                               new BinaryClientFormatterSinkProvider(),
+                               new BinaryServerFormatterSinkProvider());
+            
+            ChannelServices.RegisterChannel( channel );
+            
+            // Yeah, we support Tcp too.
+            TcpChannel tcpChannel = new TcpChannel();
+            ChannelServices.RegisterChannel( tcpChannel );
+         }
+      }
+         
       public static IEngine backend
       {
          get

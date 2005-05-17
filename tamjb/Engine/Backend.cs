@@ -1009,39 +1009,6 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      ///
-      /// Compress threshold as a 16-bit unsigned int. 
-      ///
-      public int clipThreshold
-      {
-         get
-         {
-            return _compressor.clipThreshold;
-         }
-         set
-         {
-            _Lock();
-            try
-            {
-               _audioMutex.WaitOne();
-               try
-               {
-                  _compressor.clipThreshold = value;
-               }
-               finally
-               {
-                  _audioMutex.ReleaseMutex();
-               }
-
-               _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
-            }
-         }
-      }
-
       public uint compressPredelayMax
       {
          get

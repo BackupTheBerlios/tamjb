@@ -158,11 +158,5 @@ namespace byteheaven.tamjb.Interfaces
 
       int gateThreshold{ get; set; }
 
-      ///
-      /// SOFT clip threshold.
-      ///
-      int clipThreshold{ get; set; }
-
-      
    }
 }

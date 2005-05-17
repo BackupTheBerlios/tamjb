@@ -1,6 +1,14 @@
 
 TODO
+ - Make the server use CLR system service api's, which should allow it
+  to run as a service cross-platform (works as of mono 1.1.7). Need to
+  store settings in the config file and/or database, though.
+
  - Add gratuitous eye candy
+   - Display the mp3 bitrate 
+   - Add some sort of graphic display of compression ratios and levels.
+    This really won't help you accomplish anything, but for some reason
+    visual feedback is important. One of those psychology things, I guess.
 
  - Drop songs from future part of playlist if they are flagged as suck or
   something. Perhaps rework the way songs are chosen to be more visually
@@ -8,23 +16,24 @@ TODO
 
  - Port to firebird database, because it is an embedded database
    that supports transactions and named parameters (unlike sqlite).
-   The performance will probably be better with postgres if you
-   have a server that gets millions of hits, but then probably not.
-   Anyway, there is only one client of a given database instance,
-   the engine. 
+   Must investigate the use of firebird as a standalone engine on
+   linux, as it doesn't seem to properly support that.
+
+   Or, if named parameter support is ever properly added to the 
+   SQLite CLR wrapper, possibly use that, since embedded firebird
+   is not really widely used on linux.
 
  - Add track browser dialogs, so that you can adjust song suck on blocks
   of songs, perhaps selecting by artist, etc.
+
+ - Front-panel checkbox to tag damaged mp3's. This way, you don't have
+  to say they suck, and later you can rewrip them. Needs a way to list
+  (and printout list?) the broken mp3's.
 
  - Display audio player status on error. Right now, if the mp3player
   thread can't start, nothing happens!
 
  - Test database for existance. Ask/create if does not exist.
-
- - Make client mode a command-line option, or else create separate 
-  client/server standalone binaries at build time. I'd like to see
-  the Makefile create both versions every time you build, so you'll 
-  know if you've broken something in one of the builds.
 
  - Enhanced error reporting. The new file recursive scanner has no way 
   to report files with problems. On my system, I commonly see
@@ -55,15 +64,11 @@ TODO
 
  - Make a System.Windows.Forms GUI, or figure how to deploy the Gtk# 
   runtimes without recompiling. I do NOT want to have to compile
-  separate binaries for windows, that is not acceptable.
+  separate binaries for windows, that is not acceptable, however it
+  should be possible to distribute both the gtk and forms GUI's with
+  the same engine DLL's. 
 
  - Implement delete/copy of user/mood
-
- - Display the mp3 bitrate 
-
- - Add some sort of graphic display of compression ratios and levels.
-  This really won't help you accomplish anything, but for some reason
-  visual feedback is important. One of those psychology things, I guess.
 
  - Add support for monophonic mp3 files. (Proper support, that is. They
   play fine as long as you don't mind that they only play through the
@@ -72,16 +77,10 @@ TODO
  - Add proper support for playing back files encoded at rates other
   than 44.1.
 
- - Add support for ogg/vorbis, WAV, and losslessly-compressed files
-
  - Calculate average song volume and store for later level adjustment
 
  - Create ebuilds for esd-sharp and mp3sharp, eliminating the need for 
   wrapper makefiles, etc. (gentoo)
-
- - Front-panel checkbox to tag damaged mp3's. This way, you don't have
-  to say they suck, and later you can rewrip them. Needs a way to list
-  (and printout list?) the broken mp3's.
 
  - When mp3's are not found, they should be flagged as missing and no
   longer played. Then later when the file scanner finds the file again,
@@ -98,5 +97,9 @@ TODO
   recommendations. Perhaps an abstract info sharing layer could be
   designed so that it could be layerd on a client-server system
   OR gnutalla-2 OR freenet/entropy or whatever you can find.
+
+ - Add support for ogg/vorbis, WAV, and/or losslessly-compressed files.
+  Probably GStreamer# will solve this problem transparently. If it is
+  ever released.
 
 

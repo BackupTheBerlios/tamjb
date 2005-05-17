@@ -215,6 +215,10 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Compress threshold as a 16-bit unsigned int. 
       ///
+      /// The default is OK, there's no real reason to adjust
+      /// this, except perhaps to turn it off. For which there
+      /// is no current method. Hmmm.
+      ///
       public int clipThreshold
       {
          get

@@ -10,7 +10,8 @@ PIDFILE=/var/run/tamjb.pid
 
 set -e
 
-# Has big memory leak--stop leak from crashing system
+# Early versions of mono leaked memory like nobody's business.
+# Set limits.
 ulimit -m 80000
 ulimit -v 90000
 ulimit -a 1>&2
