@@ -26,18 +26,18 @@ SOURCES = AssemblyInfo.cs \
 
 # -- SQLite
 # DBFLAGS = -define:USE_SQLITE
-# DBREFS = -r Mono.Data.SqliteClient 
+# DBREFS = -r:Mono.Data.SqliteClient 
 
 # -- MySql (4.1 or better for nested queries)
 # DBFLAGS = -define:USE_MYSQL
-# DBREFS = -r ByteFX.Data
+# DBREFS = -r:ByteFX.Data
 
 # -- PostgreSQL
 DBFLAGS = -define:USE_POSTGRESQL
-DBREFS = -r Npgsql
+DBREFS = -r:Npgsql
 
 
-DEBUGFLAGS = -g -define:DEBUG -define:TRACE
+DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 
 # libs for dependency checking during dev:
 DEPLIBS = ../bin/byteheaven.id3.dll \
@@ -47,7 +47,7 @@ DEPLIBS = ../bin/byteheaven.id3.dll \
         ../bin/tamjb.SimpleMp3Player.dll
 
 
-REFS = -r System.Data \
+REFS = -r:System.Data \
         $(DBREFS) \
         $(addprefix -r:, $(DEPLIBS))
 

@@ -1130,10 +1130,10 @@ namespace byteheaven.tamjb.Engine
       // This is a workaround for SQLITE's complaining. If the SQLITE 
       // wrapper adds support for parameters, we can eliminate this. 
       // Probably.
-      static Regex _invalidCharRegex = 
-         new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
+//       static Regex _invalidCharRegex = 
+//          new Regex( "[^\"'\\<>A-Za-z /!@#$%^&*()-_+=?~]" );
 
-      Regex _tickRegex = new Regex( "'" );
+//       Regex _tickRegex = new Regex( "'" );
 
       ///
       /// Removes any special chars from the supplied string, to

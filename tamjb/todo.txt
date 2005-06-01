@@ -1,5 +1,7 @@
 
 TODO
+ - Desperately needs a gnome-2 dock applet for remote control
+
  - Make the server use CLR system service api's, which should allow it
   to run as a service cross-platform (works as of mono 1.1.7). Need to
   store settings in the config file and/or database, though.

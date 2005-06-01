@@ -42,6 +42,7 @@ namespace byteheaven.tamjb.Engine
          _leftFilter = new FirstOrderLowpassFilter();
          _rightFilter = new FirstOrderLowpassFilter();
 
+         // Use set function to initialize private members:
          cutoff = 150.0;        // hz
       }
 
@@ -58,12 +59,6 @@ namespace byteheaven.tamjb.Engine
             _leftFilter.Initialize( cutoff, 44100.0 );
             _rightFilter.Initialize( cutoff, 44100.0 );
          }
-      }
-
-      void _Initiailize( double cutoff )
-      {
-         _leftFilter.Initialize( cutoff, 44100.0 );
-         _rightFilter.Initialize( cutoff, 44100.0 );
       }
 
       ///

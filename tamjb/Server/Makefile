@@ -1,6 +1,6 @@
 # $Id$
 
-DEBUGFLAGS = -g -define:DEBUG -define:TRACE
+DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 
 SERVER = ../bin/tamjb.Server.exe
 
@@ -16,7 +16,7 @@ DEPLIBS = ../bin/Mp3Sharp.dll \
         ../bin/tamjb.SimpleMp3Player.dll \
         ../bin/tamjb.Engine.dll
 
-SERVER_REFS = -r System.Runtime.Remoting \
+SERVER_REFS = -r:System.Runtime.Remoting \
         $(addprefix -r:, $(DEPLIBS))
 
 all: $(SERVER)

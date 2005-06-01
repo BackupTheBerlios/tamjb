@@ -232,9 +232,11 @@ namespace byteheaven.tamjb.Server
             // to do this.
 
             Backend.Init( QUEUE_MIN_SIZE, _connectionString );
+            Backend.theBackend.desiredQueueSize = 20; // Get many. I mean, what if they all suck?
             Backend.theBackend.bufferSize = bufferSize;
             Backend.theBackend.bufferCount = bufferCount;
             Backend.theBackend.bufferPreload = bufferCount;
+
             Backend.theBackend.Poll();
 
             // Register as an available service for the tam Engine.

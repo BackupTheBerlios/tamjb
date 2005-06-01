@@ -59,6 +59,7 @@ namespace byteheaven.tamjb.Engine
          _leftFilter = new MonoHighpassFilter();
          _rightFilter = new MonoHighpassFilter();
 
+         // Use public "set" function to initialize everything:
          cutoff = 150.0;        // hz
       }
 
@@ -75,12 +76,6 @@ namespace byteheaven.tamjb.Engine
             _leftFilter.Initialize( cutoff, 44100.0 );
             _rightFilter.Initialize( cutoff, 44100.0 );
          }
-      }
-
-      void _Initiailize( double cutoff )
-      {
-         _leftFilter.Initialize( cutoff, 44100.0 );
-         _rightFilter.Initialize( cutoff, 44100.0 );
       }
 
       ///

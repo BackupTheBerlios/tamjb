@@ -1052,55 +1052,6 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Calculate average power of this buffer, and update any 
-      /// decaying means or whatever.
-      ///
-      void _UpdateAveragePower( byte [] buffer, 
-                                int length,
-                                bool compress )
-      {
-         Debug.Assert( length % 4 == 0, 
-                       "I could have sworn this was 16 bit stereo" );
-
-         if (length < 4)
-            return;
-
-         /// 
-         /// \bug Should not be hardcoded 16-bit stereo
-         ///
-
-         // Assumes the buffer is 16-bit little-endian stereo. Ew!
-
-         long sum = 0;
-         int offset = 0;
-         while (offset + 4 < length)
-         {
-            // Heck - truncate to 16-bit audio
-            long sample = (((long)(sbyte)buffer[offset + 1] << 8) |
-                           ((long)buffer[offset] ));
-            sum += sample * sample;
-
-            sample = (((long)(sbyte)buffer[offset + 3] << 8) |
-                      ((long)buffer[offset + 2] ));
-            sum += sample * sample;
-
-            offset += 4;
-         }
-
-         // Root mean square. I like an acronym that actually helps.
-         // Note this is the rms / (2^8). :)
-         // double rms = Math.Sqrt( sum / (length / 2) );
-
-         // TODO: add this value in to the average for this track.
-         // TODO: store the rms value on a per-track basis for later
-         //       levelling efforts
-         // TODO: we don't really need to calculate the rms value of each
-         //       buffer, do we? I think we're supposed to save the 
-         //       square and count, then average and sqrt when the track
-         //       ends!
-      }
-
-      ///
       /// Save the current compression settings
       ///
       void _StoreCompressSettings()
@@ -1742,3 +1693,57 @@ namespace byteheaven.tamjb.Engine
       Mutex _audioMutex = new Mutex();
    }
 } // tam namespace
+
+
+#if QQQ // comment out
+
+      ///
+      /// Calculate average power of this buffer, and update any 
+      /// decaying means or whatever.
+      ///
+      void _UpdateAveragePower( byte [] buffer, 
+                                int length,
+                                bool compress )
+      {
+         Debug.Assert( length % 4 == 0, 
+                       "I could have sworn this was 16 bit stereo" );
+
+         if (length < 4)
+            return;
+
+         /// 
+         /// \bug Should not be hardcoded 16-bit stereo
+         ///
+
+         // Assumes the buffer is 16-bit little-endian stereo. Ew!
+
+         long sum = 0;
+         int offset = 0;
+         while (offset + 4 < length)
+         {
+            // Heck - truncate to 16-bit audio
+            long sample = (((long)(sbyte)buffer[offset + 1] << 8) |
+                           ((long)buffer[offset] ));
+            sum += sample * sample;
+
+            sample = (((long)(sbyte)buffer[offset + 3] << 8) |
+                      ((long)buffer[offset + 2] ));
+            sum += sample * sample;
+
+            offset += 4;
+         }
+
+         // Root mean square. I like an acronym that actually helps.
+         // Note this is the rms / (2^8). :)
+         // double rms = Math.Sqrt( sum / (length / 2) );
+
+         // TODO: add this value in to the average for this track.
+         // TODO: store the rms value on a per-track basis for later
+         //       levelling efforts
+         // TODO: we don't really need to calculate the rms value of each
+         //       buffer, do we? I think we're supposed to save the 
+         //       square and count, then average and sqrt when the track
+         //       ends!
+      }
+
+#endif // QQQ

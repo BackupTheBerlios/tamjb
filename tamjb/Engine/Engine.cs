@@ -53,12 +53,10 @@ namespace byteheaven.tamjb.Engine
       ///
       public Engine()
       {
-         // _Trace( "[Engine]" );
       }
       
       ~Engine()
       {
-         // _Trace( "[~Engine]" );
          // System.Runtime.Remoting.RemotingServices.Disconnect(this); ???
       }
 
@@ -324,12 +322,5 @@ namespace byteheaven.tamjb.Engine
       {
          return Backend.theBackend.GetUser( name );
       }
-
-      void _Trace( string msg )
-      {
-         Trace.WriteLine( msg, "Engine" );
-      }
-
-
    }
 }
