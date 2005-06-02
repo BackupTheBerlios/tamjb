@@ -826,7 +826,22 @@ namespace byteheaven.tamjb.Engine
                
                double right = (((long)(sbyte)buffer[offset + 3] << 8) |
                                ((long)buffer[offset + 2] ));
-               
+
+               left += _denormalFix;
+               right += _denormalFix;
+               _denormalFix = - _denormalFix;
+
+#if WATCH_DENORMALS
+               // it is assumed that no plugin sends denormal values
+               // as its output (well, that's how it should be, yes?)
+               // so it may be assumed that NONE of them check their input.
+               // So, let's fix it here:
+               Denormal.CheckDenormal( "Backend input left", 
+                                       left );
+               Denormal.CheckDenormal( "Backend input right", 
+                                       right );
+#endif
+
                _compressor.Process( ref left, ref right );
 
                long sample = (long)left;
@@ -1691,6 +1706,11 @@ namespace byteheaven.tamjb.Engine
       /// having to worry about concurrency.)
       ///
       Mutex _audioMutex = new Mutex();
+
+      ///
+      /// The denormalization fix. Talk to your doctor or pharmacist.
+      ///
+      double _denormalFix = Denormal.denormalFixValue;
    }
 } // tam namespace
 

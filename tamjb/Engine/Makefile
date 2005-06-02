@@ -6,6 +6,7 @@ TARGET = ../bin/tamjb.Engine.dll
 SOURCES = AssemblyInfo.cs \
         Backend.cs \
         Compressor.cs \
+	Denormal.cs \
         Engine.cs \
         FirstOrderLowpassFilter.cs \
         FirstOrderHighpassFilter.cs \
@@ -36,7 +37,9 @@ SOURCES = AssemblyInfo.cs \
 DBFLAGS = -define:USE_POSTGRESQL
 DBREFS = -r:Npgsql
 
+# Note: WATCH_DENORMALS is pretty cpu-expensive
 
+# DEBUGFLAGS = -debug -define:DEBUG -define:TRACE -define:WATCH_DENORMALS
 DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 
 # libs for dependency checking during dev:

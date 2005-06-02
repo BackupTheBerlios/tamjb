@@ -51,28 +51,47 @@ namespace byteheaven.tamjb.Engine
          _a1 = _a0;
          _b1 = (w - twoPiCutoff) * n;
 
-         Console.WriteLine( "w:" + w );
-         Console.WriteLine( "n:" + n );
-         Console.WriteLine( "a0:" + _a0 );
-         Console.WriteLine( "a1:" + _a1 );
-         Console.WriteLine( "b1:" + _b1 );
+//          Console.WriteLine( "w:" + w );
+//          Console.WriteLine( "n:" + n );
+//          Console.WriteLine( "a0:" + _a0 );
+//          Console.WriteLine( "a1:" + _a1 );
+//          Console.WriteLine( "b1:" + _b1 );
       }
 
       public double Process( double input )
       {
-         _prevOutput = (input * _a0)
+         // Introduces a high frequency hiss that should be inaudable
+         // most of the time. Probably.
+
+         _prevOutput = 
+            (input * _a0)
             + (_prevInput * _a1)
             + (_prevOutput * _b1)
+            + _denormalOffset
             ;
 
+#if WATCH_DENORMALS
+         Denormal.CheckDenormal( "FOLP a0", _a0 );
+         Denormal.CheckDenormal( "FOLP a1", _a1 );
+         Denormal.CheckDenormal( "FOLP b1", _b1 );
+         Denormal.CheckDenormal( "FOLP output", _prevOutput );
+#endif
+
          _prevInput = input;
+         _denormalOffset = - _denormalOffset;
          return _prevOutput;
       }
 
-      double _a0 = 0.0; 
-      double _a1 = 0.0; 
-      double _b1 = 0.0; 
-      double _prevInput = 0.0;  
+
+      double _a0 = 1.0e-25; 
+      double _a1 = 1.0e-25; 
+      double _b1 = 1.0e-25; 
+      double _prevInput = 0.0;
       double _prevOutput = 0.0;  
+
+      // Should help prevent long stretches of 0's from causing performance
+      // problems.
+      double _denormalOffset = Denormal.denormalFixValue;
+
    }
 }

@@ -62,9 +62,19 @@ namespace byteheaven.tamjb.Engine
          _prevOutput = (input * _a0)
             + (_prevInput * _a1)
             + (_prevOutput * _b1)
+            + _denormalOffset
             ;
 
+
+#if WATCH_DENORMALS
+         Denormal.CheckDenormal( "FOHP a0", _a0 );
+         Denormal.CheckDenormal( "FOHP a1", _a1 );
+         Denormal.CheckDenormal( "FOHP b1", _b1 );
+         Denormal.CheckDenormal( "FOHP output", _prevOutput );
+#endif
+
          _prevInput = input;
+         _denormalOffset = - _denormalOffset;
          return _prevOutput;
       }
 
@@ -73,5 +83,7 @@ namespace byteheaven.tamjb.Engine
       double _b1 = 0.0; 
       double _prevInput = 0.0;  
       double _prevOutput = 0.0;  
+
+      double _denormalOffset = Denormal.denormalFixValue;
    }
 }

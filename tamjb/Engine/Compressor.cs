@@ -93,6 +93,15 @@ namespace byteheaven.tamjb.Engine
                 (magnitude * _decayRatioNew));
          }
 
+#if WATCH_DENORMALS
+         Denormal.CheckDenormal( "Comp _decayingAveragePower", 
+                                 _decayingAveragePower );
+#endif
+         // Clamp average power to 0 if it's close enough, to avoid
+         // denormalization problems.
+         if (_decayingAveragePower < 1.0e-25)
+            _decayingAveragePower = 0.0;
+
          // How far off from the target power are we?
          double correction;
          if (_decayingAveragePower < _gateLevel)
@@ -100,10 +109,18 @@ namespace byteheaven.tamjb.Engine
          else
             correction = _targetPowerLevel / _decayingAveragePower;
 
+#if WATCH_DENORMALS
+         Denormal.CheckDenormal( "Comp correction", correction );
+#endif
+
          // For inf:1 compression, use "offset", otherwise
          // use this ratio to get other ratios:
          correction = (correction * _compressRatio) 
             + (1.0 - _compressRatio);
+
+#if WATCH_DENORMALS
+         Denormal.CheckDenormal( "Comp correction[2]", correction );
+#endif
 
          // Store samples to circular buffer, and save here.
          // Note that the lookahead is hardcoded and you're stuck
@@ -113,12 +130,12 @@ namespace byteheaven.tamjb.Engine
 
          // Write new values to the samples: left
 
-         left = left * correction;
+         left = (left * correction) + _denormalFix;
          left = _leftFifo.Push( left );
 
          // Now the right!
 
-         right = right * correction;
+         right = (right * correction) + _denormalFix;
          right = _rightFifo.Push( right );
 
          // Now your left!
@@ -126,6 +143,14 @@ namespace byteheaven.tamjb.Engine
          // No, that's your right.
          
          // (Aqua Teen Rules!)
+
+         _denormalFix = - _denormalFix;
+
+#if WATCH_DENORMALS
+         Denormal.CheckDenormal( "Comp out left", left );
+         Denormal.CheckDenormal( "Comp out right", right );
+#endif
+
       }
 
       //
@@ -306,5 +331,7 @@ namespace byteheaven.tamjb.Engine
       //       with signed 16-bit samples. :)
       SampleFifo _leftFifo = new SampleFifo( MAX_PREDELAY, 0 );
       SampleFifo _rightFifo = new SampleFifo( MAX_PREDELAY, 0 );
+
+      double _denormalFix = Denormal.denormalFixValue;
    }
 }
