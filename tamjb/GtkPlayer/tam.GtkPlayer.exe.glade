@@ -1479,7 +1479,8 @@ Level</property>
 		      <child>
 			<widget class="GtkLabel" id="label34">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Attack</property>
+			  <property name="label" translatable="yes">Attack
+(ms)</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_RIGHT</property>
@@ -1581,7 +1582,7 @@ Threshold</property>
 			  <property name="digits">1</property>
 			  <property name="update_policy">GTK_UPDATE_DISCONTINUOUS</property>
 			  <property name="inverted">False</property>
-			  <property name="adjustment">1 1 10 0.5 1 0</property>
+			  <property name="adjustment">100 2 1000 1 10 1</property>
 			  <signal name="value_changed" handler="_OnAttackChanged" object="this" last_modification_time="Sun, 18 Jul 2004 02:39:26 GMT"/>
 			  <signal name="format_value" handler="_OnFormatAttack" object="this" last_modification_time="Sun, 18 Jul 2004 19:31:52 GMT"/>
 			</widget>

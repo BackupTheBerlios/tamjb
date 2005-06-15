@@ -45,7 +45,6 @@ namespace byteheaven.tamjb.GtkPlayer
    ///
    public class MiscSettingsDialog
    {
-      static readonly double ATTACK_BASE = 0.28;
       static readonly double DECAY_BASE = 0.23;
 
       ///
@@ -80,8 +79,8 @@ namespace byteheaven.tamjb.GtkPlayer
 
       void _UpdateSettingsFromBackend()
       {
-         _attackScale.Value = 10 - Math.Log( _backend.compressAttack, 
-                                             ATTACK_BASE );
+         // Milliseconds
+         _attackScale.Value = _backend.compressAttack * 1000.0;
 
          _decayScale.Value = 12 - Math.Log( _backend.compressDecay, 
                                             DECAY_BASE );
@@ -114,7 +113,7 @@ namespace byteheaven.tamjb.GtkPlayer
       {
          try
          {
-            args.RetVal = args.Value.ToString( "F1" );
+            args.RetVal = args.Value.ToString( "F1" ) + "ms";
          }
          catch (Exception e)
          {
@@ -128,15 +127,14 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnAttackChanged]" );
 
-            // Attack ranges from ~0.00001 to 1.0, where 1.0 is a infinitely 
-            // fast attack, and 0.00001 is pretty darn slow. The scale value 
-            // should range from 0-9 for this to work:
-            double newVal = Math.Pow( ATTACK_BASE, (10 - _attackScale.Value) );
+            // Convert to seconds, and save
+            double newVal = _attackScale.Value / 1000.0;
 
             if (_ChangeRatio(_backend.compressAttack, newVal) > 0.01)
             {
                _Trace( "compressAttack: " + _backend.compressAttack
                        + " --> " + newVal );
+
                _backend.compressAttack = newVal;
             }
          }
@@ -152,7 +150,7 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnDecayChanged]" );
 
-            // Attack ranges from 0.0000005 to something less than 1.0, 
+            // Decay ranges from 0.0000005 to something less than 1.0, 
             // where 1.0 is a infinitely fast release. I really don't
             // want an instantaneous release ever! :)
             // range from 1-10 for this to work:

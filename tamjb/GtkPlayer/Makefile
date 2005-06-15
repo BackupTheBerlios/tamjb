@@ -1,6 +1,6 @@
 # $Id$
 
-DEBUGFLAGS = -g -define:DEBUG -define:TRACE
+DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 
 SRCS = Main.cs \
         GtkPlayer.cs \
@@ -13,8 +13,8 @@ SRCS = Main.cs \
 DEPLIBS = ../bin/tamjb.Interfaces.dll
 
 
-PLAYER_REFS = -r System.Data \
-        -r System.Runtime.Remoting \
+PLAYER_REFS = -r:System.Data \
+        -r:System.Runtime.Remoting \
         $(addprefix -r:, $(DEPLIBS)) \
         -pkg:gtk-sharp \
         -pkg:glade-sharp

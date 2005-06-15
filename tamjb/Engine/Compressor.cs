@@ -51,6 +51,9 @@ namespace byteheaven.tamjb.Engine
          // Initially select 1/2 millisecond for the delay as a default.
          _leftFifo.delay = 22;
          _rightFifo.delay = 22;
+
+         // Initialize compression times
+         compressAttack = 0.3333; // 333 ms? Can't be right.
       }
 
       ///
@@ -59,80 +62,55 @@ namespace byteheaven.tamjb.Engine
       public void Process( ref double left,
                            ref double right )
       {
-         // Approximate the average power of both channels by summing
-         // them (yes, phase differences are a problem but whatever)
-         // And exponentially decay or release the level:
-               
-         // Fast attack, slow decay
-         double magnitude;
-         magnitude = Math.Abs(left);
-         if (magnitude > _decayingAveragePower)
-         {
-            _decayingAveragePower = 
-               ((_decayingAveragePower * _attackRatioOld) +
-                (magnitude * _attackRatioNew));
-         }
-         else
-         {
-            _decayingAveragePower = 
-               ((_decayingAveragePower * _decayRatioOld) +
-                (magnitude * _decayRatioNew));
-         }
+         // Approximate the average power of each channel, then
+         // figure the average of the two channel's average power.
 
-         magnitude = Math.Abs(right);
-         if (magnitude > _decayingAveragePower)
-         {
-            _decayingAveragePower = 
-               ((_decayingAveragePower * _attackRatioOld) +
-                (magnitude * _attackRatioNew));
-         }
-         else
-         {
-            _decayingAveragePower = 
-               ((_decayingAveragePower * _decayRatioOld) +
-                (magnitude * _decayRatioNew));
-         }
+         _decayingAveragePowerLeft = 
+            ((_decayingAveragePowerLeft * _rmsDecayOld) +
+             (Math.Abs(left) * _rmsDecayNew));
 
-#if WATCH_DENORMALS
-         Denormal.CheckDenormal( "Comp _decayingAveragePower", 
-                                 _decayingAveragePower );
-#endif
-         // Clamp average power to 0 if it's close enough, to avoid
-         // denormalization problems.
-         if (_decayingAveragePower < 1.0e-25)
-            _decayingAveragePower = 0.0;
+         if (_decayingAveragePowerLeft < 1.0e-25) // avoid denormals
+            _decayingAveragePowerLeft = 0.0;
 
-         // How far off from the target power are we?
+         _decayingAveragePowerRight = 
+            ((_decayingAveragePowerRight * _rmsDecayOld) +
+             (Math.Abs(right) * _rmsDecayNew));
+         
+         if (_decayingAveragePowerRight < 1.0e-25) // avoid denormals
+            _decayingAveragePowerRight = 0.0;
+
+         double avgPower = (_decayingAveragePowerLeft 
+                            + _decayingAveragePowerRight) / 2;
+
+         // Don't correct gain if we're below the threshold
          double newCorrection;
-         if (_decayingAveragePower < _gateLevel)
+         if (avgPower < _gateLevel)
             newCorrection = _targetPowerLevel / _gateLevel;
          else
-            newCorrection = _targetPowerLevel / _decayingAveragePower;
+            newCorrection = _targetPowerLevel / avgPower;
 
          // For inf:1 compression, use "offset", otherwise
          // use this ratio to get other ratios:
          newCorrection = (newCorrection * _compressRatio) 
             + (1.0 - _compressRatio);
 
-         // Slew rate limit (both attack & release).
-         // Note: linear max correction is going to sound pretty
-         // uninteresting. I'd prefer more of a controlled acceleration, 
-         // so that once it gets moving it can move faster than the slew
-         // rate. I guess we're talking about a digital control system
-         // controlling the gain slew rate. Hmmm.
-         double correctionChange = newCorrection - _correction;
-         if (correctionChange > _maxCorrectionSlew)
+         // Avoid clicks. Use lowpass filter (attack ratio) on both
+         // attack and release.
+         newCorrection = _correctionFilter.Process( newCorrection );
+
+         // On release, use exponential decay in addition to the 
+         // lowpass. 
+         if (newCorrection > _correction) // Gain is increasing?
          {
-            _correction = _correction + _maxCorrectionSlew;
-         }
-         else if (correctionChange < ( - _maxCorrectionSlew ))
-         {
-            _correction = _correction - _maxCorrectionSlew;
+            _correction = 
+               ((_correction * _decayRatioOld) +
+                (newCorrection * _decayRatioNew));
          }
          else
          {
             _correction = newCorrection;
          }
+
 
 #if WATCH_DENORMALS
          // Correction should never remotely approach 0
@@ -170,25 +148,27 @@ namespace byteheaven.tamjb.Engine
 
       }
 
-      //
-      // Attack ratio per-sample. Hmmm.
-      //
+      ///
+      /// Attack time in seconds
+      ///
       public double compressAttack
       {
          get
          {
-            return _attackRatioNew;
+            return _compressAttack;
          }
          set
          {
-            _attackRatioNew = value;
-            if (_attackRatioNew >= 1.0)
-               _attackRatioNew = 1.0;
-            
-            if (_attackRatioNew <= 0.0)
-               _attackRatioNew = 0.0;
-            
-            _attackRatioOld = 1.0 - _attackRatioNew;
+            if (value < Denormal.denormalFixValue)
+            {
+               throw new ArgumentException( "Attack too small",
+                                            "compressAttack" );
+            }
+
+            _correctionFilter.Initialize( 1.0 / _compressAttack,
+                                          44100.0 );
+
+            _compressAttack = value;
          }
       }
 
@@ -322,21 +302,24 @@ namespace byteheaven.tamjb.Engine
       double _compressRatio = 0.833;
 
       //
-      // Attack time really should be more than a 10 milliseconds to 
-      // avoid distortion on kick drums, unless the release time is 
-      // really long and you want to use it as a limiter, etc.
+      // The average power should have a decay at least long enough to allow
+      // detecting low frequencies (20 Hz). Attack/decay the same to calculate
+      // a time-decaying RMS power.
       //
-      double _attackRatioNew = 0.002;
-      double _attackRatioOld = 0.998;
+      double _rmsDecayNew = 0.0005; // Note: should depend on sample rate!
+      double _rmsDecayOld = 0.9995;
 
-      double _decayRatioNew = 0.00000035;
-      double _decayRatioOld = 0.99999965;
+      double _decayRatioNew = 0.0004;
+      double _decayRatioOld = 0.9996;
 
-      double _correction = 1.0; // gain correction. 1.0 = no gain change
+      //
+      // gain correction as used in the current & previous sample
+      //
+      double _correction = 1.0; 
 
-      // Slew rate limit: maximum difference in gain between the
-      // current and previous sample. Mostly useful for click reduction.
-      double _maxCorrectionSlew = 0.001;
+      double _compressAttack = 0.3;
+      FirstOrderLowpassFilter _correctionFilter = 
+      new FirstOrderLowpassFilter();
 
       //
       // This is the average rms power of the current track decaying
@@ -344,7 +327,8 @@ namespace byteheaven.tamjb.Engine
       //
       // Initially maxed out to avoid clipping
       //
-      double _decayingAveragePower = (float)32767.0;
+      double _decayingAveragePowerLeft = (float)32767.0;
+      double _decayingAveragePowerRight = (float)32767.0;
 
       ///
       /// The short delay used to allow the compressor attack to precede
