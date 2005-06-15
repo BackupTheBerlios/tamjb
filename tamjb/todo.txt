@@ -2,9 +2,21 @@
 TODO
  - Desperately needs a gnome-2 dock applet for remote control
 
+ - Compressor clicks heavily on attack/release even with slow rates,
+  if the difference is large. Add slew rate limiting, preferably using
+  a cutoff-frequency (or time-based) parameter?
+
+  Once you add slew-rate limiting, you'll now have the problem of short
+  term peaks, which implies that a peak limiter would be a good idea. 
+
  - Make the server use CLR system service api's, which should allow it
   to run as a service cross-platform (works as of mono 1.1.7). Need to
   store settings in the config file and/or database, though.
+
+ - Set compressor attack/release using time-based scale (milliseconds).
+  What exactly does it mean 10ms attack, anyway? Time to reach a certain
+  percentage of the decay, I assume, since exponential decay never reaches
+  100%...
 
  - Add gratuitous eye candy
    - Display the mp3 bitrate 
@@ -23,7 +35,8 @@ TODO
 
    Or, if named parameter support is ever properly added to the 
    SQLite CLR wrapper, possibly use that, since embedded firebird
-   is not really widely used on linux.
+   is not really widely used on linux. (Should be rolled into mono
+   very soon, not available yet in 1.1.7.)
 
  - Add track browser dialogs, so that you can adjust song suck on blocks
   of songs, perhaps selecting by artist, etc.

@@ -103,23 +103,40 @@ namespace byteheaven.tamjb.Engine
             _decayingAveragePower = 0.0;
 
          // How far off from the target power are we?
-         double correction;
+         double newCorrection;
          if (_decayingAveragePower < _gateLevel)
-            correction = _targetPowerLevel / _gateLevel;
+            newCorrection = _targetPowerLevel / _gateLevel;
          else
-            correction = _targetPowerLevel / _decayingAveragePower;
-
-#if WATCH_DENORMALS
-         Denormal.CheckDenormal( "Comp correction", correction );
-#endif
+            newCorrection = _targetPowerLevel / _decayingAveragePower;
 
          // For inf:1 compression, use "offset", otherwise
          // use this ratio to get other ratios:
-         correction = (correction * _compressRatio) 
+         newCorrection = (newCorrection * _compressRatio) 
             + (1.0 - _compressRatio);
 
+         // Slew rate limit (both attack & release).
+         // Note: linear max correction is going to sound pretty
+         // uninteresting. I'd prefer more of a controlled acceleration, 
+         // so that once it gets moving it can move faster than the slew
+         // rate. I guess we're talking about a digital control system
+         // controlling the gain slew rate. Hmmm.
+         double correctionChange = newCorrection - _correction;
+         if (correctionChange > _maxCorrectionSlew)
+         {
+            _correction = _correction + _maxCorrectionSlew;
+         }
+         else if (correctionChange < ( - _maxCorrectionSlew ))
+         {
+            _correction = _correction - _maxCorrectionSlew;
+         }
+         else
+         {
+            _correction = newCorrection;
+         }
+
 #if WATCH_DENORMALS
-         Denormal.CheckDenormal( "Comp correction[2]", correction );
+         // Correction should never remotely approach 0
+         Denormal.CheckDenormal( "Comp correction[2]", newCorrection );
 #endif
 
          // Store samples to circular buffer, and save here.
@@ -130,12 +147,12 @@ namespace byteheaven.tamjb.Engine
 
          // Write new values to the samples: left
 
-         left = (left * correction) + _denormalFix;
+         left = (left * _correction) + _denormalFix;
          left = _leftFifo.Push( left );
 
          // Now the right!
 
-         right = (right * correction) + _denormalFix;
+         right = (right * _correction) + _denormalFix;
          right = _rightFifo.Push( right );
 
          // Now your left!
@@ -314,6 +331,12 @@ namespace byteheaven.tamjb.Engine
 
       double _decayRatioNew = 0.00000035;
       double _decayRatioOld = 0.99999965;
+
+      double _correction = 1.0; // gain correction. 1.0 = no gain change
+
+      // Slew rate limit: maximum difference in gain between the
+      // current and previous sample. Mostly useful for click reduction.
+      double _maxCorrectionSlew = 0.001;
 
       //
       // This is the average rms power of the current track decaying

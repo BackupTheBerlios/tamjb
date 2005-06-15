@@ -96,8 +96,8 @@ namespace byteheaven.tamjb.Engine
 
       // Sample value for start of soft clipping. Leftover must
       // be 32767 - _clipThreshold.
-      double _clipThreshold = 18000.0;
-      double _clipLeftover =  14767.0;
+      double _clipThreshold = 16383.5;
+      double _clipLeftover =  16383.5;
 
    }
 }
