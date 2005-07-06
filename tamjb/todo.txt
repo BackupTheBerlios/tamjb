@@ -1,13 +1,14 @@
 
 TODO
+ - The FirstOrderLowpassFilter is really a second-order IIR. The
+  TwoBandCompressor has three bands. Etc. Fix.
+
  - Desperately needs a gnome-2 dock applet for remote control
 
- - Compressor clicks heavily on attack/release even with slow rates,
-  if the difference is large. Add slew rate limiting, preferably using
-  a cutoff-frequency (or time-based) parameter?
+ - Fix the attack on the compressor.
 
-  Once you add slew-rate limiting, you'll now have the problem of short
-  term peaks, which implies that a peak limiter would be a good idea. 
+ - Add a quality control for the 3-band, since high quality FIR sounds
+ GREAT but won't run on my PIII.
 
  - Make the server use CLR system service api's, which should allow it
   to run as a service cross-platform (works as of mono 1.1.7). Need to

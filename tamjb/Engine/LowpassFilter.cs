@@ -75,5 +75,4 @@ namespace byteheaven.tamjb.Engine
       IMonoFilter _leftFilter;
       IMonoFilter _rightFilter;
    }
-
 }

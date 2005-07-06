@@ -53,7 +53,7 @@ namespace byteheaven.tamjb.Engine
          _rightFifo.delay = 22;
 
          // Initialize compression times
-         compressAttack = 0.3333; // 333 ms? Can't be right.
+         compressAttack = 0.010; // seconds
       }
 
       ///
@@ -94,10 +94,6 @@ namespace byteheaven.tamjb.Engine
          newCorrection = (newCorrection * _compressRatio) 
             + (1.0 - _compressRatio);
 
-         // Avoid clicks. Use lowpass filter (attack ratio) on both
-         // attack and release.
-         newCorrection = _correctionFilter.Process( newCorrection );
-
          // On release, use exponential decay in addition to the 
          // lowpass. 
          if (newCorrection > _correction) // Gain is increasing?
@@ -110,6 +106,13 @@ namespace byteheaven.tamjb.Engine
          {
             _correction = newCorrection;
          }
+
+         // Avoid clicks. Use lowpass filter (attack ratio) on both
+         // attack and release. Do attack filtering after the release
+         // so that the release rate doesn't mess up the attack rate
+         // (because I'm using a lowpass, if it thinks gain was rapidly
+         // increasing, this will decrease the attack rate, which is bad).
+         newCorrection = _correctionFilter.Process( newCorrection );
 
 
 #if WATCH_DENORMALS
@@ -276,17 +279,15 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Target power level for compression/expansion.
       /// 
-      /// Hot-mastered albums have an average power level with
-      /// like -3dB from the absolute max level. Oh well, might 
-      /// as well match that.
+      /// RMS power around 4k seems common enough.
       ///
-      double _targetPowerLevel = 10000.0;
+      double _targetPowerLevel = 4000.0;
 
       ///
       /// Level below which we stop compressing and start
       /// expanding (if possible)
       ///
-      double _gateLevel = 1000.0;
+      double _gateLevel = 500.0;
 
       /// 
       /// Compression ratio where for n:1 compression, 
@@ -299,18 +300,18 @@ namespace byteheaven.tamjb.Engine
       /// 0.5 = 2:1
       /// 0.0 = no compression 
       ///
-      double _compressRatio = 0.833;
+      double _compressRatio = 1.0;
 
       //
       // The average power should have a decay at least long enough to allow
       // detecting low frequencies (20 Hz). Attack/decay the same to calculate
       // a time-decaying RMS power.
       //
-      double _rmsDecayNew = 0.0005; // Note: should depend on sample rate!
-      double _rmsDecayOld = 0.9995;
+      double _rmsDecayNew = 0.002; // Note: should depend on sample rate!
+      double _rmsDecayOld = 0.998;
 
-      double _decayRatioNew = 0.0004;
-      double _decayRatioOld = 0.9996;
+      double _decayRatioNew = 0.0002;
+      double _decayRatioOld = 0.9998;
 
       //
       // gain correction as used in the current & previous sample

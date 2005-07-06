@@ -93,20 +93,22 @@ namespace byteheaven.tamjb.Engine
          double trebleLeft = left;
          double trebleRight = right;
 
-         _lowPassOne.Process( ref bassLeft, ref bassRight );
+         _crossover.Process( left, right,
+                             ref bassLeft, ref bassRight,
+                             ref midLeft,  ref midRight );
+
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
          // Clip the bass separately, because it is most likely
-         // to clip bounds (this will create interesting
-         // harmonics if it clips :)
+         // to overshoot (this will create interesting
+         // harmonics, won't it? :)
+
          _softClipper.Process( ref bassLeft, ref bassRight );
 
-         _highPassOne.Process( ref midLeft, ref midRight );
-         _lowPassTwo.Process( ref midLeft, ref midRight );
          _midCompress.Process( ref midLeft, ref midRight );
 
-         _highPassTwo.Process( ref trebleLeft, ref trebleRight );
-         _trebleCompress.Process( ref trebleLeft, ref trebleRight );
+//          _highPassTwo.Process( ref trebleLeft, ref trebleRight );
+//          _trebleCompress.Process( ref trebleLeft, ref trebleRight );
 
          // Is this an adequate mixing algorithm?
          left = bassLeft + midLeft + trebleLeft;
@@ -230,6 +232,8 @@ namespace byteheaven.tamjb.Engine
             _softClipper.clipThreshold = value;
          }
       }
+
+      StereoCrossover _crossover = new StereoCrossover( 220.0 );
 
       Compressor _bassCompress = new Compressor();
 

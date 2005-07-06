@@ -5,21 +5,25 @@ TARGET = ../bin/tamjb.Engine.dll
 
 SOURCES = AssemblyInfo.cs \
         Backend.cs \
+	Bessel.cs \
         Compressor.cs \
 	Denormal.cs \
         Engine.cs \
         FirstOrderLowpassFilter.cs \
         FirstOrderHighpassFilter.cs \
+	FIR.cs \
         HighpassFilter.cs \
         IAudioProcessor.cs \
         IMonoFilter.cs \
+	KaiserWindow.cs \
         LocalFileDatabase.cs \
         LowpassFilter.cs \
         MyRandom.cs \
         RecursiveScanner.cs \
         SampleFifo.cs \
         SoftClipper.cs \
-        TwoBandCompressor.cs
+	StereoCrossover.cs \
+        MultiBandCompressor.cs
 
 #
 # Choose your database
