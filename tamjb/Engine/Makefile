@@ -8,10 +8,10 @@ SOURCES = AssemblyInfo.cs \
 	Bessel.cs \
         Compressor.cs \
 	Denormal.cs \
+	DualFIR.cs \
         Engine.cs \
         FirstOrderLowpassFilter.cs \
         FirstOrderHighpassFilter.cs \
-	FIR.cs \
         HighpassFilter.cs \
         IAudioProcessor.cs \
         IMonoFilter.cs \

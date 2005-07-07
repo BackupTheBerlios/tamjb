@@ -50,16 +50,22 @@ namespace byteheaven.tamjb.Engine
               400,              // maxM
               out beta );
 
-         _leftFilter = new FIR( lowpass );
-         _rightFilter = new FIR( lowpass );
+         _lowFilter = new DualFIR( lowpass );
 
-         _delayLineLeft = _leftFilter.delayLine;
-         _delayLineRight = _rightFilter.delayLine;
+         // Left and right ought to be the same
+         int delaySize = _lowFilter.minDelaySize;
 
-         // The Kaiser window introduces an M/2 sample delay, so set 
-         // up a delay line tap at that point for the midrange.
+         _delayLineLeft = new double[ delaySize ];
+         _delayLineRight = new double[ delaySize ];
+
+         _lowFilter.delayLineLeft = _delayLineLeft;
+         _lowFilter.delayLineRight = _delayLineRight;
+
+         // The Kaiser window (linear) introduces an M/2 sample delay, so set 
+         // up a delay line tap at that point for the midrange. A positive
+         // starting offset into the buffer is a positive delay...
          _midTapOffset = 
-            _leftFilter.delayLineOffset - (lowpass.Length / 2);
+            _lowFilter.delayLineOffset - (lowpass.Length / 2);
 
          if (_midTapOffset < 0)
             _midTapOffset += lowpass.Length;
@@ -72,8 +78,9 @@ namespace byteheaven.tamjb.Engine
                            out double leftLowOut, out double rightLowOut,
                            out double leftHiOut, out double rightHiOut )
       {
-         leftLowOut = _leftFilter.Process( left );
-         rightLowOut = _rightFilter.Process( right );
+         leftLowOut = left;
+         rightLowOut = right;
+         _lowFilter.Process( ref leftLowOut, ref rightLowOut );
 
          leftHiOut = _delayLineLeft[ _midTapOffset ] - leftLowOut;
          rightHiOut = _delayLineRight[ _midTapOffset ] - rightLowOut;
@@ -90,8 +97,8 @@ namespace byteheaven.tamjb.Engine
 #endif
       }
 
-      FIR _leftFilter;
-      FIR _rightFilter;
+      // Filter for the low freq crossover
+      DualFIR _lowFilter;
 
       int _midTapOffset;
       double [] _delayLineLeft;
