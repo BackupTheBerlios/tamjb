@@ -108,33 +108,30 @@ namespace byteheaven.tamjb.Engine
          }
 
          // Avoid clicks. Use lowpass filter (attack ratio) on both
-         // attack and release. Do attack filtering after the release
-         // so that the release rate doesn't mess up the attack rate
-         // (because I'm using a lowpass, if it thinks gain was rapidly
-         // increasing, this will decrease the attack rate, which is bad).
+         // attack and release. This is a temporary fix to eliminate 
+         // clicking
+         //
          newCorrection = _correctionFilter.Process( newCorrection );
 
 
 #if WATCH_DENORMALS
          // Correction should never remotely approach 0
-         Denormal.CheckDenormal( "Comp correction[2]", newCorrection );
+         Denormal.CheckDenormal( "Comp correction[2]", _correction );
 #endif
 
          // Store samples to circular buffer, and save here.
-         // Note that the lookahead is hardcoded and you're stuck
-         // with it. :) 
-         // Use the returned value from the circular buffer as the
-         // current value. This introduces a delay, naturally.
+         // Use the "future" level to compress the current returned
+         // sample
 
          // Write new values to the samples: left
 
-         left = (left * _correction) + _denormalFix;
          left = _leftFifo.Push( left );
+         left = (left * _correction) + _denormalFix;
 
          // Now the right!
 
-         right = (right * _correction) + _denormalFix;
          right = _rightFifo.Push( right );
+         right = (right * _correction) + _denormalFix;
 
          // Now your left!
          
@@ -307,8 +304,8 @@ namespace byteheaven.tamjb.Engine
       // detecting low frequencies (20 Hz). Attack/decay the same to calculate
       // a time-decaying RMS power.
       //
-      double _rmsDecayNew = 0.002; // Note: should depend on sample rate!
-      double _rmsDecayOld = 0.998;
+      double _rmsDecayNew = 0.005; // Note: should depend on sample rate!
+      double _rmsDecayOld = 0.995;
 
       double _decayRatioNew = 0.0002;
       double _decayRatioOld = 0.9998;

@@ -86,16 +86,16 @@ namespace byteheaven.tamjb.Engine
          // compress
          // Mix back together
 
-         double bassLeft = left;
-         double bassRight = right;
-         double midLeft = left;
-         double midRight = right;
-         double trebleLeft = left;
-         double trebleRight = right;
+         double bassLeft;
+         double bassRight;
+         double midLeft;
+         double midRight;
+         double trebleLeft;
+         double trebleRight;
 
          _crossover.Process( left, right,
-                             ref bassLeft, ref bassRight,
-                             ref midLeft,  ref midRight );
+                             out bassLeft, out bassRight,
+                             out midLeft,  out midRight );
 
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
@@ -111,8 +111,8 @@ namespace byteheaven.tamjb.Engine
 //          _trebleCompress.Process( ref trebleLeft, ref trebleRight );
 
          // Is this an adequate mixing algorithm?
-         left = bassLeft + midLeft + trebleLeft;
-         right = bassRight + midRight + trebleRight;
+         left = bassLeft + midLeft;
+         right = bassRight + midRight;
 
          _softClipper.Process( ref left, ref right );
       }

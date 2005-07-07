@@ -69,8 +69,8 @@ namespace byteheaven.tamjb.Engine
       /// Implmenets IAudioProcessor.Process.
       ///
       public void Process( double left, double right,
-                           ref double leftLowOut, ref double rightLowOut,
-                           ref double leftHiOut, ref double rightHiOut )
+                           out double leftLowOut, out double rightLowOut,
+                           out double leftHiOut, out double rightHiOut )
       {
          leftLowOut = _leftFilter.Process( left );
          rightLowOut = _rightFilter.Process( right );
