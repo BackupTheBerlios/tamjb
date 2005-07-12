@@ -1,5 +1,9 @@
 
 TODO
+ - The learn levels function does not periodically save the compressor
+  settings, so they are lost if you kill the program before changing
+  a compressor setting.
+
  - The FirstOrderLowpassFilter is really a second-order IIR. The
   TwoBandCompressor has three bands. Etc. Fix.
 

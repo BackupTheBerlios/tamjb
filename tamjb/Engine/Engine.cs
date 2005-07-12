@@ -178,17 +178,54 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Compress threshold as a 16-bit unsigned int. 
       ///
-      public int compressThreshold
+      public int compressThresholdBass
       {
          get
          {
-            return Backend.theBackend.compressThreshold;
+            return Backend.theBackend.compressThresholdBass;
          }
          set
          {
-            Backend.theBackend.compressThreshold = value;
+            Backend.theBackend.compressThresholdBass = value;
          }
       }
+
+      public int compressThresholdMid
+      {
+         get
+         {
+            return Backend.theBackend.compressThresholdMid;
+         }
+         set
+         {
+            Backend.theBackend.compressThresholdMid = value;
+         }
+      }
+
+      public int compressThresholdTreble
+      {
+         get
+         {
+            return Backend.theBackend.compressThresholdTreble;
+         }
+         set
+         {
+            Backend.theBackend.compressThresholdTreble = value;
+         }
+      }
+
+      public bool learnLevels 
+      { 
+         get
+         {
+            return Backend.theBackend.learnLevels;
+         } 
+         set
+         {
+            Backend.theBackend.learnLevels = value;
+         }
+      }
+
 
       ///
       /// Predelay (negative delay on attack)

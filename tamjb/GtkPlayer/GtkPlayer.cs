@@ -44,15 +44,12 @@ namespace byteheaven.tamjb.GtkPlayer
    {
       // Some constants
       readonly int TITLE_MAX_WIDTH = 60;
-      readonly int ARTIST_MAX_WIDTH = 30;
+      // readonly int ARTIST_MAX_WIDTH = 30;
 
       // What's comin' at cha, including the current track.
       // Wish this wasn't hard coded
       readonly int HISTORY_SIZE = 5;
       readonly int TRACK_LIST_SIZE = 11; // 5 old + 5 new + current
-
-      // Temporary hardcoded table index for the suck metric
-      readonly uint DOESNTSUCK = 0;
 
       enum TrackListOffset : int
       {
@@ -229,7 +226,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// When the close button is clicked...
       ///
-      void _OnDelete( object sender, DeleteEventArgs delArgs )
+      protected void _OnDelete( object sender, DeleteEventArgs delArgs )
       {
          _Trace( "[_OnDelete]" );
          Application.Quit();
@@ -634,13 +631,13 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Called when the window is deleted via the window manager
       ///
-      void _DeleteHandler( object sender, DeleteEventArgs delArgs )
+      protected void _DeleteHandler( object sender, DeleteEventArgs delArgs )
       {
          _Trace( "[_DeleteHandler]" );
          Application.Quit();
       }
 
-      void _SuckBtnClick( object sender, EventArgs args )
+      protected void _SuckBtnClick( object sender, EventArgs args )
       {
          try
          {
@@ -681,7 +678,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _RuleBtnClick( object sender, EventArgs args )
+      protected void _RuleBtnClick( object sender, EventArgs args )
       {
          try
          {
@@ -715,7 +712,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Called when the user things this song is wrong for the playlist.
       ///
-       void _MoodNoBtnClick( object sender, EventArgs args )
+      protected void _MoodNoBtnClick( object sender, EventArgs args )
       {
          _Trace( "[_MoodNoBtnClick]" );
 
@@ -751,7 +748,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Called when the user things this song is wrong for the playlist.
       ///
-      void _MoodYesBtnClick( object sender, EventArgs args )
+      protected void _MoodYesBtnClick( object sender, EventArgs args )
       {
          _Trace( "[_MoodYesBtnClick]" );
 
@@ -776,7 +773,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _NextBtnClick( object sender, EventArgs args )
+      protected void _NextBtnClick( object sender, EventArgs args )
       {
          _Trace( "[_NextBtnClick]" );
          try
@@ -799,7 +796,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Go back to the previous song. 
       ///
-      void _PrevBtnClick( object sender, EventArgs args )
+      protected void _PrevBtnClick( object sender, EventArgs args )
       {
          _Trace( "[_PrevBtnClick]" );
 
@@ -831,7 +828,7 @@ namespace byteheaven.tamjb.GtkPlayer
       /// Callback for the stop button. Tries to make the backend stop
       /// playing.
       ///
-      void _OnStopBtnClicked( object sender, EventArgs args )
+      protected void _OnStopBtnClicked( object sender, EventArgs args )
       {
          try
          {
@@ -848,7 +845,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Callback for the play button
       ///
-      void _OnPlayBtnClicked( object sender, EventArgs args )
+      protected void _OnPlayBtnClicked( object sender, EventArgs args )
       {
          try
          {
@@ -865,7 +862,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Run the configuration dialog.
       ///
-      void _ConfigBtnClick( object sender, EventArgs args )
+      protected void _ConfigBtnClick( object sender, EventArgs args )
       {
          try
          {
@@ -931,7 +928,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Run the configuration dialog.
       ///
-      void _AudioBtnClick( object sender, EventArgs args )
+      protected void _AudioBtnClick( object sender, EventArgs args )
       {
          try
          {
@@ -954,7 +951,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Show the "who the heck are you"? Dialog
       ///
-      void _UserBtnClick( object sender, EventArgs args )
+      protected void _UserBtnClick( object sender, EventArgs args )
       {
          try
          {
@@ -1006,7 +1003,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Show the "who the heck are you" dialog but with mood selected
       ///
-      void _MoodBtnClick( object sender, EventArgs args )
+      protected void _MoodBtnClick( object sender, EventArgs args )
       {
          try
          {
@@ -1056,7 +1053,7 @@ namespace byteheaven.tamjb.GtkPlayer
       }
       
       
-      void _OnLockToggled( object sender, EventArgs args )
+      protected void _OnLockToggled( object sender, EventArgs args )
       {
          /// \todo Have the appropriate toggles share 1 function.
          ///
@@ -1076,7 +1073,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnListCursorChanged( object sender, EventArgs e )
+      protected void _OnListCursorChanged( object sender, EventArgs e )
       {
          _Trace( "[_OnListCursorChanged]" );
          

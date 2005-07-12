@@ -53,6 +53,20 @@ namespace byteheaven.tamjb.Engine
          crossoverFrequencyTwo = 5800; // hz
       }
 
+      public bool doAutomaticLeveling
+      {
+         get
+         {
+            return _bassCompress.doAutomaticLeveling;
+         }
+         set
+         {
+            _bassCompress.doAutomaticLeveling = value;
+            _midCompress.doAutomaticLeveling = value;
+            _trebleCompress.doAutomaticLeveling = value;
+         }
+      }
+
       public double crossoverFrequencyOne
       {
          get
@@ -145,7 +159,7 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public int compressThreshold
+      public int compressThresholdBass
       {
          get
          {
@@ -153,15 +167,31 @@ namespace byteheaven.tamjb.Engine
          }
          set
          {
-            ///
-            /// \todo The levels here are a hack based on crossover freqs
-            ///   at 220 and 5500 hz. Fix?
-            ///
             _bassCompress.compressThreshold = value;
-            _midCompress.compressThreshold = (int)((double)value * 0.75);
-            _trebleCompress.compressThreshold = (int)((double)value * 0.28);
-//             _midCompress.compressThreshold = (int)((double)value * 0.50);
-//             _trebleCompress.compressThreshold = (int)((double)value * 0.14);
+         }
+      }
+
+      public int compressThresholdMid
+      {
+         get
+         {
+            return _midCompress.compressThreshold;
+         }
+         set
+         {
+            _midCompress.compressThreshold = value;
+         }
+      }
+
+      public int compressThresholdTreble
+      {
+         get
+         {
+            return _trebleCompress.compressThreshold;
+         }
+         set
+         {
+            _trebleCompress.compressThreshold = value;
          }
       }
 

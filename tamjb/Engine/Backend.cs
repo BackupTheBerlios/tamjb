@@ -927,11 +927,11 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Compress threshold as a 16-bit unsigned int. 
       ///
-      public int compressThreshold
+      public int compressThresholdBass
       {
          get
          {
-            return _compressor.compressThreshold;
+            return _compressor.compressThresholdBass;
          }
          set
          {
@@ -941,7 +941,97 @@ namespace byteheaven.tamjb.Engine
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressThreshold = value;
+                  _compressor.compressThresholdBass = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
+
+               _StoreCompressSettings();
+            }
+            finally
+            {
+               _Unlock();
+            }
+         }
+      }
+
+      public int compressThresholdMid
+      {
+         get
+         {
+            return _compressor.compressThresholdMid;
+         }
+         set
+         {
+            _Lock();
+            try
+            {
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressThresholdMid = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
+
+               _StoreCompressSettings();
+            }
+            finally
+            {
+               _Unlock();
+            }
+         }
+      }
+
+      public int compressThresholdTreble
+      {
+         get
+         {
+            return _compressor.compressThresholdTreble;
+         }
+         set
+         {
+            _Lock();
+            try
+            {
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.compressThresholdTreble = value;
+               }
+               finally
+               {
+                  _audioMutex.ReleaseMutex();
+               }
+
+               _StoreCompressSettings();
+            }
+            finally
+            {
+               _Unlock();
+            }
+         }
+      }
+
+      public bool learnLevels
+      {
+         get
+         {
+            return _compressor.doAutomaticLeveling;
+         }
+         set
+         {
+            _Lock();
+            try
+            {
+               _audioMutex.WaitOne();
+               try
+               {
+                  _compressor.doAutomaticLeveling = value;
                }
                finally
                {

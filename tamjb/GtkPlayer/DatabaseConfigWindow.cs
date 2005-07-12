@@ -101,7 +101,7 @@ namespace byteheaven.tamjb.GtkPlayer
          _databaseConfigDialog.Run();
       }
 
-      void _OnUserResponse( object sender, ResponseArgs args )
+      protected void _OnUserResponse( object sender, ResponseArgs args )
       {
          _Trace( "[_OnUserResponse]" );
 
@@ -146,7 +146,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnMp3BtnClick( object sender, EventArgs args )
+      protected void _OnMp3BtnClick( object sender, EventArgs args )
       {
          // The GTK widget is not well suited to selecting directories
          // right now. I'll do the best I can for the moment:
@@ -169,7 +169,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Attempt to create the database tables, etc
       ///
-      void _OnCreateDatabaseBtnClick( object sender, EventArgs args )
+      protected void _OnCreateDatabaseBtnClick( object sender, EventArgs args )
       {
          _Trace( "[_OnCreateDatabaseBtnClick]" );
          try

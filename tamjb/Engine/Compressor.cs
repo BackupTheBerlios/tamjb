@@ -46,6 +46,24 @@ namespace byteheaven.tamjb.Engine
       ///
       public readonly static uint MAX_PREDELAY = 88;
 
+      ///
+      /// Set to true to have the compressor gradually learn the
+      /// average level of all songs, thus automatically adjusting
+      /// all incoming audio gradually to the average level learned
+      /// from all audio to date.
+      ///
+      public bool doAutomaticLeveling
+      {
+         get
+         {
+            return _learnTargetPower;
+         }
+         set
+         {
+            _learnTargetPower = true;
+         }
+      }
+
       public Compressor()
       {
          // Initially select 1/2 millisecond for the delay as a default.
@@ -54,6 +72,9 @@ namespace byteheaven.tamjb.Engine
 
          // Initialize compression times
          compressAttack = 0.010; // seconds
+         compressDecay = 5.0;   // seconds
+
+         _learnTargetPower = false;
       }
 
       ///
@@ -82,37 +103,54 @@ namespace byteheaven.tamjb.Engine
          double avgPower = (_decayingAveragePowerLeft 
                             + _decayingAveragePowerRight) / 2;
 
-         // Don't correct gain if we're below the threshold
-         double newCorrection;
-         if (avgPower < _gateLevel)
-            newCorrection = _targetPowerLevel / _gateLevel;
+         // Gradually adjust target power?
+         if (_learnTargetPower)
+         {
+            // How fast to adjust? Slowly! We want the average of many
+            // songs, not just one. A 3.5 minute song at 44100 has
+            // 9.2 million samples in it, and we want to adjust, say, 50% of
+            // the scale over, say, 10 songs. Hmm.
+            if (avgPower > _targetPowerLevel)
+               _targetPowerLevel += 0.000001;
+            else if (avgPower < _targetPowerLevel)
+               _targetPowerLevel -= 0.000001;
+         }
+
+         // Limit the rate of change of the percieved average power,
+         // and let the instantaneous correction take care of itself
+
+         if (avgPower > _avgPowerDecaying)
+         {
+            _avgPowerDecaying += _compressAttackRateMax;
+            if (_avgPowerDecaying > avgPower)
+               _avgPowerDecaying = avgPower;
+         }
          else
-            newCorrection = _targetPowerLevel / avgPower;
+         {
+            // Experimental log-linear release algorithm
+            double logAvgPowerNew = Math.Log10( avgPower );
+            double logAvgPowerOld = Math.Log10( _avgPowerDecaying );
+            logAvgPowerOld -= _compressReleaseRate;
+            if (logAvgPowerOld < logAvgPowerNew)
+               logAvgPowerOld = logAvgPowerNew; // don't pass the new value
+
+            _avgPowerDecaying = Math.Pow( 10, logAvgPowerOld );
+            
+//             _avgPowerDecaying = 
+//                (avgPower * _compressReleaseRateMax)
+//                + (_avgPowerDecaying * _compressReleaseRateKeep);
+         }
+
+         // Don't correct gain if we're below the threshold
+         if (_avgPowerDecaying < _gateLevel)
+            _correction = _targetPowerLevel / _gateLevel;
+         else
+            _correction = _targetPowerLevel / _avgPowerDecaying;
 
          // For inf:1 compression, use "offset", otherwise
          // use this ratio to get other ratios:
-         newCorrection = (newCorrection * _compressRatio) 
+         _correction = (_correction * _compressRatio) 
             + (1.0 - _compressRatio);
-
-         // On release, use exponential decay in addition to the 
-         // lowpass. 
-         if (newCorrection > _correction) // Gain is increasing?
-         {
-            _correction = 
-               ((_correction * _decayRatioOld) +
-                (newCorrection * _decayRatioNew));
-         }
-         else
-         {
-            _correction = newCorrection;
-         }
-
-         // Avoid clicks. Use lowpass filter (attack ratio) on both
-         // attack and release. This is a temporary fix to eliminate 
-         // clicking
-         //
-         newCorrection = _correctionFilter.Process( newCorrection );
-
 
 #if WATCH_DENORMALS
          // Correction should never remotely approach 0
@@ -155,7 +193,7 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressAttack;
+            return 0.020 / _compressAttackRateMax;
          }
          set
          {
@@ -165,29 +203,42 @@ namespace byteheaven.tamjb.Engine
                                             "compressAttack" );
             }
 
-            _correctionFilter.Initialize( 1.0 / _compressAttack,
-                                          44100.0 );
-
-            _compressAttack = value;
+            _compressAttackRateMax = (0.020) / value;
          }
       }
 
+      ///
+      /// Get/set the compress decay rate in seconds. 
+      /// Decay time is defined as the time for the level to reach some
+      /// percentage of the decay curve, which I don't feel like 
+      /// researching just now.
+      ///
       public double compressDecay
       {
          get
          {
-            return _decayRatioNew;
+            // Compute amount of decay per second in (decibels / 20.0)
+            return 1.0 / (_compressReleaseRate * 44100.0 / (3.0 / 20.0));
          }
          set
          {
-            _decayRatioNew = value;
-            if (_decayRatioNew >= 1.0)
-               _decayRatioNew = 1.0;
+            if (value <= 0.0)
+               throw new ArgumentException( "Must be >= 0", "compressDecay" );
+
+            // Divide by 72dB delay, multiply by 20 (because we don't bother
+            // with the * -20 in the decibel calculation) and
+            // divide by 44100 samples / second rate.
             
-            if (_decayRatioNew <= 0.0)
-               _decayRatioNew = 0.0;
-            
-            _decayRatioOld = 1.0 - _decayRatioNew;
+            _compressReleaseRate = (1.0 / value) * (3.0 / 20.0) / 44100.0;
+           
+//             _compressReleaseRateMax = 0.0002 / value;
+
+//             // This is important for the decay algorithm. Anyway, let's
+//             // not release that fast anyway.
+//             if (_compressReleaseRateMax > 1.0)
+//                _compressReleaseRateMax = 1.0;
+
+//             _compressReleaseRateKeep = 1.0 - _compressReleaseRateMax;
          }
       }
 
@@ -202,7 +253,7 @@ namespace byteheaven.tamjb.Engine
          }
          set
          {
-            _targetPowerLevel = (double)value;
+            _targetPowerLevel = value;
             
             if (_targetPowerLevel >= 32767.0)
                _targetPowerLevel = 32767.0;
@@ -224,7 +275,7 @@ namespace byteheaven.tamjb.Engine
          }
          set
          {
-            _gateLevel = (double)value;
+            _gateLevel = value;
             
             if (_gateLevel >= 32767.0)
                _gateLevel = 32767.0;
@@ -276,9 +327,11 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Target power level for compression/expansion.
       /// 
-      /// RMS power around 4k seems common enough.
+      /// Start with something not too unusual
       ///
-      double _targetPowerLevel = 4000.0;
+      double _targetPowerLevel = 2800.0;
+
+      bool _learnTargetPower;
 
       ///
       /// Level below which we stop compressing and start
@@ -307,26 +360,32 @@ namespace byteheaven.tamjb.Engine
       double _rmsDecayNew = 0.005; // Note: should depend on sample rate!
       double _rmsDecayOld = 0.995;
 
-      double _decayRatioNew = 0.0002;
-      double _decayRatioOld = 0.9998;
+//       double _decayRatioNew = 0.0002;
+//       double _decayRatioOld = 0.9998;
 
       //
       // gain correction as used in the current & previous sample
       //
       double _correction = 1.0; 
 
-      double _compressAttack = 0.3;
-      FirstOrderLowpassFilter _correctionFilter = 
-      new FirstOrderLowpassFilter();
+      double _compressAttackRateMax = 1.0;
+      double _compressReleaseRate = 6.0 / 44100.0 / 20.0; 
+
+//       double _compressReleaseRateMax = 0.25;
+//       double _compressReleaseRateKeep = 0.75;
 
       //
-      // This is the average rms power of the current track decaying
-      // exponentially over time. Normalized to 16 bits.
+      // This is the average rms power of the current track over the
+      // last few milliseconds. Normalized to 16 bits.
       //
       // Initially maxed out to avoid clipping
       //
-      double _decayingAveragePowerLeft = (float)32767.0;
-      double _decayingAveragePowerRight = (float)32767.0;
+      double _decayingAveragePowerLeft = 32767.0;
+      double _decayingAveragePowerRight = 32767.0;
+
+      // This is the average of the left/right average power, with
+      // its slew rate limited by the attack/decay algorithm.
+      double _avgPowerDecaying = 32767.0;
 
       ///
       /// The short delay used to allow the compressor attack to precede

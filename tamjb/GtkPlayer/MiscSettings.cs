@@ -82,10 +82,16 @@ namespace byteheaven.tamjb.GtkPlayer
          // Milliseconds
          _attackScale.Value = _backend.compressAttack * 1000.0;
 
-         _decayScale.Value = 12 - Math.Log( _backend.compressDecay, 
-                                            DECAY_BASE );
+//          _decayScale.Value = 12 - Math.Log( _backend.compressDecay, 
+//                                             DECAY_BASE );
+         _decayScale.Value = _backend.compressDecay;
 
-         _targetScale.Value = _backend.compressThreshold;
+         _bassLevelScale.Value = _backend.compressThresholdBass;
+         _midLevelScale.Value = _backend.compressThresholdMid;
+         _trebleLevelScale.Value = _backend.compressThresholdTreble;
+
+         _learnButton.Active = _backend.learnLevels;
+
          _ratioScale.Value = _backend.compressRatio;
          _gateThresholdScale.Value = _backend.gateThreshold;
 
@@ -95,13 +101,13 @@ namespace byteheaven.tamjb.GtkPlayer
             ((double)_backend.compressPredelay) / 44.0;
       }
 
-      void _OnClose( object sender, EventArgs args )
+      protected void _OnClose( object sender, EventArgs args )
       {
          _Trace( "[_OnClose]" );
          _miscSettingsDialog.Destroy();
       }
 
-      void _OnUserResponse( object sender, ResponseArgs args )
+      protected void _OnUserResponse( object sender, ResponseArgs args )
       {
          _Trace( "[_OnUserResponse]" );
 
@@ -109,7 +115,7 @@ namespace byteheaven.tamjb.GtkPlayer
          _miscSettingsDialog.Destroy();
       }
 
-      void _OnFormatAttack( object sender, FormatValueArgs args )
+      protected void _OnFormatAttack( object sender, FormatValueArgs args )
       {
          try
          {
@@ -121,7 +127,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnAttackChanged( object sender, EventArgs args )
+      protected void _OnAttackChanged( object sender, EventArgs args )
       {
          try
          {
@@ -144,25 +150,26 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnDecayChanged( object sender, EventArgs args )
+      protected void _OnDecayChanged( object sender, EventArgs args )
       {
          try
          {
             _Trace( "[_OnDecayChanged]" );
 
-            // Decay ranges from 0.0000005 to something less than 1.0, 
-            // where 1.0 is a infinitely fast release. I really don't
-            // want an instantaneous release ever! :)
-            // range from 1-10 for this to work:
-            double newVal = Math.Pow( DECAY_BASE, (12 - _decayScale.Value) );
+//             // Decay ranges from 0.0000005 to something less than 1.0, 
+//             // where 1.0 is a infinitely fast release. I really don't
+//             // want an instantaneous release ever! :)
+//             // range from 1-10 for this to work:
+//             double newVal = Math.Pow( DECAY_BASE, (12 - _decayScale.Value) );
 
-            if (_ChangeRatio(_backend.compressDecay, newVal) > 0.01)
-            {
-               _Trace( "compressDecay: " + _backend.compressDecay
-                       + " --> " + newVal );
+//             if (_ChangeRatio(_backend.compressDecay, newVal) > 0.0001)
+//             {
+//                _Trace( "compressDecay: " + _backend.compressDecay
+//                        + " --> " + newVal );
 
-               _backend.compressDecay = newVal;
-            }
+//                _backend.compressDecay = newVal;
+//             }
+            _backend.compressDecay = _decayScale.Value;
          }
          catch (Exception e)
          {
@@ -170,13 +177,13 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnTargetChanged( object sender, EventArgs args )
+      protected void _OnBassLevelChanged( object sender, EventArgs args )
       {
          try
          {
-            _Trace( "[_OnTargetChanged]" );
-            if (_backend.compressThreshold != (int)_targetScale.Value)
-               _backend.compressThreshold = (int)_targetScale.Value;
+            _Trace( "[_OnBassLevelChanged]" );
+            if (_backend.compressThresholdBass != (int)_bassLevelScale.Value)
+               _backend.compressThresholdBass = (int)_bassLevelScale.Value;
          }
          catch (Exception e)
          {
@@ -184,7 +191,47 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnRatioChanged( object sender, EventArgs args )
+      protected void _OnMidLevelChanged( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_OnMidLevelChanged]" );
+            if (_backend.compressThresholdMid != (int)_midLevelScale.Value)
+               _backend.compressThresholdMid = (int)_midLevelScale.Value;
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      protected void _OnTrebleLevelChanged( object sender, EventArgs args )
+      {
+         try
+         {
+            _Trace( "[_OnTrebleLevelChanged]" );
+            if (_backend.compressThresholdTreble != (int)_trebleLevelScale.Value)
+               _backend.compressThresholdTreble = (int)_trebleLevelScale.Value;
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      protected void _OnLearnButtonToggled( object sender, EventArgs args )
+      {
+         try
+         {
+            _backend.learnLevels = _learnButton.Active;
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+         }
+      }
+
+      protected void _OnRatioChanged( object sender, EventArgs args )
       {
          try
          {
@@ -203,7 +250,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnGateChanged( object sender, EventArgs args )
+      protected void _OnGateChanged( object sender, EventArgs args )
       {
          try
          {
@@ -218,7 +265,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnPredelayChanged( object sender, EventArgs args )
+      protected void _OnPredelayChanged( object sender, EventArgs args )
       {
          try
          {
@@ -283,12 +330,22 @@ namespace byteheaven.tamjb.GtkPlayer
       Scale  _ratioScale;
 
       [Glade.Widget]
-      Scale  _targetScale;
+      Scale  _bassLevelScale;
+
+      [Glade.Widget]
+      Scale  _midLevelScale;
+
+      [Glade.Widget]
+      Scale  _trebleLevelScale;
+
+      [Glade.Widget]
+      CheckButton  _learnButton;
 
       [Glade.Widget]
       Scale  _gateThresholdScale; 
 
       [Glade.Widget]
       Scale  _predelayScale;
+
    }
 }

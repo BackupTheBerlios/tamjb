@@ -167,7 +167,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Dialog finished response callback
       ///
-      void _OnUserResponse( object sender, ResponseArgs args )
+      protected void _OnUserResponse( object sender, ResponseArgs args )
       {
          _Trace( "[_OnUserResponse]" );
 
@@ -202,7 +202,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnUserDelete( object sender, EventArgs args )
+      protected void _OnUserDelete( object sender, EventArgs args )
       {
          MessageDialog md = 
             new MessageDialog( null, 
@@ -214,7 +214,7 @@ namespace byteheaven.tamjb.GtkPlayer
          md.Run ();
       }
 
-      void _OnMoodDelete( object sender, EventArgs args )
+      protected void _OnMoodDelete( object sender, EventArgs args )
       {
          MessageDialog md = 
             new MessageDialog( null, 
@@ -226,7 +226,7 @@ namespace byteheaven.tamjb.GtkPlayer
          md.Run ();
       }
 
-      void _OnUserCopy( object sender, EventArgs args )
+      protected void _OnUserCopy( object sender, EventArgs args )
       {
          MessageDialog md = 
             new MessageDialog( null, 
@@ -238,7 +238,7 @@ namespace byteheaven.tamjb.GtkPlayer
          md.Run ();
       }
 
-      void _OnMoodCopy( object sender, EventArgs args )
+      protected void _OnMoodCopy( object sender, EventArgs args )
       {
          MessageDialog md = 
             new MessageDialog( null, 
@@ -253,7 +253,7 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       /// Called when a new user name is selected or entered
       ///
-      void _OnUserChanged( object sender, EventArgs args )
+      protected void _OnUserChanged( object sender, EventArgs args )
       {
          try
          {
@@ -267,7 +267,7 @@ namespace byteheaven.tamjb.GtkPlayer
          }
       }
 
-      void _OnMoodChanged( object sender, EventArgs args )
+      protected void _OnMoodChanged( object sender, EventArgs args )
       {
          try
          {

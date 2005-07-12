@@ -46,6 +46,8 @@ namespace byteheaven.tamjb.GtkPlayer
    ///
    public class PlayerApp
    {
+      static protected GtkPlayer gtkPlayer;
+
       [MTAThread]
       static int Main( string [] args )
       {
@@ -95,7 +97,7 @@ namespace byteheaven.tamjb.GtkPlayer
 
             // New:
             _Trace( "Creating GtkPlayer" );
-            GtkPlayer gtkPlayer = new GtkPlayer();
+            gtkPlayer = new GtkPlayer();
 
             _Trace( "Application.Run time" );
             Application.Run ();
@@ -383,7 +385,6 @@ namespace byteheaven.tamjb.GtkPlayer
       // Variables used when we are running locally
       static IBackend          _backendInterface = null;
       static IRecursiveScanner _scanner = null;
-      static int               _scanRetryCountdown = 0;
 
       // Things that are configurable when running locally
       static string            _mp3RootDir = null;

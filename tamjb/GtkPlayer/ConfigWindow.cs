@@ -100,7 +100,7 @@ namespace byteheaven.tamjb.GtkPlayer
          _configDialog.Run();
       }
 
-      void _OnUserResponse( object sender, ResponseArgs args )
+      protected void _OnUserResponse( object sender, ResponseArgs args )
       {
          _Trace( "[_OnUserResponse]" );
 
