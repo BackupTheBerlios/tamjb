@@ -52,14 +52,29 @@ namespace byteheaven.tamjb.Engine
 
          _lowFilter = new DualFIR( lowpass );
 
+
+//          double [] simpleDelay = new double[ 80 ];
+//          for (int i = 0; i < simpleDelay.Length; i++)
+//             simpleDelay[i] = 0.0;
+         
+//          simpleDelay[0] = 1.0;
+
+//          _highFilter = new DualFIR( simpleDelay );
+
+
          // Left and right ought to be the same
-         int delaySize = _lowFilter.minDelaySize;
+         int delaySize = Math.Min( _lowFilter.minDelaySize,
+                                   _highFilter.minDelaySize );
+         
 
          _delayLineLeft = new double[ delaySize ];
          _delayLineRight = new double[ delaySize ];
 
          _lowFilter.delayLineLeft = _delayLineLeft;
          _lowFilter.delayLineRight = _delayLineRight;
+
+         _highFilter.delayLineLeft = _delayLineLeft;
+         _highFilter.delayLineRight = _delayLineRight;
 
          // The Kaiser window (linear) introduces an M/2 sample delay, so set 
          // up a delay line tap at that point for the midrange. A positive

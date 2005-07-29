@@ -275,6 +275,7 @@ namespace byteheaven.tamjb.Server
                {
                   Trace.WriteLine( "Reached my lifeSpan. \"Wake up, time to die.\"" );
                   Trace.WriteLine( "Exiting." );
+                  Backend.theBackend.ShutDown();
                   return 0;
                }
 

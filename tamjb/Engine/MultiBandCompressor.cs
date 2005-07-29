@@ -49,7 +49,7 @@ namespace byteheaven.tamjb.Engine
          // Note: default crossover frequencies are related to
          // the compressThreshold adjustment!
 
-         crossoverFrequencyOne = 220; // hz
+         crossoverFrequencyOne = 120; // hz
          crossoverFrequencyTwo = 5800; // hz
       }
 

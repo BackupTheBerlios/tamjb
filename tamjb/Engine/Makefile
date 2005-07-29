@@ -18,6 +18,7 @@ SOURCES = AssemblyInfo.cs \
 	KaiserWindow.cs \
         LocalFileDatabase.cs \
         LowpassFilter.cs \
+	MathApproximation.cs \
         MyRandom.cs \
         RecursiveScanner.cs \
         SampleFifo.cs \

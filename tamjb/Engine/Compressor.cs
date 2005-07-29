@@ -88,18 +88,14 @@ namespace byteheaven.tamjb.Engine
 
          _decayingAveragePowerLeft = 
             ((_decayingAveragePowerLeft * _rmsDecayOld) +
-             (Math.Abs(left) * _rmsDecayNew));
-
-         if (_decayingAveragePowerLeft < 1.0e-25) // avoid denormals
-            _decayingAveragePowerLeft = 0.0;
+             (Math.Abs(left) * _rmsDecayNew))
+            + Denormal.denormalFixValue;
 
          _decayingAveragePowerRight = 
             ((_decayingAveragePowerRight * _rmsDecayOld) +
-             (Math.Abs(right) * _rmsDecayNew));
+             (Math.Abs(right) * _rmsDecayNew))
+            + Denormal.denormalFixValue;
          
-         if (_decayingAveragePowerRight < 1.0e-25) // avoid denormals
-            _decayingAveragePowerRight = 0.0;
-
          double avgPower = (_decayingAveragePowerLeft 
                             + _decayingAveragePowerRight) / 2;
 
@@ -119,33 +115,38 @@ namespace byteheaven.tamjb.Engine
          // Limit the rate of change of the percieved average power,
          // and let the instantaneous correction take care of itself
 
-         if (avgPower > _avgPowerDecaying)
+         // Soft-knee is pretty much like this:
+//         y=yo*(x/xo)^r      r=ratio, xo=threshold, so
+//         20*log10(y/yo)=r*20*log10(x/xo)   - 1 dB in -> r dB out 
+
+         // Experimental log-linear attack/release
+         // 
+         // (Since log10(x) ~= log10(2) * log2(x))
+
+         // double logAvgPowerNew = MathApproximation.Log10Poor( avgPower );
+         double logAvgPowerNew = Math.Log10( avgPower );
+
+         if (logAvgPowerNew > _avgPowerLog)
          {
-            _avgPowerDecaying += _compressAttackRateMax;
-            if (_avgPowerDecaying > avgPower)
-               _avgPowerDecaying = avgPower;
+            _avgPowerLog += _compressAttackRate;
+            if (_avgPowerLog > logAvgPowerNew)
+               _avgPowerLog = logAvgPowerNew;
          }
          else
          {
-            // Experimental log-linear release algorithm
-            double logAvgPowerNew = Math.Log10( avgPower );
-            double logAvgPowerOld = Math.Log10( _avgPowerDecaying );
-            logAvgPowerOld -= _compressReleaseRate;
-            if (logAvgPowerOld < logAvgPowerNew)
-               logAvgPowerOld = logAvgPowerNew; // don't pass the new value
-
-            _avgPowerDecaying = Math.Pow( 10, logAvgPowerOld );
-            
-//             _avgPowerDecaying = 
-//                (avgPower * _compressReleaseRateMax)
-//                + (_avgPowerDecaying * _compressReleaseRateKeep);
+            _avgPowerLog -= _compressReleaseRate;
+            if (_avgPowerLog < logAvgPowerNew)
+               _avgPowerLog = logAvgPowerNew; // don't pass the new value
          }
+
+         // Convert back into a 16-bit "number" for the correction math
+         avgPower = MathApproximation.AntiLog10( _avgPowerLog );
 
          // Don't correct gain if we're below the threshold
-         if (_avgPowerDecaying < _gateLevel)
+         if (avgPower < _gateLevel)
             _correction = _targetPowerLevel / _gateLevel;
          else
-            _correction = _targetPowerLevel / _avgPowerDecaying;
+            _correction = _targetPowerLevel / avgPower;
 
          // For inf:1 compression, use "offset", otherwise
          // use this ratio to get other ratios:
@@ -186,6 +187,7 @@ namespace byteheaven.tamjb.Engine
 
       }
 
+
       ///
       /// Attack time in seconds
       ///
@@ -193,7 +195,7 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return 0.020 / _compressAttackRateMax;
+            return _LogDecayToSeconds( _compressAttackRate );
          }
          set
          {
@@ -203,7 +205,7 @@ namespace byteheaven.tamjb.Engine
                                             "compressAttack" );
             }
 
-            _compressAttackRateMax = (0.020) / value;
+            _compressAttackRate = _SecondsToLogDecay( value );
          }
       }
 
@@ -218,7 +220,7 @@ namespace byteheaven.tamjb.Engine
          get
          {
             // Compute amount of decay per second in (decibels / 20.0)
-            return 1.0 / (_compressReleaseRate * 44100.0 / (3.0 / 20.0));
+            return _LogDecayToSeconds( _compressReleaseRate );
          }
          set
          {
@@ -228,18 +230,22 @@ namespace byteheaven.tamjb.Engine
             // Divide by 72dB delay, multiply by 20 (because we don't bother
             // with the * -20 in the decibel calculation) and
             // divide by 44100 samples / second rate.
-            
-            _compressReleaseRate = (1.0 / value) * (3.0 / 20.0) / 44100.0;
-           
-//             _compressReleaseRateMax = 0.0002 / value;
-
-//             // This is important for the decay algorithm. Anyway, let's
-//             // not release that fast anyway.
-//             if (_compressReleaseRateMax > 1.0)
-//                _compressReleaseRateMax = 1.0;
-
-//             _compressReleaseRateKeep = 1.0 - _compressReleaseRateMax;
+            _compressReleaseRate = _SecondsToLogDecay( value );
          }
+      }
+
+      ///
+      /// Convert the input value into a number suitable for use in
+      /// decay functions (say, compression).
+      ///
+      static double _SecondsToLogDecay( double input )
+      {
+         return (1.0 / input) * (3.0 / 20.0) / 44100.0;
+      }
+      
+      static double _LogDecayToSeconds( double input )
+      {
+         return 1.0 / (input * 44100.0 / (3.0 / 20.0));
       }
 
       ///
@@ -368,11 +374,8 @@ namespace byteheaven.tamjb.Engine
       //
       double _correction = 1.0; 
 
-      double _compressAttackRateMax = 1.0;
-      double _compressReleaseRate = 6.0 / 44100.0 / 20.0; 
-
-//       double _compressReleaseRateMax = 0.25;
-//       double _compressReleaseRateKeep = 0.75;
+      double _compressAttackRate = 1.0; // in LogDecay format
+      double _compressReleaseRate = 1.0;
 
       //
       // This is the average rms power of the current track over the
@@ -383,9 +386,8 @@ namespace byteheaven.tamjb.Engine
       double _decayingAveragePowerLeft = 32767.0;
       double _decayingAveragePowerRight = 32767.0;
 
-      // This is the average of the left/right average power, with
-      // its slew rate limited by the attack/decay algorithm.
-      double _avgPowerDecaying = 32767.0;
+      // This is log10 of the average of the left/right average power
+      double _avgPowerLog = Math.Log10( 32767.0 );
 
       ///
       /// The short delay used to allow the compressor attack to precede
