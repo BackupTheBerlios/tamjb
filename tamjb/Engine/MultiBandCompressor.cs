@@ -49,8 +49,9 @@ namespace byteheaven.tamjb.Engine
          // Note: default crossover frequencies are related to
          // the compressThreshold adjustment!
 
-         crossoverFrequencyOne = 120; // hz
-         crossoverFrequencyTwo = 5800; // hz
+         // Note: does nothing
+//          crossoverFrequencyOne = 120; // hz
+//          crossoverFrequencyTwo = 5800; // hz
       }
 
       public bool doAutomaticLeveling
@@ -107,9 +108,10 @@ namespace byteheaven.tamjb.Engine
          double trebleLeft;
          double trebleRight;
 
-         _crossover.Process( left, right,
+         _crossover.Process( ref left, ref right,
                              out bassLeft, out bassRight,
-                             out midLeft,  out midRight );
+                             out midLeft,  out midRight,
+                             out trebleLeft, out trebleRight );
 
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
@@ -120,13 +122,11 @@ namespace byteheaven.tamjb.Engine
          _softClipper.Process( ref bassLeft, ref bassRight );
 
          _midCompress.Process( ref midLeft, ref midRight );
-
-//          _highPassTwo.Process( ref trebleLeft, ref trebleRight );
-//          _trebleCompress.Process( ref trebleLeft, ref trebleRight );
+         _trebleCompress.Process( ref trebleLeft, ref trebleRight );
 
          // Is this an adequate mixing algorithm?
-         left = bassLeft + midLeft;
-         right = bassRight + midRight;
+         left = bassLeft + midLeft + trebleLeft;
+         right = bassRight + midRight + trebleRight;
 
          _softClipper.Process( ref left, ref right );
       }
@@ -263,7 +263,7 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      StereoCrossover _crossover = new StereoCrossover( 220.0 );
+      StereoCrossover _crossover = new StereoCrossover( 190.0, 3300.0 );
 
       Compressor _bassCompress = new Compressor();
 
