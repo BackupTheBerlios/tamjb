@@ -53,12 +53,12 @@ namespace byteheaven.tamjb.Engine
          _lowFilter = new DualFIR( lowFiltCoef );
 
 
-         double highCut = highCutoff * 3.0 / 22050.0;
+         double highCut = highCutoff * 2.0 / 22050.0;
          if (highCut > 1.0)
             highCut = 1.0;
 
          double [] highFiltCoef = KaiserWindow.FromParameters
-            ( highCutoff / 3.0 / 22050.0,
+            ( highCutoff / 2.0 / 22050.0,
               highCut,
               50,               // A (60 is good, 50 acceptable, 70 is GREAT)
               100,              // maxM

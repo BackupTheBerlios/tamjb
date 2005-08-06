@@ -45,8 +45,6 @@ namespace byteheaven.tamjb.GtkPlayer
    ///
    public class MiscSettingsDialog
    {
-      static readonly double DECAY_BASE = 0.23;
-
       ///
       /// Creates the mood window dialog but does not display it. 
       /// (use Run()).
@@ -82,8 +80,6 @@ namespace byteheaven.tamjb.GtkPlayer
          // Milliseconds
          _attackScale.Value = _backend.compressAttack * 1000.0;
 
-//          _decayScale.Value = 12 - Math.Log( _backend.compressDecay, 
-//                                             DECAY_BASE );
          _decayScale.Value = _backend.compressDecay;
 
          _bassLevelScale.Value = _backend.compressThresholdBass;
@@ -96,9 +92,9 @@ namespace byteheaven.tamjb.GtkPlayer
          _gateThresholdScale.Value = _backend.gateThreshold;
 
          // Convert from samples to seconds. Note that this assumes
-         // 44.1 samples per second. Approximately. :)
+         // 44.1 samples per millisecond. Approximately. :)
          _predelayScale.Value = 
-            ((double)_backend.compressPredelay) / 44.0;
+            ((double)_backend.compressPredelay) / 44.1;
       }
 
       protected void _OnClose( object sender, EventArgs args )
@@ -156,19 +152,6 @@ namespace byteheaven.tamjb.GtkPlayer
          {
             _Trace( "[_OnDecayChanged]" );
 
-//             // Decay ranges from 0.0000005 to something less than 1.0, 
-//             // where 1.0 is a infinitely fast release. I really don't
-//             // want an instantaneous release ever! :)
-//             // range from 1-10 for this to work:
-//             double newVal = Math.Pow( DECAY_BASE, (12 - _decayScale.Value) );
-
-//             if (_ChangeRatio(_backend.compressDecay, newVal) > 0.0001)
-//             {
-//                _Trace( "compressDecay: " + _backend.compressDecay
-//                        + " --> " + newVal );
-
-//                _backend.compressDecay = newVal;
-//             }
             _backend.compressDecay = _decayScale.Value;
          }
          catch (Exception e)
@@ -276,7 +259,7 @@ namespace byteheaven.tamjb.GtkPlayer
             // is also not the proper name for this.
 
             // The value is displayed in milliseconds. So...
-            uint delayInSamples = (uint)(_predelayScale.Value * 44.0);
+            uint delayInSamples = (uint)(_predelayScale.Value * 44.1);
 
             // Limit the range
             if (delayInSamples < 0)

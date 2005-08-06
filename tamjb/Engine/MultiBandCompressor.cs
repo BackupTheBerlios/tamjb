@@ -39,11 +39,6 @@ namespace byteheaven.tamjb.Engine
    public class MultiBandCompressor
       : IAudioProcessor
    {
-      ///
-      /// Maximum value for the compressPredelay value. (samples)
-      ///
-      public readonly static uint MAX_PREDELAY = 88;
-
       public MultiBandCompressor()
       {
          // Note: default crossover frequencies are related to
@@ -263,7 +258,7 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      StereoCrossover _crossover = new StereoCrossover( 190.0, 3300.0 );
+      StereoCrossover _crossover = new StereoCrossover( 190.0, 2200.0 );
 
       Compressor _bassCompress = new Compressor();
 

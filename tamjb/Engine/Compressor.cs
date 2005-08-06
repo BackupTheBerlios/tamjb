@@ -44,7 +44,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Maximum value for the compressPredelay value. (samples)
       ///
-      public readonly static uint MAX_PREDELAY = 88;
+      public readonly static uint MAX_PREDELAY = (uint)(44.1 * 200.0);
 
       ///
       /// Set to true to have the compressor gradually learn the
@@ -60,7 +60,7 @@ namespace byteheaven.tamjb.Engine
          }
          set
          {
-            _learnTargetPower = true;
+            _learnTargetPower = value;
          }
       }
 
@@ -86,18 +86,7 @@ namespace byteheaven.tamjb.Engine
          // Approximate the average power of each channel, then
          // figure the average of the two channel's average power.
 
-         _decayingAveragePowerLeft = 
-            ((_decayingAveragePowerLeft * _rmsDecayOld) +
-             (Math.Abs(left) * _rmsDecayNew))
-            + Denormal.denormalFixValue;
-
-         _decayingAveragePowerRight = 
-            ((_decayingAveragePowerRight * _rmsDecayOld) +
-             (Math.Abs(right) * _rmsDecayNew))
-            + Denormal.denormalFixValue;
-         
-         double avgPower = (_decayingAveragePowerLeft 
-                            + _decayingAveragePowerRight) / 2;
+         double avgPower = (Math.Abs(left) + Math.Abs(right)) / 2;
 
          // Gradually adjust target power?
          if (_learnTargetPower)
@@ -119,10 +108,9 @@ namespace byteheaven.tamjb.Engine
 //         y=yo*(x/xo)^r      r=ratio, xo=threshold, so
 //         20*log10(y/yo)=r*20*log10(x/xo)   - 1 dB in -> r dB out 
 
-         // Experimental log-linear attack/release
-         // 
-         // (Since log10(x) ~= log10(2) * log2(x))
+         // log-linear attack/release
 
+         // This is a bad approximatino AND it's very slow. :(
          // double logAvgPowerNew = MathApproximation.Log10Poor( avgPower );
          double logAvgPowerNew = Math.Log10( avgPower );
 
@@ -359,32 +347,12 @@ namespace byteheaven.tamjb.Engine
       double _compressRatio = 1.0;
 
       //
-      // The average power should have a decay at least long enough to allow
-      // detecting low frequencies (20 Hz). Attack/decay the same to calculate
-      // a time-decaying RMS power.
-      //
-      double _rmsDecayNew = 0.005; // Note: should depend on sample rate!
-      double _rmsDecayOld = 0.995;
-
-//       double _decayRatioNew = 0.0002;
-//       double _decayRatioOld = 0.9998;
-
-      //
       // gain correction as used in the current & previous sample
       //
       double _correction = 1.0; 
 
       double _compressAttackRate = 1.0; // in LogDecay format
       double _compressReleaseRate = 1.0;
-
-      //
-      // This is the average rms power of the current track over the
-      // last few milliseconds. Normalized to 16 bits.
-      //
-      // Initially maxed out to avoid clipping
-      //
-      double _decayingAveragePowerLeft = 32767.0;
-      double _decayingAveragePowerRight = 32767.0;
 
       // This is log10 of the average of the left/right average power
       double _avgPowerLog = Math.Log10( 32767.0 );
