@@ -1,5 +1,7 @@
 
 TODO
+ - Add some sort of "too soon" detection.
+
  - The learn levels function does not periodically save the compressor
   settings, so they are lost if you kill the program before changing
   a compressor setting.
@@ -9,10 +11,11 @@ TODO
 
  - Desperately needs a gnome-2 dock applet for remote control
 
- - Fix the attack on the compressor.
+ - Desperately needs a high-efficiency log approximation. Matlab time?
 
- - Add a quality control for the 3-band, since high quality FIR sounds
- GREAT but won't run on my PIII.
+ - Add a quality control for the compression, so that higher quality
+  FIR can be used for bass with systems that are faster than, well,
+  mine.
 
  - Make the server use CLR system service api's, which should allow it
   to run as a service cross-platform (works as of mono 1.1.7). Need to
@@ -29,8 +32,8 @@ TODO
     This really won't help you accomplish anything, but for some reason
     visual feedback is important. One of those psychology things, I guess.
 
- - Drop songs from future part of playlist if they are flagged as suck or
-  something. Perhaps rework the way songs are chosen to be more visually
+ - Drop songs from future part of playlist if they are manually flagged
+  as suck. Perhaps rework the way songs are chosen to be more visually
   interesting?
 
  - Port to firebird database, because it is an embedded database

@@ -1201,8 +1201,6 @@ namespace byteheaven.tamjb.Engine
          {
             _Trace( "Note: compression settings not found, using defaults" );
             compressor = new MultiBandCompressor(); // load with defaults
-            compressor.crossoverFrequencyOne = 220.0; // Hz
-            compressor.crossoverFrequencyTwo = 5500.0; // Hz
          }
          
          return compressor;

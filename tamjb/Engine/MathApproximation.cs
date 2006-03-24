@@ -51,13 +51,17 @@ namespace byteheaven.tamjb.Engine
 
       /// Helper table for Antilog base 10
       ///
-      static double [] antilog_1_0 = new double[ 6 ] {
+      static double [] antilog_1_0 = new double[ 10 ] {
          1,
          10,
          100,
          1000,
          10000,
-         100000
+         100000,
+         1000000,
+         10000000,
+         100000000,
+         1000000000.0
       };
 
       static double [] antilog_0_1 = new double[ 10 ] {
@@ -90,7 +94,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Antilog (base 10) approximation
       ///
-      /// \warn Input must be >= 0.0 and < 6.0!
+      /// \warn Input must be >= 0.0 and < 10.0!
       ///
       /// The antilog approximation only has to handle input values
       /// representing average power of a 16-bit value, which is to say
@@ -103,8 +107,16 @@ namespace byteheaven.tamjb.Engine
       ///
       static public double AntiLog10( double input )
       {
-//          Debug.Assert( input < 6.0, "Log10 approximation input out of range" );
-//          Debug.Assert( input >= 0.0, "negative inputs not supported" );
+         // This should never happen (I mean, really..)
+//          if (input >= 10.0)
+//          {
+//             // Trace.WriteLine( "Input > 10.0", "MathApproximation" );
+//             return 1000000000.0;
+//          }
+
+         // This happens sometimes if there's lots of silence
+         if (input < 0.0)
+            return 1.0;
 
          double output = antilog_1_0[ (int)input ];
 

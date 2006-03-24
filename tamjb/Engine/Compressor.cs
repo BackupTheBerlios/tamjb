@@ -95,11 +95,16 @@ namespace byteheaven.tamjb.Engine
             // songs, not just one. A 3.5 minute song at 44100 has
             // 9.2 million samples in it, and we want to adjust, say, 50% of
             // the scale over, say, 10 songs. Hmm.
-            if (avgPower > _targetPowerLevel)
+            //
+            // Note that I increase the target power because the 
+            // compressor mostly uses the peak level (unless I do some
+            // radical changes to how it works).
+            if (avgPower > (_targetPowerLevel / 2.0))
                _targetPowerLevel += 0.000001;
-            else if (avgPower < _targetPowerLevel)
+            else
                _targetPowerLevel -= 0.000001;
          }
+
 
          // Limit the rate of change of the percieved average power,
          // and let the instantaneous correction take care of itself

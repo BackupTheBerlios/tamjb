@@ -41,12 +41,6 @@ namespace byteheaven.tamjb.Engine
    {
       public MultiBandCompressor()
       {
-         // Note: default crossover frequencies are related to
-         // the compressThreshold adjustment!
-
-         // Note: does nothing
-//          crossoverFrequencyOne = 120; // hz
-//          crossoverFrequencyTwo = 5800; // hz
       }
 
       public bool doAutomaticLeveling
@@ -60,32 +54,6 @@ namespace byteheaven.tamjb.Engine
             _bassCompress.doAutomaticLeveling = value;
             _midCompress.doAutomaticLeveling = value;
             _trebleCompress.doAutomaticLeveling = value;
-         }
-      }
-
-      public double crossoverFrequencyOne
-      {
-         get
-         {
-            return _lowPassOne.cutoff;
-         }
-         set
-         {
-            _lowPassOne.cutoff = value;
-            _highPassOne.cutoff = value;
-         }
-      }
-
-      public double crossoverFrequencyTwo
-      {
-         get
-         {
-            return _lowPassTwo.cutoff;
-         }
-         set
-         {
-            _lowPassTwo.cutoff = value;
-            _highPassTwo.cutoff = value;
          }
       }
 
@@ -111,10 +79,11 @@ namespace byteheaven.tamjb.Engine
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
          // Clip the bass separately, because it is most likely
-         // to overshoot (this will create interesting
-         // harmonics, won't it? :)
+         // to overshoot. Should make clipping less audible. 
 
-         _softClipper.Process( ref bassLeft, ref bassRight );
+         // Commented out to save processing time,. Would prefer
+         // to have soft clip on all 3 bands.
+         // _softClipper.Process( ref bassLeft, ref bassRight );
 
          _midCompress.Process( ref midLeft, ref midRight );
          _trebleCompress.Process( ref trebleLeft, ref trebleRight );
@@ -261,15 +230,7 @@ namespace byteheaven.tamjb.Engine
       StereoCrossover _crossover = new StereoCrossover( 190.0, 2200.0 );
 
       Compressor _bassCompress = new Compressor();
-
-      LowpassFilter _lowPassOne = new LowpassFilter();
-      HighpassFilter _highPassOne = new HighpassFilter();
-
       Compressor _midCompress = new Compressor();
-
-      LowpassFilter _lowPassTwo = new LowpassFilter();
-      HighpassFilter _highPassTwo = new HighpassFilter();
-
       Compressor _trebleCompress = new Compressor();
 
       SoftClipper _softClipper = new SoftClipper();

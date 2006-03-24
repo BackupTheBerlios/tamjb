@@ -42,11 +42,13 @@ namespace byteheaven.tamjb.Engine
          // Define the bass/mid FIR as fairly poor quality, because
          // otherwise the filter has a lot of coefficients and your
          // poor Pentium III will roll over and play dead.
+         
+         // If you have 
          double beta;
          double [] lowFiltCoef = KaiserWindow.FromParameters
             ( lowCutoff / 2.0 / 22050.0,
               lowCutoff * 4.0 / 22050.0,
-              45,               // A (60 is good, 50 acceptable, 70 is GREAT)
+              _lowQuality,
               400,              // maxM
               out beta );
 
@@ -167,6 +169,11 @@ namespace byteheaven.tamjb.Engine
 
       // Offset of the high crossover (for delay compensation)
       int _highOffset;
+
+      // A (60 is good, 50 acceptable, 70 is GREAT). 45 swamps my
+      // PIII-600. If you have something faster you definitely should
+      // increase this.
+      readonly int _lowQuality = 38;
    }
 
 }
