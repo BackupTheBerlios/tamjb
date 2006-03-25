@@ -4,7 +4,7 @@
 # Note: be sure EsdAssemblyInfo's version number matches the 
 #       installed version!
 #
-ESDSHARPDIR = ../../../esd-sharp-0.1.3
+ESDSHARPDIR = ../../../esd-sharp
 
 TARGET = ../../bin/esd-sharp.dll
 

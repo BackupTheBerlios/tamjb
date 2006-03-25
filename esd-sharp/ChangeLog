@@ -1,0 +1,7 @@
+
+2004-05-23 malte <malte@amy.udd.htu.se>
+	* esd-sharp.cs: Changed to statically allocated buffers
+	and fixed bad length calculation code in stream writes
+	and reads.
+	* esd-play.cs: Created, simple sample application.
+

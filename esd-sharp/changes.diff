@@ -1,0 +1,89 @@
+--- ../0.1.2/esd-sharp.cs	2004-03-20 17:51:58.000000000 +0000
++++ esd-sharp.cs	2004-05-23 13:17:44.000000000 +0000
+@@ -1,6 +1,6 @@
+ 
+ //
+-// esd-sharp.cs 0.1.2
++// esd-sharp.cs 0.1.3
+ //
+ // (c) Malte Hildingson 2003
+ //
+@@ -137,6 +137,7 @@
+ 		internal int id;
+ 		internal string name;
+ 		internal EsdFunc func;
++		private IntPtr rmem, wmem;
+ 
+ 		public int Id
+ 		{
+@@ -168,6 +169,9 @@
+ 		{
+ 			if (IsOpen)
+ 				Close();
++
++			if (rmem != IntPtr.Zero) FreeReadBuffer();
++			if (wmem != IntPtr.Zero) FreeWriteBuffer();
+ 		}
+ 
+ 		public void Close()
+@@ -176,19 +180,37 @@
+ 			id = -1;
+ 		}
+ 
++		public void AllocReadBuffer(int size)
++		{
++			rmem = Marshal.AllocHGlobal(size);
++		}
++
++		public void FreeReadBuffer()
++		{
++			Marshal.FreeHGlobal(rmem);
++			rmem = IntPtr.Zero;
++		}
++
+ 		public int Read(byte[] buffer, int offset, int length)
+ 		{
+ 			if (func != EsdFunc.Record || func != EsdFunc.Monitor)
+ 				throw new EsdException("Stream is not readable");
+ 
+-			IntPtr ptr;
+-			ptr = Marshal.AllocHGlobal(length - offset);
++			Debug.Assert(rmem != IntPtr.Zero);
++			length = Esd.read(id, rmem, length);
++			Marshal.Copy(rmem, buffer, offset, length);
++			return length;
++		}
+ 
+-			length = Esd.read(id, ptr, length - offset);
+-			Marshal.Copy(buffer, offset, ptr, length);
++		public void AllocWriteBuffer(int size)
++		{
++			wmem = Marshal.AllocHGlobal(size);
++		}
+ 
+-			Marshal.FreeHGlobal(ptr);
+-			return length;
++		public void FreeWriteBuffer()
++		{
++			Marshal.FreeHGlobal(wmem);
++			wmem = IntPtr.Zero;
+ 		}
+ 
+ 		public int Write(byte[] buffer, int offset, int length)
+@@ -196,13 +218,9 @@
+ 			if (func != EsdFunc.Play)
+ 				throw new EsdException("Stream is not writable");
+ 
+-			IntPtr ptr;
+-			ptr = Marshal.AllocHGlobal(buffer.Length);
+-
+-			Marshal.Copy(buffer, offset, ptr, length);
+-			length = Esd.write(id, ptr, length - offset);
+-
+-			Marshal.FreeHGlobal(ptr);
++			Debug.Assert(wmem != IntPtr.Zero);
++			Marshal.Copy(buffer, offset, wmem, length);
++			length = Esd.write(id, wmem, length);
+ 			return length;
+ 		}
+ 
