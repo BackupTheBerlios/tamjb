@@ -1,5 +1,16 @@
 
 TODO
+
+ - ITrackInfo.key should be an unsigned long, shouldn't it? (I thought 
+   all database unique ID's were 64 bit these days...)
+
+ - Replace all Lock() Unlock() blocks with lock (object). Cause I mean 
+   really.
+
+ - Engine.CheckState should return the engine state, and should take 
+   only the change count as a parameter. This would reduce the amount
+   of state that has to be held in the web gui.
+
  - Add some sort of "too soon" detection.
 
  - The learn levels function does not periodically save the compressor

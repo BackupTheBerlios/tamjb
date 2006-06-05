@@ -74,6 +74,11 @@ namespace byteheaven.tamjb.Engine
          return Backend.theBackend.CheckState( ref state );
       }
 
+      public EngineState GetState()
+      {
+         return Backend.theBackend.GetState();
+      }
+
       ///
       /// Increases suck by 50% of the difference between its
       /// current level and 100%. Thus it theoretically never reaches

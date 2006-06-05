@@ -11,7 +11,7 @@ TARGET = ../../bin/Mp3Sharp.dll
 # Should the engine throw an exception when it loses sync?
 #   -define:THROW_ON_SYNC_LOSS
 
-DEBUGFLAGS = -g -define:DEBUG -define:TRACE -define:THROW_ON_SYNC_LOSS
+DEBUGFLAGS = -debug -define:DEBUG -define:TRACE -define:THROW_ON_SYNC_LOSS
 
 # Note: LayerIIDecoder.cs won't compile with mcs 0.29.99
 

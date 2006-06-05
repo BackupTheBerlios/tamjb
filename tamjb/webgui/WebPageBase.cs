@@ -36,6 +36,9 @@ namespace byteheaven.tamjb.webgui
    ///
    public class WebPageBase : System.Web.UI.Page
    {
+      // Used to optimize retrieval of the back end pointer in a single
+      // call.
+      private IEngine _backend = null;
 
       protected string serverUrl
       {
@@ -56,8 +59,13 @@ namespace byteheaven.tamjb.webgui
       {
          get
          {
-            return (IEngine) Activator.GetObject( typeof(IEngine), 
-                                                  this.serverUrl );
+            if (null == _backend)
+            {
+               _backend = (IEngine) Activator.GetObject( typeof(IEngine), 
+                                                         this.serverUrl );
+            }
+
+            return _backend;
          }
       }
    }

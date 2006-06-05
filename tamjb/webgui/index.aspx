@@ -2,13 +2,14 @@
   MasterPageFile="~/tamjb.master"
   Inherits="byteheaven.tamjb.webgui.index" 
   Codebehind="index.aspx.cs"
-  EnableViewState="false" 
+  EnableViewState="true"
   AutoEventWireup="false"
   Title="T.A.M. Jukebox"
 %>
 <%@ Register Assembly="Anthem" Namespace="Anthem" TagPrefix="anthem" %>
 <script runat="server">
 //
+// $Id$
 // Copyright (C) 2006 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
@@ -34,13 +35,28 @@
 <asp:Content id="content" contentplaceholderid="mainContent" runat="server">
 
  <div style="float: right;">
+    <asp:Literal id="userIdKey" runat="server" visible="false" />
     <anthem:Button id="refreshButton" runat="server" text="Refresh"
        OnClick="_OnRefresh" />
  </div>
 
- <div id="nowPlayingBox">
-  <h2>Now Playing</h2>
+ <div id="test"> Test</div>
+ <div id="moodBox">
+   <asp:Literal id="nowTrackKey" runat="server" visible="false" />
+   <anthem:LinkButton id="userNameBtn" runat="server" text="(unknown)" 
+     OnClick="_OnUserClick" /> 
+   |
+   <anthem:LinkButton id="moodBtn" runat="server" text="(unknown)" 
+     OnClick="_OnMoodClick" />
+   |
+   <anthem:Button id="suckBtn" runat="server" text="Suck"
+     OnClick="_OnSuck" />
+   |
+   <anthem:Button id="ruleBtn" runat="server" text="Rule"
+     OnClick="_OnRule" />
+ </div>
 
+ <div id="nowPlayingBox">
   <!-- I say this wants a little table -->
   <table class="nowPlaying">
   <tr>

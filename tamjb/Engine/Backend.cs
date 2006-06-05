@@ -258,8 +258,7 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// \todo Does state get copied both ways in spite of this
-      ///   code?
+      /// Updates the state and returns true if it has changed
       ///
       public bool CheckState( ref EngineState state )
       {
@@ -292,6 +291,29 @@ namespace byteheaven.tamjb.Engine
             _Unlock();
          }
       }
+
+      ///
+      /// Implements IEngine.GetState()
+      ///
+      public EngineState GetState()
+      {
+         _Lock();
+         try
+         {
+            // Note: when remoting, this is probably MORE efficient than
+            // the CheckState method. Go figure!
+            return new EngineState( 
+               _shouldBePlaying,
+               _playQueueCurrentTrack,
+               (ITrackInfo[])_playQueue.ToArray(typeof(PlayableData)),
+               _changeCount );
+         }
+         finally
+         {
+            _Unlock();
+         }
+      }
+
 
       ///
       /// Call this on, say, a half-second interval to ensure

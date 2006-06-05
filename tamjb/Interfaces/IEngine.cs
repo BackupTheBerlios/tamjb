@@ -90,6 +90,11 @@ namespace byteheaven.tamjb.Interfaces
       ///
       bool CheckState( ref EngineState state );
 
+      ///
+      /// Gets the current engine state
+      ///
+      EngineState GetState();
+
       // These are fine - they retrieve info about tracks and playlist 
       // criteria using the unique keys.
       ITrackInfo GetFileInfo( uint key );

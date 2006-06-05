@@ -39,7 +39,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
    using System.Collections;
    using System.Threading;
    using EsdSharp;                 // Esd kinda sucks, but it works!
-   using Mp3Sharp;                 // Inefficient. But it work!
+   using Mp3Sharp;                 // It works! 
 
    ///
    /// Event handler called when track is done playing. This is only

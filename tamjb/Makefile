@@ -73,6 +73,7 @@ dll_subdirs:
 exe_subdirs:
 	$(MAKE) --directory=Server
 	$(MAKE) --directory=GtkPlayer
+	$(MAKE) --directory=webgui
 
 
 doc: .build_docs
