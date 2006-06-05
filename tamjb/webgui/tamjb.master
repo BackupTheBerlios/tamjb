@@ -1,0 +1,54 @@
+<%@ Master 
+ Language="C#" 
+ Inherits="byteheaven.tamjb.webgui.master" 
+ EnableViewState="false" 
+ AutoEventWireup="false"
+ %><%@ Register TagPrefix="anthem" Namespace="Anthem" Assembly="Anthem" 
+%><%
+// Note: you want no spaces before the DOCTYPE element
+
+// Copyright (C) 2006 Tom Surace.
+//
+// This file is part of the Tam Jukebox project.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+//   Tom Surace <tekhedd@byteheaven.net>
+
+%><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<head>
+<title>T.A.M. Jukebox - Untitled</title>
+<link href="~/style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<form id="mainForm" runat="server">
+
+<div id="wrapper">
+
+<div id="header">
+ <h1>Tam Jukebox</h1>
+</div>
+
+<div id="content">
+  <asp:ContentPlaceHolder id="mainContent" runat="server" />
+</div>
+
+</div>
+
+</form>
+</body>
+</html>
+
+
