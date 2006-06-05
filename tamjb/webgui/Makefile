@@ -16,6 +16,7 @@ DEPLIBS = ../bin/tamjb.Interfaces.dll \
 	$(ANTHEM)
 
 REFS = -r:System.Configuration \
+	-r:System.Data \
 	-r:System.Runtime.Remoting \
 	-r:System.Web \
         $(addprefix -r:, $(DEPLIBS)) 

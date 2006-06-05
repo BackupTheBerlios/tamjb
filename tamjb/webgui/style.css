@@ -16,12 +16,17 @@ body
   background-color: #400b5c;
 }
 
+a:link, a:visited, a:active, a:hover {
+  color: #000000;
+}
+
+
 /* todo: this style document and the master code go together. No way
    to easily change styles... */
 #wrapper
 {
   background-color: #ff0000;
-  max-width: 65em;
+  /* max-width: 65em; */
 
   margin: 0px;
   padding: 0px;
@@ -78,6 +83,16 @@ body
 }
 
 #nowPlayingBox
+{ 
+  float: left;
+  margin: 0.6em;
+
+  border: thin solid #ffffff;
+
+  display: inline; /* hello ie */
+}
+
+#historyBox
 { 
   float: left;
   margin: 0.6em;
@@ -178,14 +193,76 @@ table.suckTable td
   text-align: right;
 }
 
-table.suckTable th a:link,
-table.suckTable th a:visited {
-  color: #000000;
-}
-
 table.suckTable td div.widthLimit
 { 
   overflow: hidden;
   width: 3em;
 }
 
+/* Style for the history list */
+table.history {
+	border-width: 0px 0px 0px 0px;
+	border-spacing: 2px 2px;
+	border-style: none none none none;
+	border-color: white white white white;
+	border-collapse: separate;
+        /*background-color: white; */
+}
+table.history th {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: solid solid solid solid;
+	border-color: white white white white;
+	background-color: rgb(159, 159, 159);
+	-moz-border-radius: 6px 6px 6px 6px;
+}
+table.history td {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: solid solid solid solid;
+	border-color: white white white white;
+	background-color: rgb(159, 159, 159);
+	-moz-border-radius: 6px 6px 6px 6px;
+}
+
+table.history td 
+{ 
+  font-size: smaller;
+}
+
+table.history td div.widthLimit
+{ 
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+table.history tr.past td
+{ 
+  background-color: rgb( 159, 159, 159 );
+}
+
+table.history tr.present td
+{ 
+  font-size: smaller;
+  background-color: black;
+  color: white;
+}
+
+table.history tr.present a:link,
+table.history tr.present a:active,
+table.history tr.present a:hover,
+table.history tr.present a:visited
+{ 
+  color: white;
+}
+
+table.history tr.future td
+{ 
+  font-size: smaller;
+  background-color: rgb( 220, 220, 220 );
+}
+
+table.history div.suckOrMood
+{ 
+  white-space: nowrap;
+}

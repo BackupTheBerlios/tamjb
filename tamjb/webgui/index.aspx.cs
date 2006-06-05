@@ -26,6 +26,7 @@ namespace byteheaven.tamjb.webgui
 {
    using System;
    using System.Collections;
+   using System.Data;
    using System.Web;
    using System.Web.UI.WebControls;
 
@@ -47,6 +48,8 @@ namespace byteheaven.tamjb.webgui
 
       protected Anthem.Button refreshButton;
 
+      protected Anthem.Repeater history;
+
       override protected void OnLoad( EventArgs loadArgs )
       {
          base.OnLoad( loadArgs );
@@ -55,10 +58,21 @@ namespace byteheaven.tamjb.webgui
          {
             Manager.Register( this );
 
-            if (! IsPostBack)
-            {
-               _InstallRefreshScript();
+            // _InstallRefreshScript();
+            Anthem.Timer timer = new Anthem.Timer();
+            timer.ID = "refreshTimer";
+            timer.Enabled = true;
+            timer.Interval = 10000;
+            timer.Tick += new EventHandler(_OnRefresh);
+            this.Controls.Add( timer );
 
+            if (Anthem.Manager.IsCallBack)
+            {
+               // Rebuild the data grid state so button events will work
+               _BuildGrid( backend.GetState() );
+            }
+            else
+            {
                _Refresh();
             }
          }
@@ -66,46 +80,6 @@ namespace byteheaven.tamjb.webgui
          {
             // do nothing
          }
-      }
-
-      ///
-      /// \todo make the refresh interval configurable
-      ///
-      void _InstallRefreshScript()
-      {
-         string timeout = "10000"; // milliseconds, I hope!
-
-         // A script that sets another timeout, then calls the "refresh"
-         // button's callback.
-         string refreshFunction = 
-            "<script>\n"
-            + "<!--\n"
-            + "function doRefresh() {\n"
-            + " setTimeout(\"doRefresh()\"," + timeout + ");\n"
-            + " Anthem_InvokePageMethod( '_Refresh', [], null );"
-            + "}\n"
-            + "// -->\n"
-            + "</script>\n"
-            ;
-
-//  " function(result) { document.getElementById('test').innerHTML = result.value; } );\n"
-//          Anthem.Manager.AddScriptForClientSideEval( refreshFunction );
-
-         ClientScript.RegisterClientScriptBlock( GetType(),
-                                                 "doRefresh", 
-                                                 refreshFunction );
-
-         string refreshScript = 
-            "<script>\n"
-            + " <!--\n"
-            + "setTimeout(\"doRefresh()\"," + timeout + ");\n"
-            + "// -->\n"
-            + "</script>\n"
-            ;
-      
-         ClientScript.RegisterStartupScript( GetType(),
-                                             "RefreshInit", 
-                                             refreshScript );
       }
 
       ///
@@ -123,18 +97,29 @@ namespace byteheaven.tamjb.webgui
       [Anthem.Method]
       public int _Refresh()
       {
+         Console.WriteLine( "[Refresh]" );
+
          try
          {
-            Credentials credentials = new Credentials();
-            Mood mood = new Mood();
-            
-            backend.GetCurrentUserAndMood( ref credentials, ref mood );
+            EngineState state = backend.GetState();
+            if (state.changeCount != changeCount)
+            {
+               Console.WriteLine( "Engine state changed, refreshing" );
 
-            // Save what we THINK is the current state for later.
-            this.credentials = credentials;
-            this.mood = mood;
+               Credentials credentials = new Credentials();
+               Mood mood = new Mood();
+               
+               backend.GetCurrentUserAndMood( ref credentials, ref mood );
+
+               // Save what we THINK is the current state for later.
+               this.credentials = credentials;
+               this.mood = mood;
             
-            _UpdateNowPlayingInfo( backend.GetState() );
+               _UpdateNowPlayingInfo( state );
+               _BuildGrid( state );
+
+               changeCount = state.changeCount; // save for later
+            }
 
             return 0;
          }
@@ -145,6 +130,77 @@ namespace byteheaven.tamjb.webgui
             
             // For now just rethrow.
             throw new ApplicationException( msg, snw );
+         }
+      }
+
+      void _BuildGrid( EngineState state )
+      {
+         DataTable table = new DataTable();
+         table.Columns.Add("key", typeof(uint));
+         table.Columns.Add("title", typeof(string));
+         table.Columns.Add("artist", typeof(string));
+         table.Columns.Add("album", typeof(string));
+         table.Columns.Add("suck", typeof(int));
+         table.Columns.Add("mood", typeof(int));
+         table.Columns.Add("status", typeof(string));
+         table.Columns.Add("when", typeof(string));
+
+         int index = 0;
+         foreach (ITrackInfo info in state.playQueue)
+         {
+            int suck;
+            int mood;
+            _GetSuckAsInt( info.key, out suck, out mood );
+
+            DataRow row = table.NewRow();
+            row["key"] = info.key;
+            row["title"] = info.title;
+            row["artist"] = info.artist;
+            row["album"] = info.album;
+            row["suck"] = suck;
+            row["mood"] = mood;
+            row["status"] = info.evaluation.ToString();
+
+            if (index < state.currentTrackIndex)
+            {
+               row["when"] = "past";
+            }
+            else if (index == state.currentTrackIndex)
+            {
+               row["when"] = "present";
+            }
+            else
+            {
+               row["when"] = "future";
+            }
+            table.Rows.Add(row);
+
+            ++index;
+         }
+
+         history.DataSource = table;
+         history.DataBind();  
+         history.UpdateAfterCallBack = true;
+      }
+
+      ///
+      /// get/set the change count so we know if a refresh is needed.
+      ///
+      long changeCount
+      {
+         get
+         {
+            if (null == ViewState["changeCount"])
+            {
+               return -1;       // Not known.
+            }
+            
+            return (long)ViewState["changeCount"];
+         }
+
+         set
+         {
+            ViewState["changeCount"] = value;
          }
       }
 
@@ -244,21 +300,30 @@ namespace byteheaven.tamjb.webgui
          nowFileName.Text = current.filePath;
          nowFileName.UpdateAfterCallBack = true;
 
+         int suck;
+         int mood;
+         _GetSuckAsInt( current.key, out suck, out mood );
+         nowSuckLevel.Text = suck.ToString();
+         nowSuckLevel.UpdateAfterCallBack = true;
+         nowMoodLevel.Text = mood.ToString();
+         nowMoodLevel.UpdateAfterCallBack = true;
+      }
+
+      void _GetSuckAsInt( uint key, out int suck, out int mood )
+      {
          double suckPercent;
          double moodPercent;
          backend.GetAttributes( this.credentials,
                                 this.mood,
-                                current.key,
+                                key,
                                 out suckPercent,
                                 out moodPercent );
 
          suckPercent /= 100;
-         nowSuckLevel.Text = ((int)suckPercent).ToString();
-         nowSuckLevel.UpdateAfterCallBack = true;
+         suck = (int)suckPercent;
 
          moodPercent /= 100;
-         nowMoodLevel.Text = ((int)moodPercent).ToString();
-         nowMoodLevel.UpdateAfterCallBack = true;
+         mood = (int)moodPercent;
       }
 
       protected void _OnUserClick( object sender, EventArgs ea )
@@ -445,6 +510,50 @@ namespace byteheaven.tamjb.webgui
          }
       }
 
+      protected void _OnHistoryCommand( object sender, 
+                                        RepeaterCommandEventArgs args )
+      {
+         try
+         {
+            Console.WriteLine( "HistoryCommand {0}", args.CommandName );
+            Console.WriteLine( "arg: {0}", (string)args.CommandArgument );
+
+            uint key = Convert.ToUInt32( args.CommandArgument );
+
+            switch (args.CommandName)
+            {
+            case "suckMore":
+               backend.IncreaseSuckZenoStyle( this.credentials, key );
+               break;
+
+            case "suckLess":
+               backend.DecreaseSuckZenoStyle( this.credentials, key );
+               break;
+
+            case "moodYes":
+               backend.IncreaseAppropriateZenoStyle( this.credentials, 
+                                                     this.mood,
+                                                     key );
+               break;
+
+            case "moodNo":
+               backend.DecreaseAppropriateZenoStyle( this.credentials, 
+                                                     this.mood,
+                                                     key );
+               break;
+
+            default:
+               throw new ApplicationException( "Unexpected repeater command" );
+            }
+
+            _Refresh();
+         }
+         catch (Exception e)
+         {
+            Console.WriteLine( e.ToString() );
+            throw;
+         }
+      }
 
    }
 }

@@ -131,5 +131,64 @@
 
  </div>
 
+ <div id="historyBox">
+  <anthem:Repeater id="history" runat="server" 
+    EnableViewState="false"
+    OnItemCommand="_OnHistoryCommand" >
+    <HeaderTemplate>
+      <table id="historyTable" class="history">
+      <thead>
+      <tr>
+        <th>Title</th>
+        <th>Artist</th>
+        <th>Album</th>
+        <th>Suck</th>
+        <th>Mood</th>
+        <th>Status</th>
+      </tr>
+      </thead>
+      <tbody>
+    </HeaderTemplate>
+
+    <FooterTemplate>
+      </tbody>
+      </table>
+    </FooterTemplate>
+
+    <ItemTemplate>
+      <tr class="<%# DataBinder.Eval(Container.DataItem, "when") %>">
+      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
+          "title") %></div></td>
+
+      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
+          "artist") %></div></td>
+
+      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
+          "album") %></div></td>
+
+      <td><div class="suckOrMood"><%# DataBinder.Eval(Container.DataItem, "suck") %>%
+<anthem:LinkButton runat="server" CommandName="suckMore" 
+  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
+  Text="Suck" />
+  |
+<anthem:LinkButton runat="server" CommandName="suckLess" 
+  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
+  Text="Rule" /></div></td>
+
+      <td><div class="suckOrMood"><%# DataBinder.Eval(Container.DataItem, "Mood") %>%
+<anthem:LinkButton runat="server" CommandName="moodYes" 
+  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
+  Text="Yes" />
+  |
+<anthem:LinkButton runat="server" CommandName="moodNo" 
+  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
+  Text="No" /></div></td>
+
+      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, "Status") %></div></td>
+      </tr>
+    </ItemTemplate>
+  </anthem:Repeater>
+ </div>
+
 </asp:Content>
 
