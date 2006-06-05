@@ -34,11 +34,12 @@ namespace byteheaven.tamjb.webgui
 
    public class index : byteheaven.tamjb.webgui.WebPageBase
    {
-      protected Literal           userIdKey;
       protected Anthem.LinkButton userNameBtn;
       protected Anthem.LinkButton moodBtn;
 
-      protected Literal      nowTrackKey; // hidden track ID key
+      protected Anthem.Label nowSuckLevel;
+      protected Anthem.Label nowMoodLevel;
+
       protected Anthem.Label nowTitle;
       protected Anthem.Label nowArtist;
       protected Anthem.Label nowAlbum;
@@ -81,13 +82,13 @@ namespace byteheaven.tamjb.webgui
             + "<!--\n"
             + "function doRefresh() {\n"
             + " setTimeout(\"doRefresh()\"," + timeout + ");\n"
-            + " Anthem_InvokePageMethod( '_Refresh', [], "
-            + " function(result) { document.getElementById('test').innerHTML = result.value; } );\n"
+            + " Anthem_InvokePageMethod( '_Refresh', [], null );"
             + "}\n"
             + "// -->\n"
             + "</script>\n"
             ;
 
+//  " function(result) { document.getElementById('test').innerHTML = result.value; } );\n"
 //          Anthem.Manager.AddScriptForClientSideEval( refreshFunction );
 
          ClientScript.RegisterClientScriptBlock( GetType(),
@@ -124,20 +125,16 @@ namespace byteheaven.tamjb.webgui
       {
          try
          {
-            EngineState engineState = backend.GetState();
-
             Credentials credentials = new Credentials();
             Mood mood = new Mood();
             
             backend.GetCurrentUserAndMood( ref credentials, ref mood );
+
+            // Save what we THINK is the current state for later.
+            this.credentials = credentials;
+            this.mood = mood;
             
-            userNameBtn.Text = credentials.name;
-            userNameBtn.UpdateAfterCallBack = true;
-            
-            moodBtn.Text = mood.name;
-            userNameBtn.UpdateAfterCallBack = true;
-            
-            _UpdateNowPlayingInfo( engineState );
+            _UpdateNowPlayingInfo( backend.GetState() );
 
             return 0;
          }
@@ -151,15 +148,93 @@ namespace byteheaven.tamjb.webgui
          }
       }
 
+      ///
+      /// Retrieves what we think is the now playing track from viewstate:
+      ///
+      uint currentTrack
+      {
+         get
+         {
+            if (null == ViewState["nowTrackKey"])
+            {
+               throw new ApplicationException( 
+                  "now playing track key missing from view state" );
+            }
+            
+            return (uint) ViewState["nowTrackKey"];
+         }
+
+         set
+         {
+            ViewState["nowTrackKey"] = value;
+         }
+      }
+
+      ///
+      /// Stores/retrieves the current user's credentials from viewstate
+      ///
+      Credentials credentials
+      {
+         get
+         {
+            if (null == ViewState["userIdKey"])
+            {
+               throw new ApplicationException( 
+                  "userIdKey is missing from view state" );
+            }
+
+            uint userId = (uint)ViewState["userIdKey"];
+
+            // The text is really unused on the server side and for
+            // validation, so there's no need to really check it:
+            return new Credentials( userNameBtn.Text, userId );
+         }
+
+         set
+         {
+            userNameBtn.Text = value.name;
+            userNameBtn.UpdateAfterCallBack = true;
+            ViewState["userIdKey"] = value.id;
+         }
+      }
+
+      ///
+      /// get/save the current mood in the viewstate
+      ///
+      Mood mood
+      {
+         get
+         {
+            if (null == ViewState["moodIdKey"])
+            {
+               throw new ApplicationException( 
+                  "mood key not in viewstate" );
+            }
+
+            uint moodId = (uint)ViewState["moodIdKey"];
+            return new Mood( moodBtn.Text, moodId );
+         }
+
+         set
+         {
+            moodBtn.Text = value.name;
+            moodBtn.UpdateAfterCallBack = true;
+            ViewState["moodIdKey"] = value.id;
+         }
+      }
+
+
+
       void _UpdateNowPlayingInfo( EngineState engineState )
       {
          ITrackInfo current = engineState.currentTrack;
 
+         // Save for later.
+         this.currentTrack = current.key;
+
          nowTitle.Text = current.title;
          nowTitle.UpdateAfterCallBack = true;
 
-         nowTrackKey.Text = current.key.ToString();
-         
          nowArtist.Text = current.artist;
          nowArtist.UpdateAfterCallBack = true;
          
@@ -168,6 +243,22 @@ namespace byteheaven.tamjb.webgui
          
          nowFileName.Text = current.filePath;
          nowFileName.UpdateAfterCallBack = true;
+
+         double suckPercent;
+         double moodPercent;
+         backend.GetAttributes( this.credentials,
+                                this.mood,
+                                current.key,
+                                out suckPercent,
+                                out moodPercent );
+
+         suckPercent /= 100;
+         nowSuckLevel.Text = ((int)suckPercent).ToString();
+         nowSuckLevel.UpdateAfterCallBack = true;
+
+         moodPercent /= 100;
+         nowMoodLevel.Text = ((int)moodPercent).ToString();
+         nowMoodLevel.UpdateAfterCallBack = true;
       }
 
       protected void _OnUserClick( object sender, EventArgs ea )
@@ -193,7 +284,7 @@ namespace byteheaven.tamjb.webgui
          }
       }
 
-      protected void _OnSuck( object sender, EventArgs ea )
+      public void _OnSuck( object sender, EventArgs ea )
       {
          try
          {
@@ -204,39 +295,9 @@ namespace byteheaven.tamjb.webgui
             if (engineState.currentTrackIndex < 0)
                return;
 
-            // What is the track showing in the GUI? This is the one we want
-            // to flag as sucking.
-
-            uint suckTrackKey;
-            try
-            {
-               suckTrackKey = Convert.ToUInt32( nowTrackKey.Text );
-            }
-            catch (Exception e)
-            {
-               throw new ApplicationException( 
-                  "now playing track key is invalid: " + nowTrackKey.Text,
-                  e);
-            }
-
-            // Who are we? Right now the program trusts us. :)
-            uint userId;
-            try
-            {
-               userId = Convert.ToUInt32( userIdKey.Text );
-            }
-            catch (Exception e2)
-            {
-               throw new ApplicationException( 
-                  "user credentials id is invalid: " + userIdKey.Text,
-                  e2 );
-            }
-
-            Credentials credentials = new Credentials( userNameBtn.Text,
-                                                       userId );
-
             // Flag the previously playing track as suck
-            backend.IncreaseSuckZenoStyle( credentials, suckTrackKey );
+            backend.IncreaseSuckZenoStyle( this.credentials, 
+                                           this.currentTrack );
 
             // Reevaluate this track based on its new suck level, if
             // it is currently playing.
@@ -244,15 +305,15 @@ namespace byteheaven.tamjb.webgui
             // TODO: the engine should really be controlling when this
             // does or does not happen.
             //
-            if (engineState.currentTrack.key == suckTrackKey)
+            if (engineState.currentTrack.key == this.currentTrack)
                backend.ReevaluateCurrentTrack();
 
             // So: things have changed:
-            engineState = backend.GetState();
-            _UpdateNowPlayingInfo( engineState );
+            _Refresh();
          }
-         catch (Exception)
+         catch (Exception e)
          {
+            Console.WriteLine( e.ToString() );
             throw;
          }
       }
@@ -261,10 +322,19 @@ namespace byteheaven.tamjb.webgui
       {
          try
          {
-            // Hmm.
+            EngineState engineState = backend.GetState();
+            if (engineState.currentTrackIndex < 0)
+               return;
+
+            // Flag the previously playing track as less sucky
+            backend.DecreaseSuckZenoStyle( this.credentials, 
+                                           this.currentTrack );
+
+            _Refresh();
          }
-         catch (Exception)
+         catch (Exception e)
          {
+            Console.WriteLine( e.ToString() );
             throw;
          }
       }
@@ -273,10 +343,20 @@ namespace byteheaven.tamjb.webgui
       {
          try
          {
-            // Hmm.
+            EngineState engineState = backend.GetState();
+            if (engineState.currentTrackIndex < 0)
+               return;
+
+            // Flag the previously playing track as less sucky
+            backend.IncreaseAppropriateZenoStyle( this.credentials, 
+                                                  this.mood,
+                                                  this.currentTrack );
+
+            _Refresh();
          }
-         catch (Exception)
+         catch (Exception e)
          {
+            Console.WriteLine( e.ToString() );
             throw;
          }
       }
@@ -285,13 +365,86 @@ namespace byteheaven.tamjb.webgui
       {
          try
          {
-            // Hmm.
+            EngineState engineState = backend.GetState();
+            if (engineState.currentTrackIndex < 0)
+               return;
+
+            // Flag the previously playing track as less sucky
+            backend.DecreaseAppropriateZenoStyle( this.credentials, 
+                                                  this.mood,
+                                                  this.currentTrack );
+
+            _Refresh();
          }
-         catch (Exception)
+         catch (Exception e)
          {
+            Console.WriteLine( e.ToString() );
             throw;
          }
       }
+
+      protected void _OnPrev( object sender, EventArgs ea )
+      {
+         try
+         {
+            EngineState engineState = backend.GetState();
+            if (engineState.currentTrackIndex < 0)
+               return;
+
+            // Go to the track before "this" one
+            backend.GotoPrevFile( this.credentials, this.currentTrack );
+
+            _Refresh();
+         }
+         catch (Exception e)
+         {
+            Console.WriteLine( e.ToString() );
+            throw;
+         }
+      }
+
+      protected void _OnNext( object sender, EventArgs ea )
+      {
+         try
+         {
+            backend.GotoNextFile( this.credentials, this.currentTrack );
+            _Refresh();
+         }
+         catch (Exception e)
+         {
+            Console.WriteLine( e.ToString() );
+            throw;
+         }
+      }
+
+      protected void _OnStop( object sender, EventArgs ea )
+      {
+         try
+         {
+            backend.StopPlaying();
+            _Refresh();
+         }
+         catch (Exception e)
+         {
+            Console.WriteLine( e.ToString() );
+            throw;
+         }
+      }
+
+      protected void _OnPlay( object sender, EventArgs ea )
+      {
+         try
+         {
+            backend.StartPlaying();
+            _Refresh();
+         }
+         catch (Exception e)
+         {
+            Console.WriteLine( e.ToString() );
+            throw;
+         }
+      }
+
 
    }
 }

@@ -33,27 +33,75 @@
 </script>
 
 <asp:Content id="content" contentplaceholderid="mainContent" runat="server">
-
- <div style="float: right;">
-    <asp:Literal id="userIdKey" runat="server" visible="false" />
-    <anthem:Button id="refreshButton" runat="server" text="Refresh"
+ <div style="float: right; margin: 0.6em;">
+    <anthem:Button id="refreshButton" runat="server" 
+       cssclass="stdButton"
+       text="Refresh"
        OnClick="_OnRefresh" />
  </div>
 
- <div id="test"> Test</div>
  <div id="moodBox">
-   <asp:Literal id="nowTrackKey" runat="server" visible="false" />
-   <anthem:LinkButton id="userNameBtn" runat="server" text="(unknown)" 
-     OnClick="_OnUserClick" /> 
-   |
-   <anthem:LinkButton id="moodBtn" runat="server" text="(unknown)" 
-     OnClick="_OnMoodClick" />
-   |
-   <anthem:Button id="suckBtn" runat="server" text="Suck"
-     OnClick="_OnSuck" />
-   |
-   <anthem:Button id="ruleBtn" runat="server" text="Rule"
-     OnClick="_OnRule" />
+  <table class="suckTable">
+  <tr>
+    <th><anthem:LinkButton id="userNameBtn" runat="server" text="(unknown)" 
+      OnClick="_OnUserClick" /></th>
+    <td><anthem:Button id="ruleBtn" runat="server" text="Rule"
+       cssclass="stdButton"
+       OnClick="_OnRule"
+       EnableDuringCallback="false"
+       /></td>
+    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData"
+      id="nowSuckLevel" runat="server" text="100" />%</div></td>
+    <td><anthem:Button id="suckBtn" runat="server" text="Suck"
+       cssclass="stdButton"
+       OnClick="_OnSuck"
+       EnableDuringCallback="False" /></td>
+  </tr>
+
+  <tr>
+    <th><anthem:LinkButton id="moodBtn" runat="server" text="(unknown)" 
+       OnClick="_OnMoodClick" /></th>
+    <td><anthem:Button id="yesBtn" runat="server" text="Yes"
+       cssclass="stdButton"
+       OnClick="_OnYes" 
+       EnableDuringCallback="false"
+       /></td>
+    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData"
+      id="nowMoodLevel" runat="server" text="0" />%</div></td>
+    <td><anthem:Button id="noBtn" runat="server" text="No"
+       cssclass="stdButton"
+       OnClick="_OnNo" 
+       EnableDuringCallback="false"
+       /></td>
+  </tr>
+  </table>
+ </div>
+
+ <div id="transportBox">
+  <table class="transportTable">
+  <tr>
+    <td><anthem:Button id="prevBtn" runat="server" text="Prev"
+       OnClick="_OnPrev" TextDuringCallback="Updating" 
+       cssclass="stdButton"
+       EnableDuringCallback="False" 
+       /></td>
+    <td><anthem:Button id="nextBtn" runat="server" text="Next"
+       cssclass="stdButton"
+       OnClick="_OnNext" 
+       EnableDuringCallback="false"
+       /></td>
+    <td><anthem:Button id="stopBtn" runat="server" text="Stop"
+       cssclass="stdButton"
+       OnClick="_OnStop" 
+       EnableDuringCallback="false"
+       /></td>
+    <td><anthem:Button id="playBtn" runat="server" text="Play"
+       cssclass="stdButton"
+       OnClick="_OnPlay" 
+       EnableDuringCallback="false"
+       /></td>
+  </tr>
+  </table>
  </div>
 
  <div id="nowPlayingBox">
@@ -61,23 +109,23 @@
   <table class="nowPlaying">
   <tr>
     <th>Title</th>
-    <td><anthem:Label cssclass="nowPlayingData" 
-      id="nowTitle" runat="server" text="" /></td>
+    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
+      id="nowTitle" runat="server" text="(unknown)" /></div></td>
   </tr>
   <tr>
     <th>Artist</th>
-    <td><anthem:Label cssclass="nowPlayingData" 
-      id="nowArtist" runat="server" text="" /></td>
+    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
+      id="nowArtist" runat="server" text="" /></div></td>
   </tr>
   <tr>
     <th>Album</th>
-    <td><anthem:Label cssclass="nowPlayingData" 
-      id="nowAlbum" runat="server" text="" /></td>
+    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
+      id="nowAlbum" runat="server" text="" /></div></td>
   </tr>
   <tr>
     <th>File</th>
-    <td><anthem:Label cssclass="nowPlayingData" 
-      id="nowFileName" runat="server" text="" /></td>
+    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
+      id="nowFileName" runat="server" text="" /></div></td>
   </tr>
   </table>
 
