@@ -33,6 +33,15 @@
 </script>
 
 <asp:Content id="content" contentplaceholderid="mainContent" runat="server">
+<script type="text/javascript">
+
+    function historyCommand(action,keystring)
+    {
+        Anthem_InvokePageMethod('_OnHistoryCommand', [action,keystring], null);
+    }
+
+</script>
+
  <div style="float: right; margin: 0.6em;">
     <anthem:Button id="refreshButton" runat="server" 
        cssclass="stdButton"
@@ -134,7 +143,7 @@
  <div id="historyBox">
   <anthem:Repeater id="history" runat="server" 
     EnableViewState="false"
-    OnItemCommand="_OnHistoryCommand" >
+    >
     <HeaderTemplate>
       <table id="historyTable" class="history">
       <thead>
@@ -144,7 +153,6 @@
         <th>Album</th>
         <th>Suck</th>
         <th>Mood</th>
-        <th>Status</th>
       </tr>
       </thead>
       <tbody>
@@ -156,7 +164,8 @@
     </FooterTemplate>
 
     <ItemTemplate>
-      <tr class="<%# DataBinder.Eval(Container.DataItem, "when") %>">
+      <tr class='<%# DataBinder.Eval(Container.DataItem, "when") %> <%# DataBinder.Eval(Container.DataItem, "status") %> <%# DataBinder.Eval(Container.DataItem, "probability" ) %>' >
+
       <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
           "title") %></div></td>
 
@@ -166,25 +175,24 @@
       <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
           "album") %></div></td>
 
-      <td><div class="suckOrMood"><%# DataBinder.Eval(Container.DataItem, "suck") %>%
-<anthem:LinkButton runat="server" CommandName="suckMore" 
-  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
-  Text="Suck" />
-  |
-<anthem:LinkButton runat="server" CommandName="suckLess" 
-  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
-  Text="Rule" /></div></td>
+      <td class="suck"><div class="suck"><%# DataBinder.Eval(Container.DataItem, "suck") %>%
+        <a href="#"
+           OnClick='<%# "javascript:historyCommand(\"suckMore\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
+           >Suck</a>
+        |
+        <a href="#"
+           OnClick='<%# "javascript:historyCommand(\"suckLess\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
+           >Rule</a></div></td>
 
-      <td><div class="suckOrMood"><%# DataBinder.Eval(Container.DataItem, "Mood") %>%
-<anthem:LinkButton runat="server" CommandName="moodYes" 
-  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
-  Text="Yes" />
-  |
-<anthem:LinkButton runat="server" CommandName="moodNo" 
-  CommandArgument='<%# DataBinder.Eval(Container.DataItem, "key") %>'
-  Text="No" /></div></td>
+      <td class="mood"><div class="mood"><%# DataBinder.Eval(Container.DataItem, "Mood") %>%
+        <a href="#"
+           OnClick='<%# "javascript:historyCommand(\"moodNo\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
+           >No</a>
+        |
+        <a href="#"
+           OnClick='<%# "javascript:historyCommand(\"moodYes\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
+           >Yes</a></div></td>
 
-      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, "Status") %></div></td>
       </tr>
     </ItemTemplate>
   </anthem:Repeater>

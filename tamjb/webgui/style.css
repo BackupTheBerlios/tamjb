@@ -97,7 +97,8 @@ a:link, a:visited, a:active, a:hover {
   float: left;
   margin: 0.6em;
 
-  border: thin solid #ffffff;
+  border: none none none none;
+  /* border: thin solid #ffffff; */
 
   display: inline; /* hello ie */
 }
@@ -220,7 +221,7 @@ table.history td {
 	border-width: 1px 1px 1px 1px;
 	padding: 1px 1px 1px 1px;
 	border-style: solid solid solid solid;
-	border-color: white white white white;
+	border-color: rgb( 120, 120, 120, 120 );
 	background-color: rgb(159, 159, 159);
 	-moz-border-radius: 6px 6px 6px 6px;
 }
@@ -236,9 +237,40 @@ table.history td div.widthLimit
   white-space: nowrap;
 }
 
+/* A rainbow of colors for future probability
+   First so they can be overridden by the "past" and "present". 
+ */
+
+table.history tr.probHigh td
+{ 
+  background-color: rgb( 245, 240, 245 );
+}
+
+table.history tr.probMedHigh td
+{ 
+  background-color: rgb( 210, 210, 210 );
+}
+
+table.history tr.probMed td
+{ 
+  background-color: rgb( 210, 165, 165 );
+}
+
+table.history tr.probMedLow td
+{ 
+  background-color: rgb( 210, 120, 120 );
+}
+
+table.history tr.probLow td
+{ 
+  background-color: rgb( 200, 65, 65 );
+}
+
+/* Past entries default color */
+
 table.history tr.past td
 { 
-  background-color: rgb( 159, 159, 159 );
+  background-color: rgb( 170, 170, 170 );
 }
 
 table.history tr.present td
@@ -259,10 +291,22 @@ table.history tr.present a:visited
 table.history tr.future td
 { 
   font-size: smaller;
-  background-color: rgb( 220, 220, 220 );
 }
 
-table.history div.suckOrMood
+table.history div.suck,
+table.history div.mood
 { 
+  text-align: right;
   white-space: nowrap;
 }
+
+table.history tr.SUCK_TOO_MUCH td.suck
+{ 
+  background-color: rgb( 220, 120, 120 );
+}
+
+table.history tr.WRONG_MOOD td.mood
+{ 
+  background-color: rgb( 220, 110, 110 );
+}
+

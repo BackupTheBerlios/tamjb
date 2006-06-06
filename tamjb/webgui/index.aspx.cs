@@ -66,12 +66,7 @@ namespace byteheaven.tamjb.webgui
             timer.Tick += new EventHandler(_OnRefresh);
             this.Controls.Add( timer );
 
-            if (Anthem.Manager.IsCallBack)
-            {
-               // Rebuild the data grid state so button events will work
-               _BuildGrid( backend.GetState() );
-            }
-            else
+            if (!Anthem.Manager.IsCallBack)
             {
                _Refresh();
             }
@@ -144,6 +139,7 @@ namespace byteheaven.tamjb.webgui
          table.Columns.Add("mood", typeof(int));
          table.Columns.Add("status", typeof(string));
          table.Columns.Add("when", typeof(string));
+         table.Columns.Add("probability", typeof(string));
 
          int index = 0;
          foreach (ITrackInfo info in state.playQueue)
@@ -173,6 +169,23 @@ namespace byteheaven.tamjb.webgui
             {
                row["when"] = "future";
             }
+
+            // What are the chances this will play? Divide into 5 ranges.
+            // Something below 10% or above 90% never plays, so that's 
+            // intervals of 16%:
+
+            int prob = (100 - suck) * mood;
+            if (prob < (26 * 26))     // 10 * 10 = 100 - never play
+               row["probability"] = "probLow";
+            else if (prob < (42 * 42))
+               row["probability"] = "probMedLow";
+            else if (prob < (58 * 58))
+               row["probability"] = "probMed";
+            else if (prob < (74 * 74))
+               row["probability"] = "probMedHigh";
+            else
+               row["probability"] = "probHigh";
+
             table.Rows.Add(row);
 
             ++index;
@@ -439,6 +452,9 @@ namespace byteheaven.tamjb.webgui
                                                   this.mood,
                                                   this.currentTrack );
 
+            if (engineState.currentTrack.key == this.currentTrack)
+               backend.ReevaluateCurrentTrack();
+
             _Refresh();
          }
          catch (Exception e)
@@ -510,17 +526,22 @@ namespace byteheaven.tamjb.webgui
          }
       }
 
-      protected void _OnHistoryCommand( object sender, 
-                                        RepeaterCommandEventArgs args )
+
+      ///
+      /// Handler for the javascript callbacks from the history grid.
+      /// (Makes use of viewstate unnecessary)
+      ///
+      [Anthem.Method]
+      public void _OnHistoryCommand( string command,
+                                     string keyString )
+                                     
       {
          try
          {
-            Console.WriteLine( "HistoryCommand {0}", args.CommandName );
-            Console.WriteLine( "arg: {0}", (string)args.CommandArgument );
+            uint key = Convert.ToUInt32( keyString ) ;
+            Console.WriteLine( "HistoryCommand {0}-{1}", command, keyString );
 
-            uint key = Convert.ToUInt32( args.CommandArgument );
-
-            switch (args.CommandName)
+            switch (command)
             {
             case "suckMore":
                backend.IncreaseSuckZenoStyle( this.credentials, key );
