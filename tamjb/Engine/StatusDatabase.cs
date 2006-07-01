@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2006 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -63,6 +63,12 @@ namespace byteheaven.tamjb.Engine
    ///
    public class StatusDatabase
    {
+      public enum TrackStatus : int
+      {
+         OK,
+         MISSING
+      }
+
       ///
       /// Creates the database wrapper.
       ///
@@ -147,7 +153,8 @@ namespace byteheaven.tamjb.Engine
             "  title VARCHAR(255)," +
             "  track INTEGER," +
             "  genre VARCHAR(80)," +
-            "  length_seconds INTEGER" +
+            "  length_seconds INTEGER," +
+            "  status INTEGER" +
             "  )";
 
 #elif USE_MYSQL
@@ -163,7 +170,8 @@ namespace byteheaven.tamjb.Engine
             "  title VARCHAR(255),\n" +
             "  track INTEGER,\n" +
             "  genre VARCHAR(80)\n," +
-            "  length_seconds INTEGER\n," +
+            "  length_seconds INTEGER,\n," +
+            "  status INTEGER\n" +
             "  PRIMARY KEY ( filekey )\n" +
             "  ) \n" +
             " TYPE=InnoDB";
@@ -182,6 +190,7 @@ namespace byteheaven.tamjb.Engine
               track INTEGER,
               genre VARCHAR(80),
               length_seconds INTEGER,
+              status INTEGER,
               PRIMARY KEY ( filekey )
               )";
 
@@ -816,6 +825,69 @@ namespace byteheaven.tamjb.Engine
          throw new ApplicationException( "not reached" );
       }
 
+      public bool GetUser( uint uid,
+                           out Credentials creds )
+      {
+         string query = _FixQuery( 
+            "SELECT name"
+            + " FROM users"
+            + " WHERE id = :uid"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            IDbDataParameter param = _NewParameter( "uid", DbType.Int32 );
+            param.Value = uid;
+            cmd.Parameters.Add( param );
+
+            reader = cmd.ExecuteReader();
+
+            // PlayableData returnData;
+            if (!reader.Read())
+            {
+               creds = null;
+               return false;
+            }
+
+            string name = reader.GetString(0); 
+            creds = new Credentials( name, uid );
+            return true;        // found user, return true!
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+
       ///
       /// Get all moods for this user.
       ///
@@ -976,7 +1048,7 @@ namespace byteheaven.tamjb.Engine
       {
          string query = 
             "SELECT file_path, artist, album, title, track," +
-            + " genre, length_seconds" 
+            + " genre, length_seconds, status" 
             + " FROM file_info"
             + " WHERE filekey = " + key 
             ;
@@ -1009,6 +1081,10 @@ namespace byteheaven.tamjb.Engine
                returnData.track = reader.GetInt32(4);
                returnData.genre = reader.GetValue(5).ToString();
                returnData.lengthInSeconds = reader.GetInt32(6);
+               returnData.status = 
+                  (byteheaven.tamjb.Interfaces.TrackStatus)reader.GetInt32(7);
+
+               Console.WriteLine( "HHH {0}:{1}", returnData.status, reader.GetInt32(7) );
             }
 
             return returnData;
@@ -1056,7 +1132,8 @@ namespace byteheaven.tamjb.Engine
               title,
               track,
               genre,
-              length_seconds
+              length_seconds,
+              status
               )
              VALUES ( 
               :file_path,
@@ -1065,7 +1142,8 @@ namespace byteheaven.tamjb.Engine
               :title,
               :track,
               :genre,
-              0
+              0,
+              :status
               )"
             );
 
@@ -1100,6 +1178,10 @@ namespace byteheaven.tamjb.Engine
 
             param = _NewParameter( "genre", DbType.String );
             param.Value = newData.genre;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "status", DbType.Int32 );
+            param.Value = (int)newData.status;
             cmd.Parameters.Add( param );
 
             cmd.ExecuteNonQuery();
@@ -1189,7 +1271,9 @@ namespace byteheaven.tamjb.Engine
          {
             dbcon = _GetDbConnection();
 
-            query = "SELECT count(*) FROM file_info";
+            query = "SELECT count(*) FROM file_info"
+               + " WHERE status='" + (int)TrackStatus.OK + "'";
+
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1211,6 +1295,7 @@ namespace byteheaven.tamjb.Engine
                "SELECT file_path, artist, album, title, track," +
                + " genre, length_seconds, filekey" 
                + " FROM file_info"
+               + " WHERE status='" + (int)TrackStatus.OK + "'"
                + " LIMIT 1 OFFSET " + offset;
                
             // _Trace( query );
@@ -1787,6 +1872,107 @@ namespace byteheaven.tamjb.Engine
          return false;
       }
 
+      public void SetTrackStatus( uint key, TrackStatus status )
+      {
+         string query = _FixQuery( 
+            "UPDATE file_info"
+            + " SET status=:status"
+            + " WHERE filekey=:key"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+
+            // Should I be using mono's generic database wrapper?
+            IDbDataParameter param = _NewParameter( "status",
+                                                    DbType.Int32 );
+            param.Value = (int)status;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "key", DbType.Int32 );
+            param.Value = (int)key;
+            cmd.Parameters.Add( param );
+
+            int rowsAffected = cmd.ExecuteNonQuery();
+            if (rowsAffected < 1)
+               throw new ApplicationException( "No rows affected in update" );
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+      }
+
+      public void TrackIsNotMissing( string fullPath, TrackStatus status )
+      {
+         string query = _FixQuery( 
+            "UPDATE file_info"
+            + " SET status=:status"
+            + " WHERE file_path=:path"
+            + " AND status='" + (int)TrackStatus.MISSING + "'"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+
+            // Should I be using mono's generic database wrapper?
+            IDbDataParameter param = _NewParameter( "status",
+                                                    DbType.Int32 );
+            param.Value = (int)status;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "path", DbType.String );
+            param.Value = fullPath;
+            cmd.Parameters.Add( param );
+
+            cmd.ExecuteNonQuery();
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+      }
+
       ///
       /// \return the number of rows affected (UPDATE INSERT DELETE),
       ///   just like IDbCommand.ExecuteNonQuery.
@@ -1866,9 +2052,13 @@ namespace byteheaven.tamjb.Engine
       ///
       string _FixQuery( string atStyleQuery )
       {
+
+// No wait, we don't need to do this for sqlite. Maybe this was for 
+// MYSQL? Oh well, who cares!
 #if USE_SQLITE
 
-         return atStyleQuery.Replace( ':', '@' );
+         // return atStyleQuery.Replace( ':', '@' );
+         return atStyleQuery;
 
 #elif USE_POSTGRESQL
 
@@ -1886,8 +2076,9 @@ namespace byteheaven.tamjb.Engine
       IDbDataParameter _NewParameter( string name, DbType type )
       {
 #if USE_SQLITE
-
-         return new SqliteParameter( "@" + name, type ) ;
+         // I guess they fixed this in sqlite 2 also:
+         // return new SqliteParameter( "@" + name, type ) ;
+         return new SqliteParameter( name, type ) ;
 
 #elif USE_POSTGRESQL
 

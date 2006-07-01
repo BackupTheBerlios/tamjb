@@ -41,6 +41,7 @@ namespace byteheaven.tamjb.Interfaces
 
       bool EntryExists( string fullPath );
       void Add( PlayableData newData );
+      void FileIsNotMissing( string fullPath );
       void Poll();
 
       // Kills all player threads and such so the program can exit

@@ -1,5 +1,7 @@
 # $Id$
 
+MCS=gmcs
+
 DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 
 SERVER = ../bin/tamjb.Server.exe
@@ -16,11 +18,13 @@ DEPLIBS = ../bin/Mp3Sharp.dll \
         ../bin/tamjb.SimpleMp3Player.dll \
         ../bin/tamjb.Engine.dll
 
-SERVER_REFS = -r:System.Runtime.Remoting \
+SERVER_REFS = \
+	-r:System.Configuration \
+	-r:System.Runtime.Remoting \
         $(addprefix -r:, $(DEPLIBS))
 
 all: $(SERVER)
 
 $(SERVER): $(SRCS) $(DEPLIBS)
-	mcs $(DEBUGFLAGS) $(LIBPATH) $(SERVER_REFS) -out:$@ $(SRCS)
+	$(MCS) $(DEBUGFLAGS) $(LIBPATH) $(SERVER_REFS) -out:$@ $(SRCS)
 

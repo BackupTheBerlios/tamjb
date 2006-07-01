@@ -28,17 +28,94 @@
 //   Tom Surace <tekhedd@byteheaven.net>
 
 %><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<head>
+<head runat="server">
 <title>T.A.M. Jukebox - Untitled</title>
 <link href="~/style.css" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript">
+
+    function Anthem_PreCallBack()
+    {
+       var working = document.getElementById('working');
+       if (working != null) { 
+          working.style.visibility = 'visible'; 
+       }
+       return true;
+    }
+
+    function Anthem_PostCallBack()
+    {
+       var working = document.getElementById('working');
+       if (working != null) {
+          working.style.visibility = 'hidden'; 
+       }
+       return true;
+    }
+
+    function Anthem_Error( result )
+    {
+        // TODO: alert popups are sad. Replace with a retry layer of some sort
+        if ("NORESPONSE" == result.error)
+        {
+            alert( "No response from server" );
+        }
+        else if ("BADRESPONSE" == result.error)
+        {
+            alert( "Bad/illegal response from server: " + result.responseText );
+        }
+        else
+        {
+            alert( "Unexpected result.error type in Anthem_Error" );
+        }
+
+        window.location.href='<%= ResolveUrl( "~/index.aspx" ) %>';
+    }
+
+    function StartUpdate()
+    {
+       document.getElementById('updating').style.visibility = 'visible'; 
+       /* document.getElementById('updatingContent').style.visibility = 'visible';  */
+    }
+
+    function FinishUpdate()
+    {
+       document.getElementById('updating').style.visibility = 'hidden'; 
+       /* document.getElementById('updatingContent').style.visibility = 'hidden';  */
+    }
+
+</script>
+
+<style type="text/css">
+
+#working
+{
+  float: right;
+  color: rgb( 50, 255, 50 );
+  visibility: hidden;
+}
+
+</style>
 </head>
 <body>
 <form id="mainForm" runat="server">
 
+<div id="updating" class="OverlayBase">
+<div id="updatingContent" class="OverlayWindow">
+  Updating...
+</div>
+</div>
+
 <div id="wrapper">
 
-<div id="header">
- <h1>TAM Jukebox</h1>
+<div id="header" >
+ <div style="float: left">
+   TAM Jukebox - The Header
+ </div>
+
+ <div id="working" >
+   *
+ </div>
+
 </div>
 
 <div id="content">

@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2006 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -182,6 +182,20 @@ namespace byteheaven.tamjb.Interfaces
          set
          {
             _reason = value;
+         }
+      }
+
+      TrackStatus _status = TrackStatus.OK;
+
+      public TrackStatus status
+      {
+         get
+         {
+            return _status;
+         }
+         set
+         {
+            _status = value;
          }
       }
 

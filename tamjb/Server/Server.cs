@@ -4,7 +4,7 @@
 /// The Main entry point and main loop of the jukebox backend.
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2006 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -28,6 +28,7 @@
 namespace byteheaven.tamjb.Server
 {
    using System;
+   using System.Configuration;
    using System.Diagnostics;
    using System.IO;
    using System.Runtime.Remoting;
@@ -53,7 +54,6 @@ namespace byteheaven.tamjb.Server
    {
       /// \todo Get initial parameters from configuration
       ///    or whatever
-      static int _port = 0;
       static string _connectionString = null;
       static int QUEUE_MIN_SIZE = 6; // get ahead of ourselves.
 
@@ -68,15 +68,10 @@ namespace byteheaven.tamjb.Server
       static void _Usage()
       {
          Console.WriteLine( "usage: " );
-         Console.WriteLine( " --bufferCount" );
-         Console.WriteLine( " --bufferSize" );
          Console.WriteLine( " --create (create empty database and exit)" );
-         Console.WriteLine( " --dbUrl <file:/path/to.db> (or use connectionString)" );
-         Console.WriteLine( " --connectionString Server=<host>;Database=<db>;User ID=<id>;Password=<pass>" );
          Console.WriteLine( " --dir <mp3_root_dir> (multiple dirs allowed)" );
          Console.WriteLine( " --lifeSpan <maxlife-in-minutes>" );
          Console.WriteLine( " --logFile <logFile>" );
-         Console.WriteLine( " --port <port>" );
          Console.WriteLine( " --trace" );
       }
 
@@ -123,14 +118,49 @@ namespace byteheaven.tamjb.Server
 
          // defaults
          string logFile = "-";
-         string connectionString = null;
          bool doTrace = false;
          bool createDatabase = false;
-         uint bufferSize = 44100 / 4;
-         uint bufferCount = 30;
          bool isImmortal = true;
          TimeSpan maxLife = new TimeSpan( 0, 0, 0 );
-         _port = 0;
+
+         uint bufferSize = 44100 / 4;
+         uint bufferCount = 30;
+         string connectionString = null;
+
+         // Config file processing
+         try
+         {
+            bufferSize = Convert.ToUInt32( 
+               ConfigurationManager.AppSettings["BufferSize"] );
+         }
+         catch 
+         {
+            Console.WriteLine( "BufferSize missing/invalid from config file" );
+            return 1;
+         }
+
+
+         try
+         {
+            bufferCount = Convert.ToUInt32( 
+               ConfigurationManager.AppSettings["BufferCount"] );
+         }
+         catch 
+         {
+            Console.WriteLine( "BufferCount missing/invalid from config file" );
+            return 1;
+         }
+
+         connectionString = 
+            ConfigurationManager.AppSettings["ConnectionString"];
+
+         if (null == connectionString)
+         {
+            Console.WriteLine( "ConnectionString not found in config file" );
+            return 1;
+         }
+
+         // Command line processing
 
          for (int i = 0; i < args.Length; i++)
          {
@@ -142,20 +172,8 @@ namespace byteheaven.tamjb.Server
                createDatabase = true;
                break;
 
-            case "--port":
-               _port = Convert.ToInt32( args[++i] );
-               break;
-              
             case "--logFile":
                logFile = args[++i];
-               break;
-
-            case "--dbUrl":
-               connectionString = "URI=" + args[++i];
-               break;
-
-            case "--connectionString":
-               connectionString = args[++i];
                break;
 
             case "--dir":
@@ -166,14 +184,6 @@ namespace byteheaven.tamjb.Server
                doTrace = true;
                break;
                
-            case "--bufferSize":
-               bufferSize = Convert.ToUInt32( args[++i] );
-               break;
-
-            case "--bufferCount":
-               bufferCount = Convert.ToUInt32( args[++i] );
-               break;
-
             case "--lifeSpan":
                int lifeSpan = Convert.ToInt32( args[++i] );
                maxLife = new TimeSpan( 0, lifeSpan, 0 );
@@ -187,24 +197,10 @@ namespace byteheaven.tamjb.Server
             }
          }
 
-         if (null == connectionString)
-         {
-            Console.WriteLine( "--dbUrl or --connectionString required" );
-            _Usage();
-            return 2;
-         }
-
          if (createDatabase)
          {
             _CreateDatabase( connectionString );
             return 0;
-         }
-
-         if (_port == 0)
-         {
-            Console.WriteLine( "--port required" );
-            _Usage();
-            return 2;
          }
 
          try
@@ -231,24 +227,56 @@ namespace byteheaven.tamjb.Server
             // be constructed correctly. There's GOTTA be a better way
             // to do this.
 
-            Backend.Init( QUEUE_MIN_SIZE, _connectionString );
-            Backend.theBackend.desiredQueueSize = 20; // Get many. I mean, what if they all suck?
+            Backend.Quality quality = Backend.Quality.HIGH;
+            string qualityString = ConfigurationManager.AppSettings["Quality"];
+            if (null != qualityString)
+            {
+               switch (qualityString)
+               {
+               case "LOW":      quality = Backend.Quality.LOW;    break;
+               case "HIGH":     quality = Backend.Quality.HIGH;   break;
+               default:
+                  throw new ApplicationException( 
+                     "invalid quality string in configuraiton" );
+               }
+            }
+
+            Backend.Init( QUEUE_MIN_SIZE, _connectionString, quality );
+
+            int desiredQueueSize = 20;
+            try
+            {
+               desiredQueueSize = Convert.ToInt32(
+               ConfigurationManager.AppSettings[ "QueueSize" ] );
+            }
+            catch
+            {
+               // Not found or invalid? Who cares!
+            }
+
+            Backend.theBackend.desiredQueueSize = desiredQueueSize;
             Backend.theBackend.bufferSize = bufferSize;
             Backend.theBackend.bufferCount = bufferCount;
             Backend.theBackend.bufferPreload = bufferCount;
 
             Backend.theBackend.Poll();
 
+            // All done in server.config now, right?
+
             // Register as an available service for the tam Engine.
-            _CreateChannel( _port );
+            // _CreateChannel( _port );
 
             // The Engine object is a singlecall that references the
             // statically created Backend object: Backend.theBackend.
 
-            RemotingConfiguration.
-               RegisterWellKnownServiceType( typeof(Engine), 
-                                             "Engine", 
-                                             WellKnownObjectMode.SingleCall ); 
+            RemotingConfiguration.Configure( 
+               AppDomain.CurrentDomain.SetupInformation.ConfigurationFile );
+         
+//             RemotingConfiguration.
+//                RegisterWellKnownServiceType( typeof(Engine), 
+//                                              "Engine", 
+//                                              WellKnownObjectMode.SingleCall ); 
+
 
             // Force creation of the SAO by creating a local client on
             // the server that polls the server to make it enqueue files.
@@ -259,7 +287,7 @@ namespace byteheaven.tamjb.Server
             // can reference the actual Engine class, not just its interface.
             // string serverUrl = "http://localhost:" + _port + "/Engine";
 
-            Trace.WriteLine( "tam.Server started on port " + _port );
+            Trace.WriteLine( "tam.Server started" );
 
             RecursiveScanner scanner = null;;
             int scannerIndex = 0;
@@ -335,10 +363,6 @@ namespace byteheaven.tamjb.Server
                }
 
                Thread.Sleep( 2000 );   // wait a while
-
-               // HACK for memory leak watching. WTF is going on?
-//                GC.Collect();
-//                Console.WriteLine( "Memory: {0}", GC.GetTotalMemory(true) );
             }
          }
          catch (Exception outerEx)
@@ -360,29 +384,29 @@ namespace byteheaven.tamjb.Server
       }
 
 
-      ///
-      /// Set up our client-server channel
-      ///
-      static void _CreateChannel( int port )
-      {
-         ListDictionary properties = new ListDictionary();
-         properties.Add( "port", port );
+//       ///
+//       /// Set up our client-server channel
+//       ///
+//       static void _CreateChannel( int port )
+//       {
+//          ListDictionary properties = new ListDictionary();
+//          properties.Add( "port", port );
 
-         // Could use Soap or Binary formatters if we wanted... 
-         //  Will Binary work cross-platform? Soap is more generic but slow.
-//          HttpChannel channel = 
-//             new HttpChannel(properties,
+//          // Could use Soap or Binary formatters if we wanted... 
+//          //  Will Binary work cross-platform? Soap is more generic but slow.
+// //          HttpChannel channel = 
+// //             new HttpChannel(properties,
+// //                             new BinaryClientFormatterSinkProvider(),
+// //                             new BinaryServerFormatterSinkProvider());
+
+// //          ChannelServices.RegisterChannel( channel );
+
+//          TcpChannel channel =
+//             new TcpChannel( properties,
 //                             new BinaryClientFormatterSinkProvider(),
 //                             new BinaryServerFormatterSinkProvider());
-
-//          ChannelServices.RegisterChannel( channel );
-
-         TcpChannel channel =
-            new TcpChannel( properties,
-                            new BinaryClientFormatterSinkProvider(),
-                            new BinaryServerFormatterSinkProvider());
                       
-         ChannelServices.RegisterChannel( channel );
-      }   
+//          ChannelServices.RegisterChannel( channel );
+//       }   
    }
 }

@@ -4,7 +4,7 @@
 /// Info returned when a track stops playing. Possibly obsolete.
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2006 Tom Surace.
 //  
 // This file is part of the Tam Jukebox project.
 //
@@ -45,20 +45,19 @@ namespace byteheaven.tamjb.SimpleMp3Player
       {
          NORMAL,                ///< reached end of file or whatever
          USER_REQUEST,          ///< like normal, but you asked for it
-         ERROR,                 ///< generic error, see enclosed exception
+
+            ///
+            /// There was a problem opening the file (probably missing, but
+            /// maybe an mp3 decoder constructor problem).
+            ///
+            OPEN_ERROR,
+
+            ///
+            /// There was a problem while playing the file
+            ///
+            PLAY_ERROR,                 
       }
          
-      ///
-      /// This constructor is used when the track finishes playing
-      /// successfully by reaching the end of its audio.
-      ///
-      public TrackFinishedInfo( uint trackKey )
-      {
-         _key = trackKey;
-         _reason = Reason.NORMAL;
-         _whatWentWrong = null;
-      }
-
       ///
       /// This constructor allows you to explicitly state the status.
       /// But does not allow you to set the exception!
@@ -74,10 +73,12 @@ namespace byteheaven.tamjb.SimpleMp3Player
       /// This constructor implies that a generic error occurred, and is
       /// the reason the track is finished. An exception is attached.
       ///
-      public TrackFinishedInfo( uint trackKey, Exception e )
+      public TrackFinishedInfo( uint trackKey, 
+                                Exception e,
+                                Reason why )
       {
          _key = trackKey;
-         _reason = Reason.ERROR;
+         _reason = why;
          _whatWentWrong = e;
       }
 

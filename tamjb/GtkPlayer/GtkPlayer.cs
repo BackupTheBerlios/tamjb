@@ -1088,7 +1088,7 @@ namespace byteheaven.tamjb.GtkPlayer
                _UpdateTrackInfoDisplay(); 
             }
          }
-         catch (Exception ex)
+         catch (Exception)
          {
             _TraceError( e.ToString() );
          }

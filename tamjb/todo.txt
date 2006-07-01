@@ -1,6 +1,11 @@
 
 TODO
 
+ - Web interface: if the song displayed is not the same as the song now
+   playing, pop up a window prompting which one to mark.
+
+ - Web interface: add a "Mega Suck!" button.
+
  - ITrackInfo.key should be an unsigned long, shouldn't it? (I thought 
    all database unique ID's were 64 bit these days...)
 

@@ -37,10 +37,20 @@ namespace byteheaven.tamjb.Engine
    /// A multi-band compressor. Yeah. What a useful comment.
    ///
    public class MultiBandCompressor
-      : IAudioProcessor
+      : IAudioProcessor, IMultiBandCompressor
    {
       public MultiBandCompressor()
       {
+         _crossover =
+            new StereoCrossover( 190.0, 
+                                 2200.0,
+                                 StereoCrossover.Quality.HIGH );
+
+         // Default levels:
+         compressThresholdBass = 12000;
+         compressThresholdMid = 7000;
+         compressThresholdTreble = 6300;
+
       }
 
       public bool doAutomaticLeveling
@@ -78,21 +88,20 @@ namespace byteheaven.tamjb.Engine
 
          _bassCompress.Process( ref bassLeft, ref bassRight );
 
-         // Clip the bass separately, because it is most likely
+         // Limit the bass, because it is most likely
          // to overshoot. Should make clipping less audible. 
-
-         // Commented out to save processing time,. Would prefer
-         // to have soft clip on all 3 bands.
-         // _softClipper.Process( ref bassLeft, ref bassRight );
-
+         // _limiter.Process( ref bassLeft, ref bassRight );
+         
          _midCompress.Process( ref midLeft, ref midRight );
          _trebleCompress.Process( ref trebleLeft, ref trebleRight );
 
-         // Is this an adequate mixing algorithm?
+         // Is this an adequate mixing algorithm? Hehe.
          left = bassLeft + midLeft + trebleLeft;
          right = bassRight + midRight + trebleRight;
 
-         _softClipper.Process( ref left, ref right );
+         // Soft clipping and limiting together rules, but...at what cost?
+         _limiter.Process( ref left, ref right );
+         // _softClipper.Process( ref left, ref right );
       }
 
       public double compressAttack
@@ -219,20 +228,22 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _softClipper.clipThreshold;
+            return (int)Math.Round( _softClipper.clipThreshold );
          }
          set
          {
-            _softClipper.clipThreshold = value;
+            _softClipper.clipThreshold = (double)value;
          }
       }
 
-      StereoCrossover _crossover = new StereoCrossover( 190.0, 2200.0 );
+      StereoCrossover _crossover;
 
       Compressor _bassCompress = new Compressor();
       Compressor _midCompress = new Compressor();
       Compressor _trebleCompress = new Compressor();
 
       SoftClipper _softClipper = new SoftClipper();
+
+      Limiter _limiter = new Limiter();
    }
 }

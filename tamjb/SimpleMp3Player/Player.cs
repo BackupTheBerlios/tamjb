@@ -9,7 +9,7 @@
 /// this to get better.
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2006 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -394,7 +394,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
                _mp3ReaderThread = 
                   new Thread( new ThreadStart( _Mp3ReaderThread ) );
 
-               // _mp3ReaderThread.Priority = ThreadPriority.Highest;
+               _mp3ReaderThread.Priority = ThreadPriority.AboveNormal;
                _mp3ReaderThread.Start();
             }
          }
@@ -450,7 +450,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
          try
          {
             audioThread = new Thread( new ThreadStart( _AudioThread ) );
-            // audioThread.Priority = ThreadPriority.BelowNormal;
+            audioThread.Priority = ThreadPriority.AboveNormal;
             audioThread.Start();
 
             Trace.WriteLine( "Entering main loop", "MP3" );
@@ -596,12 +596,17 @@ namespace byteheaven.tamjb.SimpleMp3Player
                      TrackFinishedInfo info;
                      if (null == playbackException)
                      {
-                        info = new TrackFinishedInfo( _playingTrack.index );
+                        info = new TrackFinishedInfo( 
+                           _playingTrack.index,
+                           TrackFinishedInfo.Reason.NORMAL );
                      }
                      else
                      {
-                        info = new TrackFinishedInfo( _playingTrack.index, 
-                                                      playbackException );
+                        info = new TrackFinishedInfo
+                           ( _playingTrack.index, 
+                             playbackException,
+                             TrackFinishedInfo.Reason.PLAY_ERROR
+                             );
                      }
                      
                      if (null != OnTrackFinished)
@@ -846,7 +851,12 @@ namespace byteheaven.tamjb.SimpleMp3Player
                   ///   and problems with the mp3 playback engine
                   ///
                   if (null != OnTrackFinished)
-                     OnTrackFinished( new TrackFinishedInfo( info.index, e ) );
+                  {
+                     OnTrackFinished( 
+                        new TrackFinishedInfo( info.index, 
+                                               e, 
+                                               TrackFinishedInfo.Reason.OPEN_ERROR ) );
+                  }
                }
 
                // If anything went wrong, park the playback engine and 
@@ -922,7 +932,7 @@ namespace byteheaven.tamjb.SimpleMp3Player
 
                return nextBuffer;
             }
-            catch (System.InvalidOperationException ioe)
+            catch (System.InvalidOperationException )
             {
                // Queue is possibly empty. Keep trying.
             }

@@ -79,6 +79,14 @@ namespace byteheaven.tamjb.Engine
          return Backend.theBackend.GetState();
       }
 
+      public long changeCount
+      {
+         get
+         {
+            return Backend.theBackend.changeCount;
+         }
+      }
+
       ///
       /// Increases suck by 50% of the difference between its
       /// current level and 100%. Thus it theoretically never reaches
@@ -364,5 +372,11 @@ namespace byteheaven.tamjb.Engine
       {
          return Backend.theBackend.GetUser( name );
       }
+
+      public Credentials GetUser( uint uid )
+      {
+         return Backend.theBackend.GetUser( uid );
+      }
+
    }
 }

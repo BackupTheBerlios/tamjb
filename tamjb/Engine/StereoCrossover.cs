@@ -35,20 +35,50 @@ namespace byteheaven.tamjb.Engine
    public class StereoCrossover 
    {
       ///
+      /// Quality level settings, reflecting the tradeoff of CPU/ ram bandwidth
+      /// vs. crossover quality.
+      ///
+      public enum Quality
+      {
+         LOW,
+         MEDIUM,
+         HIGH
+      }
+
+      ///
       /// \note Assumes sample rate of 44100
       ///
-      public StereoCrossover( double lowCutoff, double highCutoff )
+      public StereoCrossover( double lowCutoff, double highCutoff,
+                              Quality qualityLevel )
       {
-         // Define the bass/mid FIR as fairly poor quality, because
-         // otherwise the filter has a lot of coefficients and your
-         // poor Pentium III will roll over and play dead.
-         
-         // If you have 
+         // Quality of the kaiser window for the low-mid crossover.
+         // A (60 is good, 50 acceptable, 70 is GREAT). 45 swamps my
+         // PIII-600. If you have something faster you definitely should
+         // increase this.
+         int lowCrossoverQuality;
+         switch (qualityLevel)
+         {
+         case Quality.LOW:
+            lowCrossoverQuality = 30;
+            break;
+
+         case Quality.MEDIUM:
+            lowCrossoverQuality = 50;
+            break;
+
+         case Quality.HIGH:
+            lowCrossoverQuality = 70;
+            break;
+
+         default:
+            throw new ApplicationException( "unexpected case in switch" );
+         }
+
          double beta;
          double [] lowFiltCoef = KaiserWindow.FromParameters
             ( lowCutoff / 2.0 / 22050.0,
               lowCutoff * 4.0 / 22050.0,
-              _lowQuality,
+              lowCrossoverQuality,
               400,              // maxM
               out beta );
 
@@ -169,11 +199,6 @@ namespace byteheaven.tamjb.Engine
 
       // Offset of the high crossover (for delay compensation)
       int _highOffset;
-
-      // A (60 is good, 50 acceptable, 70 is GREAT). 45 swamps my
-      // PIII-600. If you have something faster you definitely should
-      // increase this.
-      readonly int _lowQuality = 38;
    }
 
 }

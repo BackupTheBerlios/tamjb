@@ -38,7 +38,15 @@ namespace byteheaven.tamjb.Interfaces
    ///
    public interface IEngine
    {
+      ///
+      /// Find user by name (name is unique, so this will work).
+      ///
       Credentials GetUser( string name );
+
+      ///
+      /// Find credentials by uid. 
+      ///
+      Credentials GetUser( uint uid );
 
       Mood GetMood( Credentials cred, string name );
 
@@ -89,6 +97,15 @@ namespace byteheaven.tamjb.Interfaces
       /// \return true if anything has changed since the last call
       ///
       bool CheckState( ref EngineState state );
+
+      ///
+      /// This is incremented for each change to the back end. If this
+      /// number has not changed, you can safely assume nothing has changed.
+      ///
+      /// \note change count is also returned as an element of 
+      ///  the engine state for your comfort and convenience.
+      ///
+      long changeCount { get; }
 
       ///
       /// Gets the current engine state

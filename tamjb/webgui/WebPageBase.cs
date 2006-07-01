@@ -28,6 +28,7 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Configuration;
    using System.Web;
+   using System.Web.UI.WebControls;
 
    using byteheaven.tamjb.Interfaces; // IEngine
 
@@ -68,5 +69,25 @@ namespace byteheaven.tamjb.webgui
             return _backend;
          }
       }
+
+      ///
+      /// Helper that emits the proper javascript for setting focus.
+      ///
+      protected void SetFocusTo( WebControl control )
+      {
+         // If you don't call SetFocus in the initial page load,
+         // uncomment this: (But it can have unhappy side effects.)
+         // Anthem.Manager.IncludePageScripts = true; 
+
+         Anthem.Manager.AddScriptForClientSideEval(
+            String.Format( "document.getElementById('{0}').focus();",
+                           control.ClientID ) );
+
+//          Anthem.Manager.AddScriptForClientSideEval(
+//             string.Format( "WebForm_AutoFocus('{0}');",
+//                            control.ClientID) ); 
+      }
+
+
    }
 }

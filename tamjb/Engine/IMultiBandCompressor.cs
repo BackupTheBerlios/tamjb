@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004-2005 Tom Surace.
+// Copyright (C) 2006 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -26,22 +26,21 @@
 
 namespace byteheaven.tamjb.Engine
 {
-   using System;
-   using System.Diagnostics;
-   using System.Configuration;
-   using System.IO;
-
    ///
-   /// Soft clipping based on antilog (1/x)
-   /// based nonlinearity. ("Asympote!" "What did you just call me?")
+   /// An interface for saving our multi band compression settings.
    ///
-   public class SoftClipper : SoftKneeDevice, IAudioProcessor
+   public interface IMultiBandCompressor
    {
+      bool doAutomaticLeveling { get; set; }
+      double compressAttack{ get; set; }
+      double compressDecay{ get; set; }
+      int compressThresholdBass{ get; set; }
+      int compressThresholdMid{ get; set; }
+      int compressThresholdTreble{ get; set; }
+      int gateThreshold{ get; set; }
+      double compressRatio{ get; set; }
+      uint compressPredelay{ get; set; }
+      int clipThreshold{ get; set; }
 
-      public void Process( ref double left, ref double right )
-      {
-         left = SoftClip( left );
-         right = SoftClip( right );
-      }
    }
 }

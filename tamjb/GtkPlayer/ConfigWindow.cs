@@ -113,7 +113,7 @@ namespace byteheaven.tamjb.GtkPlayer
                {
                   _serverPort = Convert.ToInt32( _portEntry.Text );
                }
-               catch (Exception e)
+               catch (Exception)
                {
                   _portEntry.GrabFocus();
                   return;

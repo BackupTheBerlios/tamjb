@@ -184,7 +184,11 @@ namespace byteheaven.tamjb.Engine
          if (null == genre)
             genre = "unknown";
 
-         if (! engine.EntryExists( path )) 
+         if (engine.EntryExists( path )) 
+         {
+            engine.FileIsNotMissing( path );
+         }
+         else
          {
             _Trace( "adding '" + path + "'" );
 

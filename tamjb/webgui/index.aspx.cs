@@ -35,6 +35,8 @@ namespace byteheaven.tamjb.webgui
 
    public class index : byteheaven.tamjb.webgui.WebPageBase
    {
+      protected Anthem.Timer refreshTimer;
+
       protected Anthem.LinkButton userNameBtn;
       protected Anthem.LinkButton moodBtn;
 
@@ -46,35 +48,79 @@ namespace byteheaven.tamjb.webgui
       protected Anthem.Label nowAlbum;
       protected Anthem.Label nowFileName;
 
+      protected Anthem.Button megaSuckBtn;
+
       protected Anthem.Button refreshButton;
 
+      protected Anthem.CheckBox showHistory;
+      protected Anthem.Panel    historyBox;
       protected Anthem.Repeater history;
 
       override protected void OnLoad( EventArgs loadArgs )
       {
          base.OnLoad( loadArgs );
 
+         Manager.Register( this );
+
          try
          {
-            Manager.Register( this );
+            // Make sure the mood button does a postback instead of
+            // trying to use AJAX, cause we want to server.transfer:
+            moodBtn.EnableCallBack = false;
 
-            // _InstallRefreshScript();
-            Anthem.Timer timer = new Anthem.Timer();
-            timer.ID = "refreshTimer";
-            timer.Enabled = true;
-            timer.Interval = 10000;
-            timer.Tick += new EventHandler(_OnRefresh);
-            this.Controls.Add( timer );
-
-            if (!Anthem.Manager.IsCallBack)
+            if (!IsPostBack)
             {
-               _Refresh();
+               historyBox.Visible = false;
+               ViewState["historyVisible"] = false;
+               showHistory.Checked = false;
+
+               SetFocusTo( userNameBtn );
+            }
+            
+            if (Anthem.Manager.IsCallBack)
+            {
+               // Workaround for the "OnCheckedChanged handler never called"
+               // bug:
+               if (null == ViewState["historyVisible"] 
+                   || 
+                   ((bool)ViewState["historyVisible"] != showHistory.Checked))
+               {
+                  _HistoryToggle();
+                  ViewState["historyVisible"] = showHistory.Checked;
+               }
             }
          }
          catch (Exception)
          {
-            // do nothing
+            throw;              // let it fly
          }
+      }
+
+      override protected void OnPreRender( EventArgs loadArgs )
+      {
+         base.OnPreRender( loadArgs );
+
+         try
+         {
+            _Refresh();
+         }
+         catch (Exception)
+         {
+            throw;              // not handled yet
+         }
+      }
+
+
+      ///
+      /// Update the history panel visibility
+      /// 
+      void _HistoryToggle()
+      {
+         historyBox.Visible = showHistory.Checked;
+         historyBox.UpdateAfterCallBack = true;
+         
+         // Force a refresh of the history box
+         changeCount = -1;
       }
 
       ///
@@ -92,14 +138,13 @@ namespace byteheaven.tamjb.webgui
       [Anthem.Method]
       public int _Refresh()
       {
-         Console.WriteLine( "[Refresh]" );
-
          try
          {
-            EngineState state = backend.GetState();
-            if (state.changeCount != changeCount)
+            long newChangeCount = backend.changeCount;
+            if (newChangeCount != changeCount)
             {
-               Console.WriteLine( "Engine state changed, refreshing" );
+               Console.WriteLine( "  Engine state changed {0} -> {1}",
+                                  changeCount, newChangeCount );
 
                Credentials credentials = new Credentials();
                Mood mood = new Mood();
@@ -110,10 +155,14 @@ namespace byteheaven.tamjb.webgui
                this.credentials = credentials;
                this.mood = mood;
             
+               EngineState state = backend.GetState();
                _UpdateNowPlayingInfo( state );
                _BuildGrid( state );
 
                changeCount = state.changeCount; // save for later
+
+               refreshButton.Text = changeCount.ToString();
+               refreshButton.UpdateAfterCallBack = true;
             }
 
             return 0;
@@ -130,6 +179,10 @@ namespace byteheaven.tamjb.webgui
 
       void _BuildGrid( EngineState state )
       {
+         // Can't trust the value of historyBox.Visible for some reason!
+         if (!showHistory.Checked)
+            return;
+
          DataTable table = new DataTable();
          table.Columns.Add("key", typeof(uint));
          table.Columns.Add("title", typeof(string));
@@ -155,7 +208,16 @@ namespace byteheaven.tamjb.webgui
             row["album"] = info.album;
             row["suck"] = suck;
             row["mood"] = mood;
-            row["status"] = info.evaluation.ToString();
+            
+            if (TrackStatus.MISSING == info.status)
+            {
+               row["status"] = "MISSING";
+               row["title"] += " (MISSING)";
+            }
+            else
+            {
+               row["status"] = info.evaluation.ToString();
+            }
 
             if (index < state.currentTrackIndex)
             {
@@ -307,7 +369,7 @@ namespace byteheaven.tamjb.webgui
          nowArtist.Text = current.artist;
          nowArtist.UpdateAfterCallBack = true;
          
-         nowAlbum.Text = current.artist;
+         nowAlbum.Text = current.album;
          nowAlbum.UpdateAfterCallBack = true;
          
          nowFileName.Text = current.filePath;
@@ -353,13 +415,7 @@ namespace byteheaven.tamjb.webgui
 
       protected void _OnMoodClick( object sender, EventArgs ea )
       {
-         try
-         {
-            // Hmm.
-         }
-         catch (Exception)
-         {
-         }
+         Server.Transfer( "moodselect.aspx" );
       }
 
       public void _OnSuck( object sender, EventArgs ea )
@@ -386,8 +442,35 @@ namespace byteheaven.tamjb.webgui
             if (engineState.currentTrack.key == this.currentTrack)
                backend.ReevaluateCurrentTrack();
 
-            // So: things have changed:
-            _Refresh();
+         }
+         catch (Exception e)
+         {
+            Console.WriteLine( e.ToString() );
+            throw;
+         }
+      }
+
+      public void _OnMegaSuck( object sender, EventArgs ea )
+      {
+         try
+         {
+            EngineState engineState = backend.GetState();
+
+            // The engine could be rewound past 0 or whatever by some
+            // other user.
+            if (engineState.currentTrackIndex < 0)
+               return;
+
+            // todo: there should be a way to do this with one call:
+            for (int i = 0; i < 3; i++)
+            {
+               backend.IncreaseSuckZenoStyle( this.credentials, 
+                                              this.currentTrack );
+            }
+
+            // ANd, unconditionally go to the next track
+            backend.GotoNextFile( this.credentials, this.currentTrack );
+
          }
          catch (Exception e)
          {
@@ -408,7 +491,6 @@ namespace byteheaven.tamjb.webgui
             backend.DecreaseSuckZenoStyle( this.credentials, 
                                            this.currentTrack );
 
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -430,7 +512,6 @@ namespace byteheaven.tamjb.webgui
                                                   this.mood,
                                                   this.currentTrack );
 
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -455,7 +536,6 @@ namespace byteheaven.tamjb.webgui
             if (engineState.currentTrack.key == this.currentTrack)
                backend.ReevaluateCurrentTrack();
 
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -475,7 +555,6 @@ namespace byteheaven.tamjb.webgui
             // Go to the track before "this" one
             backend.GotoPrevFile( this.credentials, this.currentTrack );
 
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -489,7 +568,6 @@ namespace byteheaven.tamjb.webgui
          try
          {
             backend.GotoNextFile( this.credentials, this.currentTrack );
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -503,7 +581,6 @@ namespace byteheaven.tamjb.webgui
          try
          {
             backend.StopPlaying();
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -517,7 +594,6 @@ namespace byteheaven.tamjb.webgui
          try
          {
             backend.StartPlaying();
-            _Refresh();
          }
          catch (Exception e)
          {
@@ -566,8 +642,6 @@ namespace byteheaven.tamjb.webgui
             default:
                throw new ApplicationException( "Unexpected repeater command" );
             }
-
-            _Refresh();
          }
          catch (Exception e)
          {

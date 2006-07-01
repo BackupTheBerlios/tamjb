@@ -9,6 +9,7 @@ ANTHEM = bin/Anthem.dll
 
 SRCS = tamjb.master.cs \
 	index.aspx.cs \
+	moodselect.aspx.cs \
 	WebPageBase.cs \
 	AssemblyInfo.cs
 

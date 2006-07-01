@@ -71,8 +71,11 @@ namespace byteheaven.tamjb.Engine
          _rightFifo.delay = 22;
 
          // Initialize compression times
-         compressAttack = 0.010; // seconds
-         compressDecay = 5.0;   // seconds
+         compressAttack = 0.25; // seconds
+         compressDecay = 6.0;   // seconds
+
+         gateThreshold = 50;
+         compressThreshold = 6000;
 
          _learnTargetPower = false;
       }
@@ -133,7 +136,8 @@ namespace byteheaven.tamjb.Engine
          }
 
          // Convert back into a 16-bit "number" for the correction math
-         avgPower = MathApproximation.AntiLog10( _avgPowerLog );
+         // avgPower = MathApproximation.AntiLog10( _avgPowerLog );
+         avgPower = Math.Pow( 10, _avgPowerLog );
 
          // Don't correct gain if we're below the threshold
          if (avgPower < _gateLevel)
@@ -328,7 +332,7 @@ namespace byteheaven.tamjb.Engine
       /// 
       /// Start with something not too unusual
       ///
-      double _targetPowerLevel = 2800.0;
+      double _targetPowerLevel = 280.0;
 
       bool _learnTargetPower;
 
@@ -336,7 +340,7 @@ namespace byteheaven.tamjb.Engine
       /// Level below which we stop compressing and start
       /// expanding (if possible)
       ///
-      double _gateLevel = 500.0;
+      double _gateLevel = 100.0;
 
       /// 
       /// Compression ratio where for n:1 compression, 

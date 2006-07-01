@@ -39,10 +39,6 @@ namespace byteheaven.tamjb.Engine
    using byteheaven.tamjb.Interfaces;
    using byteheaven.tamjb.SimpleMp3Player;
 
-#if USE_POSTGRESQL
-   using Npgsql;
-#endif
-
    ///
    /// The main jukebox player object.
    ///
@@ -50,6 +46,25 @@ namespace byteheaven.tamjb.Engine
       : IEngine, 
         IBackend
    {
+      ///
+      /// Potential quality settings for the backend. 
+      ///
+      public enum Quality
+      {
+         ///
+         /// Poor audio quality. There is some compression and limiting, 
+         /// but levels will vary.
+         ///
+         LOW,
+
+         ///
+         /// Highest audio quality. Multi-band compression with 
+         /// large IIR crossover filters, limiting, soft filtering: 
+         /// the works.
+         ///
+         HIGH
+      }
+
       ///
       /// get/set the database connection string (as an url, must
       /// be file:something for SQLite.
@@ -148,9 +163,12 @@ namespace byteheaven.tamjb.Engine
       /// Call this to create the singleton object
       ///
       public static void Init( int desiredQueueSize,
-                               string connectionString )
+                               string connectionString,
+                               Quality qualityLevel )
       {
-         _theBackend = new Backend( desiredQueueSize, connectionString );
+         _theBackend = new Backend( desiredQueueSize, 
+                                    connectionString,
+                                    qualityLevel );
       }
 
       ///
@@ -158,65 +176,54 @@ namespace byteheaven.tamjb.Engine
       ///   access the singleton returned by theBackend. This constructor
       ///   is public only for use by non-remoting configurations.
       /// 
-      public Backend( int desiredQueueSize, string connectionString )
+      public Backend( int desiredQueueSize, 
+                      string connectionString,
+                      Quality qualityLevel )
       {
          _Trace( "[Backend]" );
 
+         _qualityLevel = qualityLevel;
          _desiredQueueSize = desiredQueueSize;
          _connectionString = connectionString;
 
+         if (null == _connectionString)
+            throw new ApplicationException( "Engine is not properly initialized by the server" );
+
+         _database = new StatusDatabase( _connectionString );
+
+         // Todo: initialize compressor from stored settings in database
+         _compressor = _LoadCompressor();
+
+         // Get defaults from this kind of thing?
+         // string bufferSize = 
+         //    ConfigurationSettings.AppSettings ["BufferSize"];
+                        
+         // Set up default buffering for the audio engine
+         _player = new Player();
+         _player.bufferSize = 44100 / 8 ;
+         _player.buffersInQueue = 40;
+         _player.buffersToPreload = 20;
+
+         // Set up callbacks
+         _player.OnTrackFinished +=
+            new TrackFinishedHandler( _TrackFinishedCallback );
+
+         _player.OnTrackPlayed +=
+            new TrackStartingHandler( _TrackStartingCallback );
+            
+         _player.OnReadBuffer +=
+            new ReadBufferHandler( _TrackReadCallback );
+
+         // Start playing as the default user, if there is one:
          try
          {
-            if (null == _connectionString)
-               throw new ApplicationException( "Engine is not properly initialized by the server" );
-
-            _database = new StatusDatabase( _connectionString );
-
-            // Todo: initialize compressor from stored settings in database
-            _compressor = _LoadCompressor();
-
-            // Get defaults from this kind of thing?
-            // string bufferSize = 
-            //    ConfigurationSettings.AppSettings ["BufferSize"];
-                        
-            // Set up default buffering for the audio engine
-            _player = new Player();
-            _player.bufferSize = 44100 / 8 ;
-            _player.buffersInQueue = 40;
-            _player.buffersToPreload = 20;
-
-            // Set up callbacks
-            _player.OnTrackFinished +=
-               new TrackFinishedHandler( _TrackFinishedCallback );
-
-            _player.OnTrackPlayed +=
-               new TrackStartingHandler( _TrackStartingCallback );
-            
-            _player.OnReadBuffer +=
-               new ReadBufferHandler( _TrackReadCallback );
-
-            // Start playing as the default user, if there is one:
-            try
-            {
-               _database.GetController( out _controllingUser,
-                                        out _controllingMood );
-            }
-            catch
-            {
-               _controllingUser = null;
-               _controllingMood = null;
-            }
+            _database.GetController( out _controllingUser,
+                                     out _controllingMood );
          }
-#if USE_POSTGRESQL
-         catch (Npgsql.NpgsqlException ne)
+         catch
          {
-            throw new ApplicationException( "NgpsqlException" +
-                                            ne.ToString() );
-         }
-#endif
-         finally
-         {
-            ; // do nothing
+            _controllingUser = null;
+            _controllingMood = null;
          }
       }
       
@@ -234,6 +241,8 @@ namespace byteheaven.tamjb.Engine
 
       public void ShutDown()
       {
+         // Don't hold the lock, or the callbacks into this object might
+         // deadlock.
          _player.ShutDown();
       }
 
@@ -245,25 +254,21 @@ namespace byteheaven.tamjb.Engine
       public void GetCurrentUserAndMood( ref Credentials cred,
                                          ref Mood mood )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             cred = _controllingUser;
             mood = _controllingMood;
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
       ///
       /// Updates the state and returns true if it has changed
       ///
+      /// \note This is totally inefficient for remoting. 
+      ///
       public bool CheckState( ref EngineState state )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             if (null == state)
                throw new ArgumentException( "may not be null", "state" );
@@ -286,10 +291,6 @@ namespace byteheaven.tamjb.Engine
 //                                      _changeCount );
             return true;
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       ///
@@ -297,8 +298,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public EngineState GetState()
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             // Note: when remoting, this is probably MORE efficient than
             // the CheckState method. Go figure!
@@ -308,9 +308,16 @@ namespace byteheaven.tamjb.Engine
                (ITrackInfo[])_playQueue.ToArray(typeof(PlayableData)),
                _changeCount );
          }
-         finally
+      }
+
+      public long changeCount
+      {
+         get
          {
-            _Unlock();
+            lock (_serializer)
+            {
+               return _changeCount;
+            }
          }
       }
 
@@ -330,38 +337,27 @@ namespace byteheaven.tamjb.Engine
       public void Poll()
       {
          // _Trace( "[Poll]" );
-         _Lock();
-         try
+         lock (_serializer)
          {
-            // Enqueue at most one song each time this is polled
-            if (unplayedTrackCount < _desiredQueueSize)
-               EnqueueRandomSong();
-
-            // If playback has stopped, restart it now.
-            if (_shouldBePlaying && ( ! _player.isPlaying ))
+            try
             {
-               _Trace( "Hey, we are not playing. Restarting.." );
-               GotoNext( true );
+               // Enqueue at most one song each time this is polled
+               if (unplayedTrackCount < _desiredQueueSize)
+                  EnqueueRandomSong();
+
+               // If playback has stopped, restart it now.
+               if (_shouldBePlaying && ( ! _player.isPlaying ))
+               {
+                  _Trace( "Hey, we are not playing. Restarting.." );
+                  GotoNext( true );
+               }
             }
-         }
-#if USE_POSTGRESQL
-         catch (Npgsql.NpgsqlException ne)
-         {
-            // NpgsqlException has a long-standing problem where it is
-            // not marked serializable. :(
-            throw new ApplicationException( "NpgsqlException" 
-                                            + ne.ToString() );
-         }
-#endif
-         catch (Exception e)
-         {
-            _Trace( "Exception propagating from Poll()" );
-            _Trace( e.ToString() );
-            throw;
-         }
-         finally
-         {
-            _Unlock();
+            catch (Exception e)
+            {
+               _Trace( "Exception propagating from Poll()" );
+               _Trace( e.ToString() );
+               throw;
+            }
          }
       }
 
@@ -412,8 +408,7 @@ namespace byteheaven.tamjb.Engine
       {
          _Trace( "[IncreaseSuckZenoStyle]" );
 
-         _Lock();
-         try
+         lock (_serializer)
          {
             ++_changeCount;
 
@@ -433,10 +428,6 @@ namespace byteheaven.tamjb.Engine
 
             _database.SetSuck( cred.id, trackKey, level );
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       public void DecreaseSuckZenoStyle( Credentials cred,
@@ -444,8 +435,7 @@ namespace byteheaven.tamjb.Engine
       {
          _Trace( "[DecreaseSuckZenoStyle]" );
 
-         _Lock();
-         try
+         lock (_serializer)
          {
             ++_changeCount;
             uint level = _database.GetSuck( cred.id, trackKey );
@@ -460,10 +450,6 @@ namespace byteheaven.tamjb.Engine
 
             _database.SetSuck( cred.id, trackKey, level );
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       public void IncreaseAppropriateZenoStyle( Credentials cred,
@@ -472,8 +458,7 @@ namespace byteheaven.tamjb.Engine
       {
          _Trace( "[IncreaseAppropriateZenoStyle]" );
 
-         _Lock();
-         try
+         lock (_serializer)
          {
             ++_changeCount;
 
@@ -495,10 +480,6 @@ namespace byteheaven.tamjb.Engine
 
             _database.SetAppropriate( cred.id, mood.id, trackKey, level );
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       public void DecreaseAppropriateZenoStyle( Credentials cred,
@@ -507,8 +488,7 @@ namespace byteheaven.tamjb.Engine
       {
          _Trace( "[DecreaseAppropriateZenoStyle]" );
 
-         _Lock();
-         try
+         lock (_serializer)
          {
             ++_changeCount;
             uint level = _database.GetAppropriate( cred.id, 
@@ -527,10 +507,6 @@ namespace byteheaven.tamjb.Engine
                                       mood.id,
                                       trackKey, 
                                       level );
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -551,14 +527,9 @@ namespace byteheaven.tamjb.Engine
          ///
          get
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                return (ITrackInfo)_PlaylistGetCurrent();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -578,14 +549,9 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                return _PlaylistGetCount() - _playQueueCurrentTrack;
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -601,14 +567,9 @@ namespace byteheaven.tamjb.Engine
          ///
          get
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                return (ITrackInfo)_PlaylistGetAt( index );
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -617,28 +578,18 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                return _PlaylistGetCount();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
 
       public ITrackInfo GetFileInfo( uint key )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             return (ITrackInfo)_database.GetFileInfo( key );
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -651,17 +602,12 @@ namespace byteheaven.tamjb.Engine
                                  out double suck,
                                  out double appropriate )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             suck = _database.GetSuck( cred.id, trackKey );
             appropriate = _database.GetAppropriate( cred.id, 
                                                     mood.id, 
                                                     trackKey );
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -672,14 +618,9 @@ namespace byteheaven.tamjb.Engine
       {
          _Trace( "[GotoNextFile]" );
 
-         _Lock();
-         try
+         lock (_serializer)
          {
             GotoNext( true );
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -730,8 +671,8 @@ namespace byteheaven.tamjb.Engine
       public void ReevaluateCurrentTrack()
       {
          _Trace( "[Reevaluate]" );
-         _Lock();
-         try
+
+         lock (_serializer)
          {
             PlayableData currentTrack = _PlaylistGetCurrent();
             if (null != currentTrack
@@ -740,24 +681,15 @@ namespace byteheaven.tamjb.Engine
                GotoNext( true );
             }
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       public void GotoPrevFile( Credentials cred, uint currentTrackKey )
       {
          _Trace( "[GotoPrevFile]" );
 
-         _Lock();
-         try
+         lock (_serializer)
          {
             GotoPrev();
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -793,17 +725,46 @@ namespace byteheaven.tamjb.Engine
          // Previous track could be nothing?
          if (null != info)
          {            
-            Trace.WriteLine( "Track Finished " + info.key );
+            Trace.WriteLine( 
+               String.Format(
+                  "Track {0} finished. status:{1}",
+                  info.key,
+                  info.reason ) );
 
             // Because of the threading, I don't know we can guarantee
             // this will never happen. Let's find out:
             Debug.Assert( info.key == currentTrack.key,
                           "finished track != playing track" );
+
+            switch (info.reason)
+            {
+            case TrackFinishedInfo.Reason.NORMAL:
+            case TrackFinishedInfo.Reason.USER_REQUEST:
+            case TrackFinishedInfo.Reason.PLAY_ERROR: // What to do with this?
+               break;
+
+            case TrackFinishedInfo.Reason.OPEN_ERROR: // File probably missing
+               // Ouch, potential deadlock.
+               lock (_serializer)
+               {
+                  // Update the ref to the current-playing track data
+                  PlayableData currentInfo = _PlaylistGetCurrent();
+                  currentInfo.status = TrackStatus.MISSING;
+
+                  _database.SetTrackStatus
+                     ( info.key, 
+                       StatusDatabase.TrackStatus.MISSING );
+               }
+               break;
+
+            default:
+               throw new ApplicationException( "unexpected case in switch" );
+            }
          }
 
          if (_shouldBePlaying)  // don't bother if we should be stopped
          {
-            // Don't acquire the _serializer mutex here, because this could
+            // Don't acquire the _serializer lock here, because this could
             // cause a deadlock!
 
             // Advance the playlist (_Playlist* functions are threadsafe)
@@ -890,17 +851,17 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressAttack;
+            return ((IMultiBandCompressor)_compressor).compressAttack;
          }
+
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressAttack = value;
+                  ((IMultiBandCompressor)_compressor).compressAttack = value;
                }
                finally
                {
@@ -908,10 +869,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -920,17 +877,16 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressDecay;
+            return ((IMultiBandCompressor)_compressor).compressDecay;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressDecay = value;
+                  ((IMultiBandCompressor)_compressor).compressDecay = value;
                }
                finally
                {
@@ -938,10 +894,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -953,17 +905,17 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressThresholdBass;
+            return ((IMultiBandCompressor)_compressor).compressThresholdBass;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressThresholdBass = value;
+                  ((IMultiBandCompressor)_compressor).compressThresholdBass =
+                     value;
                }
                finally
                {
@@ -971,10 +923,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -983,17 +931,17 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressThresholdMid;
+            return ((IMultiBandCompressor)_compressor).compressThresholdMid;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressThresholdMid = value;
+                  ((IMultiBandCompressor)_compressor).
+                     compressThresholdMid = value;
                }
                finally
                {
@@ -1001,10 +949,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -1013,17 +957,17 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressThresholdTreble;
+            return ((IMultiBandCompressor)_compressor).compressThresholdTreble;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressThresholdTreble = value;
+                  ((IMultiBandCompressor)_compressor).
+                     compressThresholdTreble = value;
                }
                finally
                {
@@ -1031,10 +975,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -1043,17 +983,17 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.doAutomaticLeveling;
+            return ((IMultiBandCompressor)_compressor).doAutomaticLeveling;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.doAutomaticLeveling = value;
+                  ((IMultiBandCompressor)_compressor).
+                     doAutomaticLeveling = value;
                }
                finally
                {
@@ -1061,10 +1001,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -1077,17 +1013,16 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.gateThreshold;
+            return ((IMultiBandCompressor)_compressor).gateThreshold;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.gateThreshold = value;
+                  ((IMultiBandCompressor)_compressor).gateThreshold = value;
                }
                finally
                {
@@ -1095,10 +1030,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -1110,17 +1041,16 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressRatio;
+            return ((IMultiBandCompressor)_compressor).compressRatio;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressRatio = value;
+                  ((IMultiBandCompressor)_compressor).compressRatio = value;
                }
                finally
                {
@@ -1128,10 +1058,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -1152,17 +1078,16 @@ namespace byteheaven.tamjb.Engine
       {
          get
          {
-            return _compressor.compressPredelay;
+            return ((IMultiBandCompressor)_compressor).compressPredelay;
          }
          set
          {
-            _Lock();
-            try
+            lock (_serializer)
             {
                _audioMutex.WaitOne();
                try
                {
-                  _compressor.compressPredelay = value;
+                  ((IMultiBandCompressor)_compressor).compressPredelay = value;
                }
                finally
                {
@@ -1170,10 +1095,6 @@ namespace byteheaven.tamjb.Engine
                }
 
                _StoreCompressSettings();
-            }
-            finally
-            {
-               _Unlock();
             }
          }
       }
@@ -1187,7 +1108,7 @@ namespace byteheaven.tamjb.Engine
 
          // Create a serializer, and serialize to rom
          XmlSerializer serializer = 
-            new XmlSerializer( typeof(MultiBandCompressor) );
+            new XmlSerializer( typeof(IMultiBandCompressor) );
          
          StringWriter str = new StringWriter();
          serializer.Serialize( str, _compressor );
@@ -1199,19 +1120,34 @@ namespace byteheaven.tamjb.Engine
       /// load a compressor using the settings in the database, or a default
       /// one if the settings are not found/valid
       ///
-      MultiBandCompressor _LoadCompressor()
+      IAudioProcessor _LoadCompressor()
       {
-         MultiBandCompressor compressor = null;
+         IAudioProcessor compressor = null;
          try
          {
+            Type compressorType;
+            switch (_qualityLevel)
+            {
+            case Quality.LOW:
+               compressorType = typeof( PoorCompressor );
+               break;
+
+            case Quality.HIGH:
+               compressorType = typeof( MultiBandCompressor );
+               break;
+
+            default:
+               throw new ApplicationException( "Unexpected quality level" );
+            }
+
             string settings = _database.GetCompressSettings();
             if (null != settings)
             {
-               XmlSerializer serializer = 
-                  new XmlSerializer( typeof( MultiBandCompressor ) );
+               XmlSerializer serializer = new XmlSerializer( compressorType );
 
                StringReader str = new StringReader( settings );
-               compressor = (MultiBandCompressor)serializer.Deserialize( str );
+               compressor = 
+                  (IAudioProcessor)serializer.Deserialize( str );
             }
          }
          catch (Exception e)
@@ -1222,7 +1158,12 @@ namespace byteheaven.tamjb.Engine
          if (null == compressor)
          {
             _Trace( "Note: compression settings not found, using defaults" );
-            compressor = new MultiBandCompressor(); // load with defaults
+
+            // Depending on quality settings, choose:
+            if (_qualityLevel == Quality.HIGH)
+               compressor = new MultiBandCompressor(); // load with defaults
+            else
+               compressor = new PoorCompressor();
          }
          
          return compressor;
@@ -1308,12 +1249,22 @@ namespace byteheaven.tamjb.Engine
          _playQueueMutex.WaitOne();
          try
          { 
-            if (_playQueueCurrentTrack <= 0)
-               return null;
+            // loop to go back until we find a track that isn't missing
+            // or damaged, otherwise it will be impossible to go back:
+            while (true)        
+            {
+               if (_playQueueCurrentTrack <= 0)
+                  return null;
 
-            -- _playQueueCurrentTrack;
-            -- _trackCounter;
-            return (PlayableData)_playQueue[_playQueueCurrentTrack];
+               -- _playQueueCurrentTrack;
+               -- _trackCounter;
+
+               PlayableData data = 
+                  (PlayableData)_playQueue[_playQueueCurrentTrack];
+
+               if (data.status == TrackStatus.OK)
+                  return data;  // ** Yeah, this one will do! **
+            }
          }
          finally
          {
@@ -1440,21 +1391,9 @@ namespace byteheaven.tamjb.Engine
       public bool EntryExists( string fullPath )
       {
          // _Trace( "[EntryExists]" );
-         _Lock();
-         try
+         lock (_serializer)
          {
             return _database.Mp3FileEntryExists( fullPath );
-         }
-#if USE_POSTGRESQL
-         catch (Npgsql.NpgsqlException ne) 
-         {
-            // These damn things don't Reflect properly
-            throw new ApplicationException( ne.ToString() );
-         }
-#endif
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -1463,21 +1402,24 @@ namespace byteheaven.tamjb.Engine
       ///
       public void Add( PlayableData newData )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             _database.Add( newData );
          }
-#if USE_POSTGRESQL
-         catch (Npgsql.NpgsqlException ne) 
+      }
+
+      ///
+      /// A function that tells the database this file seems to exist
+      /// on the disk (useful for refinding files that disappeared
+      /// temporarily, say during a network outage).
+      ///
+      public void FileIsNotMissing( string fullPath )
+      {
+         _Trace( "[FileIsNotMissing] " + fullPath );
+         lock (_serializer)
          {
-            // These damn things don't Reflect properly
-            throw new ApplicationException( ne.ToString() );
-         }
-#endif
-         finally
-         {
-            _Unlock();
+            _database.TrackIsNotMissing( fullPath,
+                                         StatusDatabase.TrackStatus.OK );
          }
       }
 
@@ -1486,16 +1428,11 @@ namespace byteheaven.tamjb.Engine
       ///
       public void StopPlaying()
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             _shouldBePlaying = false;
             _player.Stop();
             ++ _changeCount;
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
@@ -1504,8 +1441,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public void StartPlaying()
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             PlayableData file = _PlaylistGetCurrent();
             if (null != file)
@@ -1515,10 +1451,6 @@ namespace byteheaven.tamjb.Engine
             }
             ++ _changeCount;
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       ///
@@ -1526,36 +1458,25 @@ namespace byteheaven.tamjb.Engine
       ///
       public Mood [] GetMoodList( Credentials cred )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             ArrayList moodList = _database.GetMoodList( cred );
             return (Mood[])moodList.ToArray(typeof(Mood));
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
       public Credentials [] GetUserList()
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             ArrayList credList = _database.GetUserList();
             return (Credentials[])credList.ToArray(typeof(Credentials));
-         }
-         finally
-         {
-            _Unlock();
          }
       }
 
       public Credentials CreateUser( string name )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             _database.CreateUser( name );
             Credentials cred;
@@ -1567,10 +1488,6 @@ namespace byteheaven.tamjb.Engine
 
             return cred;
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       ///
@@ -1578,8 +1495,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public Mood CreateMood( Credentials cred, string name )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             _database.CreateMood( cred, name );
             Mood mood;
@@ -1591,16 +1507,11 @@ namespace byteheaven.tamjb.Engine
             }
             return mood;
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       public void RenewLogon( Credentials cred )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             if (null == cred)
             {
@@ -1613,16 +1524,11 @@ namespace byteheaven.tamjb.Engine
 
             _database.StoreController( _controllingUser, new Mood() );
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       public void SetMood( Credentials cred, Mood mood )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             if (null == cred)
                throw new ArgumentException( "may not be null", "cred" );
@@ -1638,10 +1544,6 @@ namespace byteheaven.tamjb.Engine
             _database.StoreController( _controllingUser, 
                                        _controllingMood );
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       ///
@@ -1650,8 +1552,7 @@ namespace byteheaven.tamjb.Engine
       public Mood GetMood( Credentials cred, 
                            string name )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             if (null == cred)
                return null;
@@ -1662,10 +1563,6 @@ namespace byteheaven.tamjb.Engine
 
             return mood;
          }
-         finally
-         {
-            _Unlock();
-         }
       }
 
       ///
@@ -1673,8 +1570,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public Credentials GetUser( string name )
       {
-         _Lock();
-         try
+         lock (_serializer)
          {
             Credentials cred;
             if (!_database.GetUser( name, out cred ))
@@ -1682,11 +1578,20 @@ namespace byteheaven.tamjb.Engine
 
             return cred;
          }
-         finally
+      }
+
+      public Credentials GetUser( uint uid )
+      {
+         lock (_serializer)
          {
-            _Unlock();
+            Credentials cred;
+            if (!_database.GetUser( uid, out cred ))
+               return null;
+
+            return cred;
          }
       }
+
 
 
       void _Trace( string msg )
@@ -1694,24 +1599,6 @@ namespace byteheaven.tamjb.Engine
          Trace.WriteLine( msg, "Backend" );
       }
 
-      ///
-      /// Wrapper function to handle serialization of remote controls.
-      ///
-      void _Lock()
-      {
-         if (false == _serializer.WaitOne( 3000,
-                                           false ))
-         {
-            throw new ApplicationException( 
-               "_serializer Timed out waiting for lock" );
-         }
-      }
-
-      void _Unlock()
-      {
-         _serializer.ReleaseMutex();
-      }
-      
       ///
       /// The Mp3 Playback Engine
       ///
@@ -1765,12 +1652,12 @@ namespace byteheaven.tamjb.Engine
       bool      _shouldBePlaying = true;
 
       ///
-      /// This one protects us from multithreaded access due to remoting,
-      /// as this is a MarshalByRefObject. Actually I think we need a slightly
-      /// better interface than what I originally threw together here...this
-      /// doesn't scale well. :)
+      /// This one protects us from multithreaded access due to remoting.
+      /// (This is a MarshalByRefObject.) Lock on the _serializer, not the
+      /// "this" reference.
       ///
-      Mutex     _serializer = new Mutex();
+      object    _serializer = new object();
+      // Mutex     _serializer = new Mutex();
 
       ///
       /// How many finished-playing tracks to keep in the queue
@@ -1805,9 +1692,11 @@ namespace byteheaven.tamjb.Engine
       StatusDatabase _database;
 
       ///
-      /// Our main audio processor: the level manager
+      /// The compressor system. This derives from BOTH IAudioProcessor
+      /// and IMultiBandCompressor. It is cast to both. Isn't this fun?
+      /// No? Well, OK.
       ///
-      MultiBandCompressor _compressor;
+      IAudioProcessor _compressor;
 
       ///
       /// A mutex to prevent audio from being mangled when settings
@@ -1821,6 +1710,8 @@ namespace byteheaven.tamjb.Engine
       /// The denormalization fix. Talk to your doctor or pharmacist.
       ///
       double _denormalFix = Denormal.denormalFixValue;
+
+      Quality _qualityLevel = Quality.HIGH;
    }
 } // tam namespace
 

@@ -1,6 +1,8 @@
 # $Id$
 #
 
+MCS=gmcs
+
 TARGET = ../bin/tamjb.Engine.dll
 
 SOURCES = AssemblyInfo.cs \
@@ -15,14 +17,19 @@ SOURCES = AssemblyInfo.cs \
         HighpassFilter.cs \
         IAudioProcessor.cs \
         IMonoFilter.cs \
+	IMultiBandCompressor.cs \
 	KaiserWindow.cs \
-        LocalFileDatabase.cs \
+	Limiter.cs \
         LowpassFilter.cs \
 	MathApproximation.cs \
         MyRandom.cs \
+	PoorCompressor.cs \
         RecursiveScanner.cs \
         SampleFifo.cs \
         SoftClipper.cs \
+        SoftKneeLimiter.cs \
+	SoftKneeDevice.cs \
+        StatusDatabase.cs \
 	StereoCrossover.cs \
         MultiBandCompressor.cs
 
@@ -31,16 +38,16 @@ SOURCES = AssemblyInfo.cs \
 #
 
 # -- SQLite
-# DBFLAGS = -define:USE_SQLITE
-# DBREFS = -r:Mono.Data.SqliteClient 
+DBFLAGS = -define:USE_SQLITE
+DBREFS = -r:Mono.Data.SqliteClient
 
 # -- MySql (4.1 or better for nested queries)
 # DBFLAGS = -define:USE_MYSQL
 # DBREFS = -r:ByteFX.Data
 
 # -- PostgreSQL
-DBFLAGS = -define:USE_POSTGRESQL
-DBREFS = -r:Npgsql
+# DBFLAGS = -define:USE_POSTGRESQL
+# DBREFS = -r:Npgsql
 
 # Note: WATCH_DENORMALS is pretty cpu-expensive
 
@@ -62,7 +69,7 @@ REFS = -r:System.Data \
 all: $(TARGET)
 
 $(TARGET): $(DEPLIBS) $(SOURCES) $(REF_LIBS) Makefile
-	mcs $(DBFLAGS) $(DEBUGFLAGS) $(LIBPATH) $(REFS) $(SOURCES) \
+	$(MCS) $(DBFLAGS) $(DEBUGFLAGS) $(LIBPATH) $(REFS) $(SOURCES) \
                 -target:library -out:$@
 
 

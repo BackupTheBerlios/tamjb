@@ -35,6 +35,15 @@ namespace byteheaven.tamjb.Interfaces
       WRONG_MOOD             ///< Rejected because not in the mood
    }
 
+   /// 
+   /// Track's physical status, as in missing or damaged
+   ///
+   public enum TrackStatus : int
+   {
+      OK,
+      MISSING
+   }
+
    public interface ITrackInfo
    {
       ///
@@ -85,5 +94,7 @@ namespace byteheaven.tamjb.Interfaces
       /// by the system.
       ///
       TrackEvaluation evaluation{ get; }
+
+      TrackStatus status{ get; }
    }
 }

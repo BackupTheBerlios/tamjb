@@ -42,13 +42,29 @@ RELEASE_BINARY_FILES = \
   bin/tamjb.Server.exe \
   bin/tamjb.GtkPlayer.exe \
 
+WEB_FILES = \
+	webgui/index.aspx \
+	webgui/moodselect.aspx \
+	webgui/style.css \
+	webgui/tamjb.master \
+	webgui/web.config
+
+WEB_BIN_FILES = \
+	webgui/bin/Anthem.dll \
+	webgui/bin/webgui.dll \
+	webgui/bin/tamjb.Interfaces.dll 
+
 all: assykey.snk dll_subdirs exe_subdirs
 
 rel-binary: all
 	-mkdir package 2> /dev/null
 	-mkdir package/bin 2> /dev/null
+	-mkdir package/webapp 2> /dev/null
+	-mkdir package/webapp/bin 2> /dev/null
 	cp $(RELEASE_TEXT_FILES) package/.
 	cp $(RELEASE_BINARY_FILES) package/bin/.
+	cp $(WEB_FILES) package/webapp/.
+	cp $(WEB_BIN_FILES) package/webapp/bin/.
 
 install: rel-binary
 	cd package && ./install.sh

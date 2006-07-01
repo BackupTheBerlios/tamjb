@@ -287,9 +287,8 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       static object _CreateLocalEngine()
       {
-         // Assembly id3 = Assembly.LoadWithPartialName( "byteheaven.id3" );
-         Assembly engineAssembly = 
-            Assembly.LoadWithPartialName( "tamjb.Engine" );
+         /* Assembly engineAssembly =  */
+         Assembly.LoadWithPartialName( "tamjb.Engine" );
          
          Type type = Type.GetType( 
             "byteheaven.tamjb.Engine.Backend,tamjb.Engine" );
@@ -308,8 +307,8 @@ namespace byteheaven.tamjb.GtkPlayer
       ///
       static IRecursiveScanner _CreateRecursiveScanner( string dir )
       {
-         Assembly engineAssembly = 
-            Assembly.LoadWithPartialName( "tamjb.Engine" );
+         // Assembly engineAssembly = 
+         Assembly.LoadWithPartialName( "tamjb.Engine" );
 
          Type type = Type.GetType( 
             "byteheaven.tamjb.Engine.RecursiveScanner,tamjb.Engine" );

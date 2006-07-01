@@ -4,7 +4,7 @@
   Codebehind="index.aspx.cs"
   EnableViewState="true"
   AutoEventWireup="false"
-  Title="T.A.M. Jukebox"
+  Title="T.A.M. Jukebox Index"
 %>
 <%@ Register Assembly="Anthem" Namespace="Anthem" TagPrefix="anthem" %>
 <script runat="server">
@@ -43,70 +43,112 @@
 </script>
 
  <div style="float: right; margin: 0.6em;">
+   <!-- TODO: Write javascript to display "working" dialog etc -->
+   <anthem:Timer id="refreshTimer" runat="server" 
+     Enabled="true"
+     Interval="5000"
+     OnTick="_OnRefresh"
+     />
     <anthem:Button id="refreshButton" runat="server" 
        cssclass="stdButton"
-       text="Refresh"
+       text="-1"
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        OnClick="_OnRefresh" />
  </div>
 
  <div id="moodBox">
   <table class="suckTable">
   <tr>
-    <th><anthem:LinkButton id="userNameBtn" runat="server" text="(unknown)" 
-      OnClick="_OnUserClick" /></th>
+    <th>Opinion of</th>
+    <td colspan="2"><anthem:LinkButton id="userNameBtn" runat="server" text="(unknown)" 
+        OnClick="_OnUserClick" /></td>
+  </tr>
+
+  <tr>
+    <th>Suck Amount<br />
+       <anthem:Label
+         id="nowSuckLevel" runat="server" text="100" />%</th>
     <td><anthem:Button id="ruleBtn" runat="server" text="Rule"
        cssclass="stdButton"
        OnClick="_OnRule"
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="false"
-       /></td>
-    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData"
-      id="nowSuckLevel" runat="server" text="100" />%</div></td>
-    <td><anthem:Button id="suckBtn" runat="server" text="Suck"
+       />
+       <anthem:Button id="suckBtn" runat="server" text="Suck"
        cssclass="stdButton"
        OnClick="_OnSuck"
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="False" /></td>
   </tr>
 
   <tr>
-    <th><anthem:LinkButton id="moodBtn" runat="server" text="(unknown)" 
-       OnClick="_OnMoodClick" /></th>
+    <th><anthem:LinkButton runat="server" 
+       id="moodBtn" 
+       EnableCallback="false"
+       text="(unknown)" 
+       OnClick="_OnMoodClick" /><br />
+       <anthem:Label cssclass="nowPlayingData"
+        id="nowMoodLevel" runat="server" text="0" />%</th>
+    </th>
     <td><anthem:Button id="yesBtn" runat="server" text="Yes"
        cssclass="stdButton"
        OnClick="_OnYes" 
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="false"
-       /></td>
-    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData"
-      id="nowMoodLevel" runat="server" text="0" />%</div></td>
-    <td><anthem:Button id="noBtn" runat="server" text="No"
+       />
+       <anthem:Button id="noBtn" runat="server" text="No"
        cssclass="stdButton"
        OnClick="_OnNo" 
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="false"
        /></td>
   </tr>
   </table>
  </div>
 
+ <div id="megaSuckBox">
+  <anthem:Button id="megaSuckBtn" runat="server" text="Mega-Suck"
+    cssclass="megaSuckBtn"
+    OnClick="_OnMegaSuck"
+    PreCallbackFunction="StartUpdate"
+    PostCallbackFunction="FinishUpdate"
+    EnableDuringCallback="false" />
+ </div>
+
  <div id="transportBox">
   <table class="transportTable">
   <tr>
     <td><anthem:Button id="prevBtn" runat="server" text="Prev"
-       OnClick="_OnPrev" TextDuringCallback="Updating" 
+       OnClick="_OnPrev"
        cssclass="stdButton"
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="False" 
        /></td>
     <td><anthem:Button id="nextBtn" runat="server" text="Next"
        cssclass="stdButton"
        OnClick="_OnNext" 
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="false"
        /></td>
     <td><anthem:Button id="stopBtn" runat="server" text="Stop"
        cssclass="stdButton"
        OnClick="_OnStop" 
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="false"
        /></td>
     <td><anthem:Button id="playBtn" runat="server" text="Play"
        cssclass="stdButton"
        OnClick="_OnPlay" 
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
        EnableDuringCallback="false"
        /></td>
   </tr>
@@ -136,11 +178,23 @@
     <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
       id="nowFileName" runat="server" text="" /></div></td>
   </tr>
+  <tr>
+    <th>&nbsp;</th>
+    <td><anthem:CheckBox id="showHistory" runat="server" 
+     Text="History Enabled" 
+     EnableDuringCallback="false"
+     PreCallbackFunction="StartUpdate"
+     PostCallbackFunction="FinishUpdate"
+     Checked="false"
+     AutoCallback="true"
+     /></td>
+  </tr>
   </table>
-
  </div>
 
- <div id="historyBox">
+ <anthem:Panel id="historyBox" runat="server" 
+     cssclass="historyBox" >
+
   <anthem:Repeater id="history" runat="server" 
     EnableViewState="false"
     >
@@ -196,7 +250,7 @@
       </tr>
     </ItemTemplate>
   </anthem:Repeater>
- </div>
+ </anthem:Panel>
 
 </asp:Content>
 
