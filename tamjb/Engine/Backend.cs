@@ -222,9 +222,13 @@ namespace byteheaven.tamjb.Engine
          }
          catch
          {
-            _controllingUser = null;
-            _controllingMood = null;
          }
+
+         if (null == _controllingUser)
+            _controllingUser = new Credentials();
+
+         if (null == _controllingMood)
+            _controllingMood = new Mood();
       }
       
       ~Backend()
@@ -1346,6 +1350,9 @@ namespace byteheaven.tamjb.Engine
       ///
       bool _WantToPlayTrack( PlayableData info )
       {
+         if (null == _controllingUser) // Nobody exists, just play it.
+            return true;
+
          uint trackKey = info.key;
 
          // Now, decide whether we are going to actually PLAY this
@@ -1363,6 +1370,10 @@ namespace byteheaven.tamjb.Engine
             info.evaluation = TrackEvaluation.SUCK_TOO_MUCH;
             return false;       // methinks it sucketh too much
          }
+
+         // If no controlling mood exists, we're happy with this track
+         if (null == _controllingMood)
+            return true;
 
          uint mood = _database.GetAppropriate( _controllingUser.id,
                                                _controllingMood.id,
@@ -1536,10 +1547,8 @@ namespace byteheaven.tamjb.Engine
             if (_controllingUser.id != cred.id)
                throw new ApplicationException( "You are not in control" );
 
-            // TODO: see if this user/mood is in the database
-
             ++_changeCount;
-            _controllingMood = (Mood)mood;
+            _controllingMood = GetMood( mood.id );
 
             _database.StoreController( _controllingUser, 
                                        _controllingMood );
@@ -1563,6 +1572,18 @@ namespace byteheaven.tamjb.Engine
 
             return mood;
          }
+      }
+
+      ///
+      /// get the mood data, given that you know its id:
+      ///
+      public Mood GetMood( uint id )
+      {
+         Mood mood;
+         if (!_database.GetMood( id, out mood ))
+            return null;
+         
+         return mood;
       }
 
       ///
@@ -1669,14 +1690,14 @@ namespace byteheaven.tamjb.Engine
       ///
       /// \todo add multiuser support? maybe?
       ///
-      Credentials _controllingUser = null;
+      Credentials _controllingUser = new Credentials();
 
       ///
       /// Controlling user's mood
       ///
       /// \todo Support multiple moods per-user. I think.
       ///
-      Mood _controllingMood = null;
+      Mood _controllingMood = new Mood();
 
       Random _rng = new MyRandom(); // Random numbers are cool
 

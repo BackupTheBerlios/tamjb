@@ -150,6 +150,8 @@ namespace byteheaven.tamjb.webgui
                Mood mood = new Mood();
                
                backend.GetCurrentUserAndMood( ref credentials, ref mood );
+Console.WriteLine( "Current: {0}:{1}", 
+                    credentials.name, mood.name );
 
                // Save what we THINK is the current state for later.
                this.credentials = credentials;

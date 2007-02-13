@@ -36,11 +36,7 @@
  <div id="moodSelectBox">
   Moods for <asp:Literal runat="server" id="currentUserBox" />:
 
-  <anthem:Repeater id="moodSelect" runat="server"
-    OnItemCommand="_OnMoodCommand" 
-    PreCallbackFunction="StartUpdate"
-    PostCallbackFunction="FinishUpdate"
-    >
+  <anthem:Repeater id="moodSelect" runat="server" >
     <HeaderTemplate>
       <div id="moodSelect">
     </HeaderTemplate>
@@ -50,23 +46,23 @@
     </FooterTemplate>
 
     <ItemTemplate>
-      <a href="#"
-        OnClick='<%# "javascript:historyCommand(\"suckMore\",\"" 
-          + DataBinder.Eval(Container.DataItem, "moodKey") 
-          + "\"); return false;" %>' 
-           ></a>
-
       <div class='moodEntry <%# DataBinder.Eval(Container.DataItem, "status") %>' >
-        <anthem:LinkButton runat="server" id="selectBtn"
-          CommandName="select"
-          CommandArgument='<%# DataBinder.Eval(Container.DataItem, "moodKey") %>'
-          Text='<%# DataBinder.Eval(Container.DataItem, "moodName") %>' 
-    PreCallbackFunction="StartUpdate"
-    PostCallbackFunction="FinishUpdate"
-          />
+        <a href="moodselect.aspx?mood=<%# DataBinder.Eval(Container.DataItem, "moodKey") %>&action=select" ><%# DataBinder.Eval(Container.DataItem, "moodName") %></a>
       </div>
     </ItemTemplate>
   </anthem:Repeater>
+ </div>
+
+ <div id="moodCreateBox">
+   <anthem:TextBox id="newMoodBox" runat="server"
+      Columns="20" />
+   <anthem:Button id="createBtn" runat="server" text="Create"
+       cssclass="stdButton"
+       OnClick="_OnCreate" 
+       PreCallbackFunction="StartUpdate"
+       PostCallbackFunction="FinishUpdate"
+       EnableDuringCallback="false"
+       />
  </div>
 </asp:Content>
 

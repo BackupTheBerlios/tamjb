@@ -61,7 +61,7 @@ namespace byteheaven.tamjb.Interfaces
       ///
       public Mood()
       {
-         _name = "";
+         _name = "(unknown)";
          _id = 0;
       }
 

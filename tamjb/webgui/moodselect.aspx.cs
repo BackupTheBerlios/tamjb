@@ -28,7 +28,7 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Data;
    using System.Web;
-   using System.Web.UI.WebControls;
+   using ASP = System.Web.UI.WebControls;
 
    using Anthem;
    using byteheaven.tamjb.Interfaces;
@@ -36,7 +36,8 @@ namespace byteheaven.tamjb.webgui
    public class moodselect : byteheaven.tamjb.webgui.WebPageBase
    {
       protected Anthem.Repeater moodSelect;
-      protected Literal currentUserBox;
+      protected ASP.Literal currentUserBox;
+      protected TextBox newMoodBox;
 
       override protected void OnLoad( EventArgs loadArgs )
       {
@@ -46,12 +47,25 @@ namespace byteheaven.tamjb.webgui
          {
             Manager.Register( this );
 
-            Console.WriteLine( "OL: {0}, {1}",
-                               IsPostBack,
-                               Anthem.Manager.IsCallBack );
-
-            moodSelect.ItemCommand += 
-               new RepeaterCommandEventHandler( _OnMoodCommand );
+            // Special: handle command line parameters. :)
+            string action = (string)Request.Params["action"];
+            if (null != action)
+            {
+               switch (action)
+               {
+               case "select":
+                  string mood = (string)Request.Params["mood"];
+                  if (null == mood)
+                  {
+                     throw new ArgumentException( "Parameter missing",
+                                                  "mood" );
+                  }
+                  _SetMood( mood );
+                  
+                  Server.Transfer( "~/index.aspx" );
+                  break;        // not reached
+               }                  
+            }
 
             if (!IsPostBack)
             {
@@ -116,52 +130,97 @@ namespace byteheaven.tamjb.webgui
          moodSelect.UpdateAfterCallBack = true;
       }
 
-      public void _OnMoodCommand( object sender,
-                                  RepeaterCommandEventArgs args )
+      ///
+      /// Get current credentials? Sloppy. Must deal with logins soon...
+      ///
+      Credentials _GetCredentials()
       {
-         Console.WriteLine( "OnMoodCommand {0}, {1}",
-                            args.CommandName,
-                            args.CommandArgument );
-
          Credentials credentials = new Credentials();
          Mood currentMood = new Mood();
          backend.GetCurrentUserAndMood( ref credentials,
                                         ref currentMood );
 
-         if (credentials.name != currentUserBox.Text)
-         {
-            // TODO: report error here: current user changed in the
-            // back end while we were working!
-            _Refresh();
-            return;
-         }
-         
-         switch (args.CommandName)
-         {
-         case "select":
-            backend.RenewLogon( credentials ); // Why?
-            
-            uint newMood = Convert.ToUInt32( args.CommandArgument );
-            Mood mood = new Mood( "", newMood );
-            backend.SetMood( credentials, mood );
-            _Refresh();
-            break;
+         return credentials;
+      }
 
-         default:
-            throw new ApplicationException( "Unexpected command" );
+//       public void _OnMoodCommand( object sender,
+//                                   ASP.RepeaterCommandEventArgs args )
+//       {
+//          Console.WriteLine( "OnMoodCommand {0}, {1}",
+//                             args.CommandName,
+//                             args.CommandArgument );
 
-         }
+//          Credentials credentials = _GetCredentials();
+
+//          if (credentials.name != currentUserBox.Text)
+//          {
+//             // TODO: report error here: current user changed in the
+//             // back end while we were working!
+//             _Refresh();
+//             return;
+//          }
+
+//          switch (args.CommandName)
+//          {
+//          case "select":
+//             backend.RenewLogon( credentials ); // Why?
+
+//             uint newMood = Convert.ToUInt32( args.CommandArgument );
+//             Mood mood = new Mood( "", newMood );
+
+//             // SetMood should take just the integer ID.
+//             backend.SetMood( credentials, mood );
+//             // _Refresh();
+//             Server.Transfer( "index.aspx" );
+//             break;
+
+//          default:
+//             throw new ApplicationException( "Unexpected command" );
+
+//          }
+//       }
+
+      void _SetMood( string moodString )
+      {
+         Credentials credentials = _GetCredentials();
+         // TODO: keep our credentials in the session or something, and then
+         // don't bother with "RenewLogon".
+
+         backend.RenewLogon( credentials ); // Why?
+
+         uint newMood = Convert.ToUInt32( moodString );
+
+         Console.WriteLine( "NewMood: {0}:{1}", newMood, moodString );
+
+         // SetMood should take just the integer ID, not force creation
+         // of a nameless object. :)
+         Mood mood = new Mood( "", newMood );
+         backend.SetMood( credentials, mood );
       }
                                      
 
-//       protected void _OnSelect( object sender, EventArgs ea )
-//       {
-//          if (null != QueryString["mood"])
-//          {
-//             string mood = (string)QueryString["mood"];
-//             Console.WriteLine( "MOOD {0}", mood );
-//          }
-//       }
+      ///
+      /// So, violent mood swings, eh?
+      ///
+      protected void _OnCreate( object sender, EventArgs ea )
+      {
+         if (newMoodBox.Text.Length == 0)
+         {
+            return;
+         }
+
+         Credentials credentials = _GetCredentials();
+
+         // I really don't understand this:
+         backend.RenewLogon( credentials ); // Why?
+
+         Mood newMood = backend.CreateMood( credentials, newMoodBox.Text );
+         backend.SetMood( credentials, newMood );
+
+         newMoodBox.Text = "";
+         newMoodBox.UpdateAfterCallBack = true;
+         moodSelect.UpdateAfterCallBack = true;
+      }
 
    }
 }

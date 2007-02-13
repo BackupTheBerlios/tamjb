@@ -60,7 +60,7 @@ namespace byteheaven.tamjb.Interfaces
       ///
       public Credentials()
       {
-         _name = "";
+         _name = "(unknown)";
          _id = 0;
       }
 

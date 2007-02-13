@@ -40,7 +40,7 @@ RELEASE_BINARY_FILES = \
   bin/tamjb.Interfaces.dll \
   bin/tamjb.Engine.dll \
   bin/tamjb.Server.exe \
-  bin/tamjb.GtkPlayer.exe \
+  bin/tamjb.Server.exe.config 
 
 WEB_FILES = \
 	webgui/index.aspx \
@@ -88,7 +88,6 @@ dll_subdirs:
 
 exe_subdirs:
 	$(MAKE) --directory=Server
-	$(MAKE) --directory=GtkPlayer
 	$(MAKE) --directory=webgui
 
 

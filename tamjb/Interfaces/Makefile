@@ -1,6 +1,6 @@
 # $Id$
 
-DEBUGFLAGS = -g -define:DEBUG -define:TRACE
+DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 
 REFS = 
 

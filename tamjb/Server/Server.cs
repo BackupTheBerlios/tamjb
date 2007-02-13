@@ -133,9 +133,10 @@ namespace byteheaven.tamjb.Server
             bufferSize = Convert.ToUInt32( 
                ConfigurationManager.AppSettings["BufferSize"] );
          }
-         catch 
+         catch (Exception e)
          {
             Console.WriteLine( "BufferSize missing/invalid from config file" );
+            Console.WriteLine( e.ToString() );
             return 1;
          }
 

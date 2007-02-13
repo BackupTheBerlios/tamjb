@@ -604,7 +604,7 @@ namespace byteheaven.tamjb.Engine
          string query = _FixQuery( 
             "INSERT INTO users ("
             + " name"
-            + " ) VALUES ( :new_name ) "
+            + " ) VALUES ( :newName ) "
             );
 
          IDbConnection dbcon = null;
@@ -615,7 +615,7 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
-            IDbDataParameter param = _NewParameter( "new_name",
+            IDbDataParameter param = _NewParameter( "newName",
                                                     DbType.String );
             param.Value = name;
             cmd.Parameters.Add( param );
@@ -898,7 +898,7 @@ namespace byteheaven.tamjb.Engine
          string query = _FixQuery(
             "SELECT id, name"
             + " FROM mood"
-            + " WHERE user_id = :user_id"
+            + " WHERE user_id = :userId"
             );
 
          IDbConnection dbcon = null;
@@ -911,7 +911,7 @@ namespace byteheaven.tamjb.Engine
             cmd.CommandText = query;
 
             IDbDataParameter param;
-            param = _NewParameter( "user_id", DbType.String );
+            param = _NewParameter( "userId", DbType.String );
             param.Value = cred.id;
             cmd.Parameters.Add( param );
 
@@ -967,8 +967,8 @@ namespace byteheaven.tamjb.Engine
          string query = _FixQuery( 
             "SELECT id"
             + " FROM mood"
-            + " WHERE name = :user_name"
-            + " AND user_id = :user_id"
+            + " WHERE name = :userName"
+            + " AND user_id = :userId"
             );
 
          IDbConnection dbcon = null;
@@ -980,12 +980,12 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
-            IDbDataParameter param = _NewParameter( "user_name", 
+            IDbDataParameter param = _NewParameter( "userName", 
                                                     DbType.String );
             param.Value = name;
             cmd.Parameters.Add( param );
 
-            param = _NewParameter( "user_id", DbType.String );
+            param = _NewParameter( "userId", DbType.String );
             param.Value = credentials.id;
             cmd.Parameters.Add( param );
 
@@ -999,6 +999,73 @@ namespace byteheaven.tamjb.Engine
             }
 
             uint id = (uint)reader.GetInt32(0); 
+            mood = new Mood( name, id );
+            return true;        // data found, yay
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      ///
+      /// Retrieve a user's mood info by id, which is globally unique.
+      ///
+      /// \return true on success, false if this mood is not found
+      ///   
+      public bool GetMood( uint id,
+                           out Mood mood )
+      {
+         string query = _FixQuery( 
+            "SELECT name"
+            + " FROM mood"
+            + " WHERE id = :moodId"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            IDbDataParameter param = _NewParameter( "moodId", DbType.String );
+            param.Value = id;
+            cmd.Parameters.Add( param );
+
+            reader = cmd.ExecuteReader();
+
+            // PlayableData returnData;
+            if (!reader.Read()) // no data found?
+            {
+               mood = null;
+               return false;
+            }
+
+            string name = reader.GetString(0);
             mood = new Mood( name, id );
             return true;        // data found, yay
          }
@@ -1136,7 +1203,7 @@ namespace byteheaven.tamjb.Engine
               status
               )
              VALUES ( 
-              :file_path,
+              :filePath,
               :artist,
               :album,
               :title,
@@ -1156,7 +1223,7 @@ namespace byteheaven.tamjb.Engine
             cmd.CommandText = query;
 
             IDbDataParameter param;
-            param = _NewParameter( "file_path", DbType.String );
+            param = _NewParameter( "filePath", DbType.String );
             param.Value = newData.filePath;
             cmd.Parameters.Add( param );
 
@@ -1829,7 +1896,7 @@ namespace byteheaven.tamjb.Engine
          // header info:
          string query = _FixQuery(
             "SELECT count(*) FROM file_info"
-            + " WHERE file_path = :file_path"
+            + " WHERE file_path = :filePath"
             );
 
          IDbConnection dbcon = null;
@@ -1842,7 +1909,7 @@ namespace byteheaven.tamjb.Engine
 
 
             IDbDataParameter param;
-            param = _NewParameter( "file_path", DbType.String );
+            param = _NewParameter( "filePath", DbType.String );
             param.Value = fullPath;
             cmd.Parameters.Add( param );
 
