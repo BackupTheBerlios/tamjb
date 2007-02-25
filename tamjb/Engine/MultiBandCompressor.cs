@@ -39,12 +39,36 @@ namespace byteheaven.tamjb.Engine
    public class MultiBandCompressor
       : IAudioProcessor, IMultiBandCompressor
    {
-      public MultiBandCompressor()
+      public MultiBandCompressor( Backend.Quality quality )
       {
-         _crossover =
-            new StereoCrossover( 190.0, 
-                                 2200.0,
-                                 StereoCrossover.Quality.HIGH );
+         StereoCrossover.Quality crossoverQuality;
+         switch (quality)
+         {
+         case Backend.Quality.HIGH:
+            _crossover =
+               new StereoCrossover( 190.0, 
+                                    2200.0,
+                                    StereoCrossover.Quality.HIGH );
+            break;
+
+         case Backend.Quality.MEDIUM:
+            _crossover =
+               new StereoCrossover( 190.0, 
+                                    2200.0,
+                                    StereoCrossover.Quality.MEDIUM );
+            break;
+
+         case Backend.Quality.LOW:
+            _crossover = 
+               new StereoCrossover( 190.0, 
+                                    2200.0,
+                                    StereoCrossover.Quality.MEDIUM );
+            break;
+
+         default:
+            throw new ApplicationException( "Unexpected case in switch" );
+         }
+
 
          // Default levels:
          compressThresholdBass = 12000;

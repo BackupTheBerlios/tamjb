@@ -69,6 +69,13 @@ namespace byteheaven.tamjb.Engine
          HIGH
       }
 
+      public enum CompressionType
+      {
+         SIMPLE,                ///< Single band compression
+         MULTIBAND,             ///< Multi band compression
+         // NONE - not implemented? :)
+      }
+
       ///
       /// get/set the database connection string (as an url, must
       /// be file:something for SQLite.
@@ -168,11 +175,13 @@ namespace byteheaven.tamjb.Engine
       ///
       public static void Init( int desiredQueueSize,
                                string connectionString,
-                               Quality qualityLevel )
+                               Quality qualityLevel,
+                               CompressionType compressType )
       {
          _theBackend = new Backend( desiredQueueSize, 
                                     connectionString,
-                                    qualityLevel );
+                                    qualityLevel,
+                                    compressType );
       }
 
       ///
@@ -182,11 +191,13 @@ namespace byteheaven.tamjb.Engine
       /// 
       public Backend( int desiredQueueSize, 
                       string connectionString,
-                      Quality qualityLevel )
+                      Quality qualityLevel,
+                      Backend.CompressionType compressionType )
       {
          _Trace( "[Backend]" );
 
          _qualityLevel = qualityLevel;
+         _compressionType = compressionType;
          _desiredQueueSize = desiredQueueSize;
          _connectionString = connectionString;
 
@@ -1134,13 +1145,14 @@ namespace byteheaven.tamjb.Engine
          try
          {
             Type compressorType;
-            switch (_qualityLevel)
+            switch (_compressionType)
             {
-            case Quality.LOW:
+            case CompressionType.SIMPLE:
+               // Note: the poor compressor is actually pretty bitchin
                compressorType = typeof( PoorCompressor );
                break;
 
-            case Quality.HIGH:
+            case CompressionType.MULTIBAND:
                compressorType = typeof( MultiBandCompressor );
                break;
 
@@ -1168,8 +1180,8 @@ namespace byteheaven.tamjb.Engine
             _Trace( "Note: compression settings not found, using defaults" );
 
             // Depending on quality settings, choose:
-            if (_qualityLevel == Quality.HIGH)
-               compressor = new MultiBandCompressor(); // load with defaults
+            if (_compressionType == CompressionType.MULTIBAND)
+               compressor = new MultiBandCompressor( _qualityLevel );
             else
                compressor = new PoorCompressor();
          }
@@ -1737,6 +1749,8 @@ namespace byteheaven.tamjb.Engine
       double _denormalFix = Denormal.denormalFixValue;
 
       Quality _qualityLevel = Quality.HIGH;
+
+      Backend.CompressionType _compressionType = CompressionType.MULTIBAND;
    }
 } // tam namespace
 

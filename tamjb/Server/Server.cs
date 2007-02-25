@@ -225,8 +225,34 @@ namespace byteheaven.tamjb.Server
             _connectionString = connectionString;
 
             // Configure the database engine so the global engine will
-            // be constructed correctly. There's GOTTA be a better way
-            // to do this.
+            // be constructed correctly. This is so wrong--some of these
+            // could be configured on the fly or something.
+
+            Backend.CompressionType compression = 
+               Backend.CompressionType.MULTIBAND;
+
+            string compressionString = 
+               ConfigurationManager.AppSettings["Compression"];
+
+            if (null != compressionString)
+            {
+               switch (compressionString)
+               {
+               case "simple":
+                  compression = Backend.CompressionType.SIMPLE;
+                  break;
+
+               case "multiband":
+                  compression = Backend.CompressionType.MULTIBAND;
+                  break;
+
+               default:
+                  throw new ApplicationException( 
+                     "Unexpected Compression string in configuration: "
+                     + compressionString );
+
+               }
+            }
 
             Backend.Quality quality = Backend.Quality.HIGH;
             string qualityString = ConfigurationManager.AppSettings["Quality"];
@@ -243,7 +269,10 @@ namespace byteheaven.tamjb.Server
                }
             }
 
-            Backend.Init( QUEUE_MIN_SIZE, _connectionString, quality );
+            Backend.Init( QUEUE_MIN_SIZE, 
+                          _connectionString, 
+                          quality,
+                          compression );
 
             int desiredQueueSize = 20;
             try
