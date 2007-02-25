@@ -62,7 +62,7 @@ namespace byteheaven.tamjb.Engine
             _crossover = 
                new StereoCrossover( 190.0, 
                                     2200.0,
-                                    StereoCrossover.Quality.MEDIUM );
+                                    StereoCrossover.Quality.LOW );
             break;
 
          default:
