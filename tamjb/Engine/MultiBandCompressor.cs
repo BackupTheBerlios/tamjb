@@ -41,7 +41,6 @@ namespace byteheaven.tamjb.Engine
    {
       public MultiBandCompressor( Backend.Quality quality )
       {
-         StereoCrossover.Quality crossoverQuality;
          switch (quality)
          {
          case Backend.Quality.HIGH:

@@ -57,7 +57,12 @@ namespace byteheaven.tamjb.Server
       static string _connectionString = null;
       static int QUEUE_MIN_SIZE = 6; // get ahead of ourselves.
 
-      static int SCAN_FINISHED_SLEEP_TIME = 100; // loops
+      static int ONE_LOOP_SLEEP_TIME = 2000; // milliseconds
+
+      // Used to be 200 seconds between scans. Well, once you have 9000 or so
+      // mp3 files, you don't REALLY care if they get updated more than
+      // once a day or something. This really should be configurable
+      static int SCAN_FINISHED_SLEEP_TIME = 40000; // loops
 
       /// 
       /// \todo The list of mp3 dirs should be changeable at runtime
@@ -393,7 +398,7 @@ namespace byteheaven.tamjb.Server
                   Console.WriteLine( "Poll Failed: " + e.ToString() );
                }
 
-               Thread.Sleep( 2000 );   // wait a while
+               Thread.Sleep( ONE_LOOP_SLEEP_TIME );   // wait a while
             }
          }
          catch (Exception outerEx)

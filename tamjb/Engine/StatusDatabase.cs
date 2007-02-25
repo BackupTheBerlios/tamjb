@@ -1414,6 +1414,96 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
+      /// Chooses the next song from an album.
+      /// 
+      /// \return data for the next song, or null if not found
+      ///   (or if the randomizer says "no")
+      ///
+      public PlayableData GetTrackByIndex( string artist,
+		      			   string album,
+		     	                   int index )
+      {
+         string query = "";
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+
+            query =
+               "SELECT file_path, artist, album, title, track,"
+               + " genre, length_seconds, filekey" 
+               + " FROM file_info"
+               + " WHERE status='" + (int)TrackStatus.OK + "'"
+	       + " AND artist=:artist"
+	       + " AND album=:album"
+	       + " AND track=:index" 
+	       ;
+               
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+	    IDbDataParameter param = _NewParameter( "artist", DbType.String );
+	    param.Value = artist;
+	    cmd.Parameters.Add( param );
+
+	    param = _NewParameter( "album", DbType.String );
+	    param.Value = album;
+	    cmd.Parameters.Add( param );
+
+	    param = _NewParameter( "index", DbType.Int32 );
+	    param.Value = index;
+	    cmd.Parameters.Add( param );
+
+            reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+               // Nothing returned. This is bad!
+               return null;
+            }
+
+	    PlayableData trackData = new PlayableData();
+            trackData.filePath = reader.GetString(0); // works for TEXT fld
+            trackData.artist = reader.GetValue(1).ToString();
+            trackData.album = reader.GetValue(2).ToString();
+            trackData.title = reader.GetValue(3).ToString();
+            trackData.track = reader.GetInt32(4);
+            trackData.genre = reader.GetValue(5).ToString();
+            trackData.lengthInSeconds = reader.GetInt32(6);
+            trackData.key = (uint)reader.GetInt32(7);
+
+	    return trackData;
+         }
+         catch (Exception e)
+         {
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+               cmd.Dispose();
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+	 Debug.Assert( false, "not reached" );
+	 return null; 
+      }
+
+
+      ///
       /// selects one song at random based on the supplied playlist
       /// limitations:
       ///

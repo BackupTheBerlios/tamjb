@@ -396,14 +396,72 @@ namespace byteheaven.tamjb.Engine
       /// \return true if a song was enqueued, false if no songs
       ///   were found.
       ///
+      /// Note that this doesn't always pick randomly. But hey, you
+      /// get the general idea.
+      ///
       bool EnqueueRandomSong()
       {
          _Trace( "[EnqueueRandomSong]" );
 
          ++_changeCount;
 
-         // Pick a song and go.
-         PlayableData nextTrack;
+	 // ** Wait! 
+	 // Maybe we want the next song in a row on this album!
+	 // To do this:
+	 //   * Check the info for the last track in-queue
+	 //   * Decide based on its track number what the odds are
+	 //   * Roll the dice
+	 //   * If we win, find the next track!
+	 //
+	 int trackIndex = 0;
+	 string artist = "";
+	 string album = "";
+         _playQueueMutex.WaitOne();
+         try
+         {
+	    int count = _playQueue.Count;
+	    if (count > 0)
+	    {
+               PlayableData currentTrack =
+		  (PlayableData)_playQueue[count - 1];
+
+	       trackIndex = currentTrack.track;
+	       artist = currentTrack.artist;
+	       album = currentTrack.album;
+	    }
+         }
+         finally
+         {
+            _playQueueMutex.ReleaseMutex();
+         }
+
+       // So here we go. Say our base chance of picking 
+       // subsequent tracks is this:
+       double chance = 0.18; // 18 percent
+
+       // It decreases by the location in the album, slightly
+       for (int i = 1; i < trackIndex; i++)
+       {
+          chance = chance * (1.0 - chance);
+       }
+
+       // _Trace( "Choosing subsequent track, probability="
+       // 	       + chance + " track=" + trackIndex );
+
+       PlayableData nextTrack = null;
+
+       // Yeah, don't even bother if we don't know the index of this track.
+       if ((trackIndex > 0) && ((double)_rng.Next(1024) < (chance * 1024.0)))
+       {
+          // Pick the next track, or if it's missing, fall back to random
+          nextTrack = _database.GetTrackByIndex( artist, 
+			                         album, 
+						 trackIndex + 1 );
+       }
+
+       if (null == nextTrack)
+       {
+         // Pick a song totally randomly.
          uint count = _database.PickRandom( _rng, out nextTrack );
 
          if (0 == count)
@@ -411,6 +469,7 @@ namespace byteheaven.tamjb.Engine
             _Trace( "  Playlist Empty: No songs found" );
             return false;    // No songs found
          }
+       }
 
          _PlaylistAppend( nextTrack );
 

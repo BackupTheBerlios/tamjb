@@ -54,16 +54,17 @@ namespace byteheaven.tamjb.Engine
          // Quality of the kaiser window for the low-mid crossover.
          // A (60 is good, 50 acceptable, 70 is GREAT). 45 swamps my
          // PIII-600. If you have something faster you definitely should
-         // increase this.
+         // increase this. (HIGH is quite acceptable, and none sound
+	 // actually bad.)
          int lowCrossoverQuality;
          switch (qualityLevel)
          {
          case Quality.LOW:
-            lowCrossoverQuality = 30;
+            lowCrossoverQuality = 23;
             break;
 
          case Quality.MEDIUM:
-            lowCrossoverQuality = 50;
+            lowCrossoverQuality = 46;
             break;
 
          case Quality.HIGH:
