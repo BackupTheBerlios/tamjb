@@ -1114,7 +1114,7 @@ namespace byteheaven.tamjb.Engine
       public PlayableData GetFileInfo( uint key )
       {
          string query = 
-            "SELECT file_path, artist, album, title, track," +
+            "SELECT file_path, artist, album, title, track,"
             + " genre, length_seconds, status" 
             + " FROM file_info"
             + " WHERE filekey = " + key 
@@ -1359,7 +1359,7 @@ namespace byteheaven.tamjb.Engine
             _Trace( "Choosing track: " + offset );
 
             query =
-               "SELECT file_path, artist, album, title, track," +
+               "SELECT file_path, artist, album, title, track,"
                + " genre, length_seconds, filekey" 
                + " FROM file_info"
                + " WHERE status='" + (int)TrackStatus.OK + "'"
