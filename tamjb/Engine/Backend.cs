@@ -52,10 +52,14 @@ namespace byteheaven.tamjb.Engine
       public enum Quality
       {
          ///
-         /// Poor audio quality. There is some compression and limiting, 
-         /// but levels will vary.
+         /// Poor audio quality. Crossovers are not very good. 
          ///
          LOW,
+
+	 ///
+	 /// It's in the middle somewhre.
+	 ///
+	 MEDIUM,
 
          ///
          /// Highest audio quality. Multi-band compression with 

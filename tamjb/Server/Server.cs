@@ -235,6 +235,7 @@ namespace byteheaven.tamjb.Server
                switch (qualityString)
                {
                case "LOW":      quality = Backend.Quality.LOW;    break;
+               case "MEDIUM":   quality = Backend.Quality.MEDIUM; break;
                case "HIGH":     quality = Backend.Quality.HIGH;   break;
                default:
                   throw new ApplicationException( 
