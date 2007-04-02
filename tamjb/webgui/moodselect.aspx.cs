@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2006 Tom Surace.
+// Copyright (C) 2006-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -62,7 +62,11 @@ namespace byteheaven.tamjb.webgui
                   }
                   _SetMood( mood );
                   
-                  Server.Transfer( "~/index.aspx" );
+		  // Note: Server.Transfer does not cause the Anthem javascript to
+		  // render properly, so Anthem.AddEvent does not exist, and ajax 
+		  // callbacks stop working. :(
+		  
+                  Response.Redirect( "~/index.aspx" );
                   break;        // not reached
                }                  
             }

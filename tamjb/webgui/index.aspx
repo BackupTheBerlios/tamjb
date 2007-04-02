@@ -37,7 +37,14 @@
 
     function historyCommand(action,keystring)
     {
+        StartUpdate();
+        setTimeout('historyCommandPtTwo("' + action + '","' + keystring + '")', 1 );
+    }
+
+    function historyCommandPtTwo(action,keystring)
+    {
         Anthem_InvokePageMethod('_OnHistoryCommand', [action,keystring], null);
+        FinishUpdate();
     }
 
 </script>

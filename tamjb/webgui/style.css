@@ -352,34 +352,39 @@ table.history tr.WRONG_MOOD td.mood
 {
   z-index: 110;
   background-color: #000000;
-  position: absolute;
+  position: fixed;
   top: 0px;
   left: 0px;
   width: 100%;
-  /* height: 2600px; */ /* Causes scrollbar... */
   height: 100%;
 
-  background: transparent;
-
   /* Set opacity in, um, several different nonstandard ways! */
-/*  
   opacity: .70;
   filter: progid:DXImageTransform.Microsoft.Alpha(opacity=50);
   -moz-opacity:.50;
-*/
 
   visibility: hidden;
   text-align: center;
 }
 
+
+/* This only exists to center the OverlayWindow */
+.OverlayWindowFormat
+{
+  z-index: 111;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  background: transparent;
+  text-align: center;
+  visibility: hidden;
+}
+
 /* Separate div that shouldn't be a child of the overlay base, if you
   don't want it transparent */
-
 .OverlayWindow
 {
-  /* position: absolute; */
-  z-index: 111;
-
   width: 20em; 
   height: 2em;
   margin-top: 3em;
@@ -396,8 +401,6 @@ table.history tr.WRONG_MOOD td.mood
   font-size: larger;
 
   text-align: center;
-
-  /* visibility: hidden; */
 }
 
 /* Styles for the mood select page */

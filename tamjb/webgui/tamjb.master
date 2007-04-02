@@ -74,13 +74,13 @@
     function StartUpdate()
     {
        document.getElementById('updating').style.visibility = 'visible'; 
-       /* document.getElementById('updatingContent').style.visibility = 'visible';  */
+       document.getElementById('updatingContent').style.visibility = 'visible';
     }
 
     function FinishUpdate()
     {
        document.getElementById('updating').style.visibility = 'hidden'; 
-       /* document.getElementById('updatingContent').style.visibility = 'hidden';  */
+       document.getElementById('updatingContent').style.visibility = 'hidden'; 
     }
 
 </script>
@@ -100,9 +100,12 @@
 <form id="mainForm" runat="server">
 
 <div id="updating" class="OverlayBase">
-<div id="updatingContent" class="OverlayWindow">
-  Updating...
+  &nbsp;
 </div>
+<div id="updatingContent" class="OverlayWindowFormat">
+  <div class="OverlayWindow">
+    Updating...
+  </div>
 </div>
 
 <div id="wrapper">
