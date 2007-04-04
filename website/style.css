@@ -10,13 +10,13 @@ div.header
   border-bottom: thin white solid;
 }
 
-div.little_paragraph
+.little_paragraph
 {
   text-align: justify;
   margin-left: 3em;
   margin-right: 3em;
-  margin-top: 0.2em;
-  margin-bottom: 0.3em;
+  margin-top: 0.5em;
+  margin-bottom: 0.6em;
 }
 
 a:link     { 
@@ -43,8 +43,12 @@ a:hover    {
 
 div.footer
 {
-  margin-top: 0.6em;
   border-top: thin white solid;
-  text-align: center;
+  margin-top: 0.6em;
+  padding-top: 0.3em;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
+  border-bottom: 0px;
+  text-align: right;
 }
 

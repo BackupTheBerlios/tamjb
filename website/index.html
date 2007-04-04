@@ -10,7 +10,7 @@
  <body>
   <div class="header">
    <h3>TAM Jukebox</h3>
-    <p>-- I don't care, just play anything. No, not that song!</p>
+    <p>It's sort of like shuffle play.</p>
   </div>
 
   <div class="little_paragraph">
@@ -18,49 +18,107 @@
 
    Tam (Track Attribute Manager) jukebox is a system that randomly picks
    songs to play, and considers
-   every track you have to be in every playlist--until you say otherwise.
+   every track you have to be in every playlist until you say otherwise.
    Then it plays them with a relative frequency depending on how much
-   you think they suck. Simple.
+   you think they suck. If a song sucks, you push the button, and the
+   jukebox learns a valuable lesson about your opinion.
+  </div>
+  <div class="little_paragraph">
+   People who need pictures should skip down to the 
+   <a href="#screenshots">screenshots</a>.
+  </div>
+  <div class="little_paragraph">
+   The initial user interface concept had just one button, called the
+   <b>Suck</b> button. While this was a good concept, it was missing several
+   things. Sometimes a song does not suck, but is inappropriate for your
+   current mood. Other times, you may not be the one listening. So, the
+   concept of mood and user were added. 
+  </div>
+  <div class="little_paragraph">
+   And then it was realized that some
+   of these moods were actually not moods, for example "rockin" or 
+   "Downtempo". And you might wish to combine them. So, while not yet
+   visible in the user interface, they are stored in the database as
+   various track attributes. And so, in fire and hot water, the 
+   Track Attribute Manager engine is born.
   </div>
 
   <div class="little_paragraph">
-   <h3>Sounds Nice, Can I Run It?</h3>
+   <h3>System Requirements</h3>
 
-   The odds are that you probably can't run it! At the moment it requires
-   a mono platform that has ESound (esd), and Gtk# which I believe limits
-   you to recent releases of Linux and some of its closer friends. Someday
-   it will run on Windows, if the GStreamer team ever decides to finalize
-   their API.
+   If you have a modern linux, you can probably run it. If you run
+   windows, you will still have difficulty. It requires Mono and
+   (at this time) ESound. At one point, work was begun on a Windows
+   version of the audio output system, but it was a pain, and we
+   eagerly await completion of the overambitious and apparently 
+   deadlocked GStreamer project.
+  </div>
+
+  <div class="little_paragraph">
+   Hardware-wise, it will run on a Pentium 3. However, you'll have to
+   turn off the more advanced leveling features, and your machine will
+   work pretty hard. 
+  </div>
+
+  <div class="little_paragraph">
+   <h3>Big Plans</h3>
+   
+   Oh, you know how every project seems to say &quot;This project
+   aims to solve every possible user need and also
+   contains a dynamically scalable automobile trading system, recipe
+   manager, and open source replacement for Google and eBay.&quot; 
+   I'm not quite that ambitious, but some of these ideas might be:
+
+   <ul>
+     <li>Should calculate or use unique song ID's based on bitzi, the
+       freedb CD signatures, or some other standard, so that songs
+       will retain their information when moved.
+     <li>Should be some way to trade song information with peers. 
+     <li>When used as a streaming radio station (this works!), it should
+       allow multiple users to log in. Song priorities can then be calculated
+       based on the opinions of various users, scaled according to how
+       important they are. Some listeners are more equal than others.
+     <li>Support for Ogg/Vorbis/FLAC. mp3 is so 1999.
+   </ul>
+
   </div>
 
   <div class="little_paragraph">
    <h3>Downloads</h3>
 
-   There are no Windows(TM) installers or unix packages right now, but
-   there is a spiffy snapshot with <u>almost</u> all the binaries and patches
-   you need to run it. See the 
+   The code is being actively hacked at the moment. Any releases will be
+   made on the 
    <a href="http://sourceforge.net/project/showfiles.php?group_id=106358">SourceForge 
-     download page</a> to see what's available.
-  </div>
-  <div class="little_paragraph">
-   Those in the know may use the <a href="dcl/">project tracker</a>.
+     download page</a> when they are available. The code is always available
+   from SVN.
   </div>
 
   <div class="little_paragraph">
-   <h3>The Inevitable Screenshots</h3>
-
-   These screenshots are from a gnome-2 desktop. But of course!
-   
-   The main window:<br />
-   <img border=0 src="shots/main_window.png">
+   <a name="screenshots"><h3>The Inevitable Screenshots</h3></a>
+   The main page looks like this. If you hit the big red button, the song
+   is reclassified as very sucky, and you will almost certainly never
+   hear it again, no matter what your mood. This is very useful with a 
+   new, untrained installation.<br />
+   <img border=0 src="shots/main_window.jpg">
    <br /><br />
 
-   The beautiful configuration dialog:<br />
-   <img border=0 src="shots/config_dlg.png">
+   Here is the main window with (future and past) history expanded. 
+   You can see here that the Beastie Boys' <i>Girls</i> was 
+   rejected as not quite appropriate for the "Steady Motion" mood, while
+   U2's <i>Exit</i> just sucked a little too much. The threshold is randomly
+   calculated for each song between 10 and 90%. So, if a song sucks 
+   by 98%, you will NEVER hear it. (This may be adjustable in the future.)
+   <br/> <br />
+   I admit it: I don't think U2 is &quot;all that&quot;. It doesn't mean
+   I don't like them. Really. Note that Dieselboy's album here is incorrectly
+   tagged, as the artist is not correctly stored in the track's artist
+   field. 
+   <br />
+   <img border=0 src="shots/main_expanded.jpg">
    <br /><br />
 
-   What kind of day are you having?<br />
-   <img border=0 src="shots/mood_control.png">
+   The mood selection page in all its glory<br />
+   <img border=0 src="shots/mood_window.jpg">
   </div>
 
   <div class="footer">
