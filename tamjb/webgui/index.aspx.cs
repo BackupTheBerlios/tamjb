@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2006 Tom Surace.
+// Copyright (C) 2006-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -55,6 +55,10 @@ namespace byteheaven.tamjb.webgui
       protected Anthem.CheckBox showHistory;
       protected Anthem.Panel    historyBox;
       protected Anthem.Repeater history;
+
+      // temporarily (?) hard-coded history size
+      //
+      const int MAX_HISTORY = 5;
 
       override protected void OnLoad( EventArgs loadArgs )
       {
@@ -181,7 +185,7 @@ Console.WriteLine( "Current: {0}:{1}",
 
       void _BuildGrid( EngineState state )
       {
-         // Can't trust the value of historyBox.Visible for some reason!
+         // Can't trust the value of historyBox.Visible. Viewstate problem, maybe?
          if (!showHistory.Checked)
             return;
 
@@ -197,8 +201,23 @@ Console.WriteLine( "Current: {0}:{1}",
          table.Columns.Add("probability", typeof(string));
 
          int index = 0;
-         foreach (ITrackInfo info in state.playQueue)
+	 int lastIndex = 0;
+
+	 // Only show a little history:
+	 if (state.currentTrackIndex > MAX_HISTORY)
+            index = state.currentTrackIndex - MAX_HISTORY;
+	 else
+            index = state.currentTrackIndex;
+
+	 if (index < 0) // In case currentTrackIndex is negative?
+            index = 0;
+
+	 lastIndex = state.playQueue.Length;
+	 
+         while (index < lastIndex)
          {
+            ITrackInfo info  = state.playQueue[index];
+
             int suck;
             int mood;
             _GetSuckAsInt( info.key, out suck, out mood );
@@ -251,8 +270,8 @@ Console.WriteLine( "Current: {0}:{1}",
                row["probability"] = "probHigh";
 
             table.Rows.Add(row);
-
-            ++index;
+	 
+	    ++index;
          }
 
          history.DataSource = table;
@@ -440,6 +459,9 @@ Console.WriteLine( "Current: {0}:{1}",
             //
             // TODO: the engine should really be controlling when this
             // does or does not happen.
+	    //
+	    // BUG: should pass this.currentTrack as a parameter to the
+	    // Reevaulate call, just in case it changed in the interim.
             //
             if (engineState.currentTrack.key == this.currentTrack)
                backend.ReevaluateCurrentTrack();

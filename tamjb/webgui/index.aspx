@@ -10,7 +10,7 @@
 <script runat="server">
 //
 // $Id$
-// Copyright (C) 2006 Tom Surace.
+// Copyright (C) 2006-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -50,7 +50,6 @@
 </script>
 
  <div style="float: right; margin: 0.6em;">
-   <!-- TODO: Write javascript to display "working" dialog etc -->
    <anthem:Timer id="refreshTimer" runat="server" 
      Enabled="true"
      Interval="5000"
