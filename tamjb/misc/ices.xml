@@ -75,7 +75,7 @@
 
             <encode>  
                 <quality>0</quality>
-                <samplerate>22050</samplerate>
+                <samplerate>44100</samplerate>
                 <channels>2</channels>
             </encode>
 
@@ -88,7 +88,7 @@
              
             <resample>
                 <in-rate>44100</in-rate>
-                <out-rate>22050</out-rate>
+                <out-rate>44100</out-rate>
             </resample>
         </instance>
 
