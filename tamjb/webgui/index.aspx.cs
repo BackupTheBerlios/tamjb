@@ -52,7 +52,8 @@ namespace byteheaven.tamjb.webgui
 
       protected Anthem.Button refreshButton;
 
-      protected Anthem.CheckBox showHistory;
+      protected Anthem.CheckBox showPast;
+      protected Anthem.CheckBox showFuture;
       protected Anthem.Panel    historyBox;
       protected Anthem.Repeater history;
 
@@ -75,8 +76,10 @@ namespace byteheaven.tamjb.webgui
             if (!IsPostBack)
             {
                historyBox.Visible = false;
-               ViewState["historyVisible"] = false;
-               showHistory.Checked = false;
+               ViewState["pastVisible"] = false;
+               ViewState["futureVisible"] = false;
+               showPast.Checked = false;
+               showFuture.Checked = false;
 
                SetFocusTo( userNameBtn );
             }
@@ -85,12 +88,20 @@ namespace byteheaven.tamjb.webgui
             {
                // Workaround for the "OnCheckedChanged handler never called"
                // bug:
-               if (null == ViewState["historyVisible"] 
+               if (null == ViewState["pastVisible"] 
                    || 
-                   ((bool)ViewState["historyVisible"] != showHistory.Checked))
+                   ((bool)ViewState["pastVisible"] != showPast.Checked))
                {
-                  _HistoryToggle();
-                  ViewState["historyVisible"] = showHistory.Checked;
+                  _PastToggle();
+                  ViewState["pastVisible"] = showPast.Checked;
+               }
+
+               if (null == ViewState["futureVisible"] 
+                   || 
+                   ((bool)ViewState["futureVisible"] != showFuture.Checked))
+               {
+                  _FutureToggle();
+                  ViewState["futureVisible"] = showFuture.Checked;
                }
             }
          }
@@ -118,9 +129,21 @@ namespace byteheaven.tamjb.webgui
       ///
       /// Update the history panel visibility
       /// 
-      void _HistoryToggle()
+      void _PastToggle()
       {
-         historyBox.Visible = showHistory.Checked;
+         historyBox.Visible = showPast.Checked || showFuture.Checked;
+         historyBox.UpdateAfterCallBack = true;
+         
+         // Force a refresh of the history box
+         changeCount = -1;
+      }
+
+      ///
+      /// Update the future panel visibility
+      /// 
+      void _FutureToggle()
+      {
+         historyBox.Visible = showPast.Checked || showFuture.Checked;
          historyBox.UpdateAfterCallBack = true;
          
          // Force a refresh of the history box
@@ -186,7 +209,7 @@ Console.WriteLine( "Current: {0}:{1}",
       void _BuildGrid( EngineState state )
       {
          // Can't trust the value of historyBox.Visible. Viewstate problem, maybe?
-         if (!showHistory.Checked)
+         if (!(showPast.Checked || showFuture.Checked))
             return;
 
          DataTable table = new DataTable();
@@ -203,11 +226,18 @@ Console.WriteLine( "Current: {0}:{1}",
          int index = 0;
 	 int lastIndex = 0;
 
-	 // Only show a little history:
-	 if (state.currentTrackIndex > MAX_HISTORY)
-            index = state.currentTrackIndex - MAX_HISTORY;
-	 else
+         if (! showPast.Checked) // Don't show the past at all?
+         {
             index = state.currentTrackIndex;
+         }
+         else
+         {
+	    // Only show a little history:
+            if (state.currentTrackIndex > MAX_HISTORY)
+               index = state.currentTrackIndex - MAX_HISTORY;
+	    else
+               index = state.currentTrackIndex;
+         }
 
 	 if (index < 0) // In case currentTrackIndex is negative?
             index = 0;
@@ -250,6 +280,9 @@ Console.WriteLine( "Current: {0}:{1}",
             }
             else
             {
+               if (! showFuture.Checked) // Not showing future tracks?
+                  break;                 // ** Quick Exit **
+
                row["when"] = "future";
             }
 

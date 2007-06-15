@@ -186,8 +186,17 @@
   </tr>
   <tr>
     <th>&nbsp;</th>
-    <td><anthem:CheckBox id="showHistory" runat="server" 
-     Text="History Enabled" 
+    <td><anthem:CheckBox id="showPast" runat="server" 
+     Text="The Past" 
+     EnableDuringCallback="false"
+     PreCallbackFunction="StartUpdate"
+     PostCallbackFunction="FinishUpdate"
+     Checked="false"
+     AutoCallback="true"
+    />
+    &nbsp;
+    <anthem:CheckBox id="showFuture" runat="server" 
+     Text="The Future" 
      EnableDuringCallback="false"
      PreCallbackFunction="StartUpdate"
      PostCallbackFunction="FinishUpdate"
