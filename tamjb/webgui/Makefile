@@ -43,6 +43,7 @@ anthem:
 
 anthem_real:
 	gmcs -debug -define:DEBUG -r:System -r:System.Data -r:System.Web \
+		-r:System.Drawing \
 		$(ANTHEM_ROOT)/Anthem/*.cs \
 		AnthemAssemblyInfo.cs \
 		-resource:$(ANTHEM_ROOT)/Anthem/Anthem.js,Anthem.Anthem.js \
