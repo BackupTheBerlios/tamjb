@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004-2005 Tom Surace.
+// Copyright (C) 2004-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -72,8 +72,11 @@ namespace byteheaven.tamjb.Engine
          // Default levels:
          compressThresholdBass = 12000;
          compressThresholdMid = 7000;
-         compressThresholdTreble = 6300;
+         compressThresholdTreble = 4500;
 
+         // Allow overshoot in the limiter, as long as we are using
+         // soft clipping.
+         _limiter.limit = 49150.0;
       }
 
       public bool doAutomaticLeveling
@@ -123,8 +126,10 @@ namespace byteheaven.tamjb.Engine
          right = bassRight + midRight + trebleRight;
 
          // Soft clipping and limiting together rules, but...at what cost?
+         // Also...the limiter should allow some overshoot if we are using
+         // soft clipping...
          _limiter.Process( ref left, ref right );
-         // _softClipper.Process( ref left, ref right );
+         _softClipper.Process( ref left, ref right );
       }
 
       public double compressAttack

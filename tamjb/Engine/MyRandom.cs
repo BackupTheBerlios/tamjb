@@ -72,9 +72,60 @@ namespace byteheaven.tamjb.Engine
          if (null == _urandom)
             return base.Next( range );
 
-         // how many bits are in the range? 
-         int bits = CountBits( range );
+         Debug.Assert( range >= 1, "Negative or zero range is not allowed." );
+         if (range <= 0) // Yipe!
+            return 0;
 
+         // Create a mask for the number of bits in "range"
+         int thisBit;
+         int mask;
+         unchecked 
+         {
+            thisBit = (int)0x80000000;
+            mask = (int)0xffffffff;
+         }
+
+         while (true)
+         {
+            if (0 != (thisBit & range)) // Ah, we found a bit. Stop masking.
+               break;
+
+            // mask ^= thisBit;           // Flip to 0
+            mask = mask & ~thisBit;
+            thisBit = thisBit >> 1;
+         }
+
+         Debug.Assert( (range & mask) == range, "Mask is too small?" );
+
+         // Strictly for debugging this mess
+         Trace.WriteLine( "" );
+         Trace.WriteLine( "RANGE: " + range.ToString( "X8" ) );
+         Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
+
+         while (true)           // loop forever (until "return")
+         {
+            int next = Next();
+            
+            // Trace.WriteLine( "Next(1) " + next.ToString( "X8" ) );
+
+            next &= mask;          // remove high bits
+
+            // Trace.WriteLine( "Next(2) " + next.ToString( "X8" ) );
+            
+            // There's about a 25% chance the number will be larger than
+            // requested. To retain linear probability, we have to try again
+            // here:
+            if (next < range)      // small enough?
+            {
+               Trace.WriteLine( "NEXT:  " + next.ToString("X8") );
+               Trace.WriteLine( "" );
+               return next;        // ** success ** quick exit **
+            }
+            
+            // Trace.WriteLine( "Trying again..." );
+         }
+
+#if QQQ // comment out old algorithm
          // Throw out bits higher than the range
          int mask = 0;
          for (int i = 0; i < bits; i++)
@@ -83,9 +134,14 @@ namespace byteheaven.tamjb.Engine
             mask |= 0x00000001;
          }
 
-         // Trace.WriteLine( "RANGE: " + range );
-         // Trace.WriteLine( "BITS:  " + bits );
-         // Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
+         Debug.Assert( range & mask == range, "Mask is too small?" );
+
+         // Strictly for debugging this mess
+         Trace.WriteLine( "" );
+         Trace.WriteLine( "RANGE: " + range );
+         Trace.WriteLine( "BITS:  " + bits );
+         Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
+         Trace.WriteLine( "" );
 
          while (true)           // loop forever (until "return")
          {
@@ -105,6 +161,7 @@ namespace byteheaven.tamjb.Engine
             
             // Trace.WriteLine( "Trying again..." );
          }
+#endif // QQQ
       }
 
       public override int Next()

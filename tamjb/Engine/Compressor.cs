@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004-2005 Tom Surace.
+// Copyright (C) 2004-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -72,7 +72,7 @@ namespace byteheaven.tamjb.Engine
 
          // Initialize compression times
          compressAttack = 0.25; // seconds
-         compressDecay = 6.0;   // seconds
+         compressDecay = 8.0;   // seconds
 
          gateThreshold = 50;
          compressThreshold = 6000;
