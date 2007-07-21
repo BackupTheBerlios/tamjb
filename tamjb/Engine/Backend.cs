@@ -1442,6 +1442,7 @@ namespace byteheaven.tamjb.Engine
             // Check to see if this user has timed out.
             if (now - contrib.lastPing > CONTRIBUTOR_TIMEOUT)
             {
+               _Trace( "User timed out, removing: " + contrib.user.name );
                _controllers.Remove( key );
                -- nUsers;
                Debug.Assert( nUsers >= 0, "removed more users than existed?" );
@@ -1519,7 +1520,7 @@ namespace byteheaven.tamjb.Engine
       ///
       public void FileIsNotMissing( string fullPath )
       {
-         _Trace( "[FileIsNotMissing] " + fullPath );
+         // _Trace( "[FileIsNotMissing] " + fullPath );
          lock (_serializer)
          {
             _database.TrackIsNotMissing( fullPath,

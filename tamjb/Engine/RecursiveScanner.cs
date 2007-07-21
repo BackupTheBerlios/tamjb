@@ -190,7 +190,9 @@ namespace byteheaven.tamjb.Engine
          }
          else
          {
-            _Trace( "adding '" + path + "'" );
+            // Oh god, the noise, the noise! Just comment when something interesting
+            // heppens, OK?
+            // _Trace( "adding '" + path + "'" );
 
             PlayableData data = new PlayableData();
             data.filePath = path;

@@ -33,7 +33,7 @@
 
 <script language="javascript" type="text/javascript">
 <!-- 
-document.getElementById("passwordBox").focus();
+document.getElementById("loginBox").focus();
 // -->
 </script>
 </body>
