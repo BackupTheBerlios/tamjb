@@ -76,6 +76,8 @@ namespace byteheaven.tamjb.Engine
          // NONE - not implemented? :)
       }
 
+      TimeSpan CONTRIBUTOR_TIMEOUT = TimeSpan.FromMinutes( 5 );
+
       ///
       /// get/set the database connection string (as an url, must
       /// be file:something for SQLite.
@@ -229,21 +231,10 @@ namespace byteheaven.tamjb.Engine
          _player.OnReadBuffer +=
             new ReadBufferHandler( _TrackReadCallback );
 
-         // Start playing as the default user, if there is one:
-         try
-         {
-            _database.GetController( out _controllingUser,
-                                     out _controllingMood );
-         }
-         catch
-         {
-         }
+         Contributor contrib = 
+            new Contributor( new Credentials(), new Mood() );
 
-         if (null == _controllingUser)
-            _controllingUser = new Credentials();
-
-         if (null == _controllingMood)
-            _controllingMood = new Mood();
+         _controllers[contrib.user.id] = contrib;
       }
       
       ~Backend()
@@ -270,13 +261,17 @@ namespace byteheaven.tamjb.Engine
       // Get the current mood. May return null for either or both
       // if no current user or mood exists.
       //
-      public void GetCurrentUserAndMood( ref Credentials cred,
-                                         ref Mood mood )
+      public void GetCurrentMood( uint userId,
+                                  ref Mood mood )
       {
          lock (_serializer)
          {
-            cred = _controllingUser;
-            mood = _controllingMood;
+            Contributor contrib = (Contributor)_controllers[userId];
+            if (null == contrib)
+            {
+               throw new ApplicationException( "User is not logged in" );
+            }
+            mood = contrib.mood;
          }
       }
 
@@ -481,7 +476,7 @@ namespace byteheaven.tamjb.Engine
       /// current level and 100%. Thus it theoretically never reaches
       /// 100% (cause integer math rounds down).
       ///
-      public void IncreaseSuckZenoStyle( Credentials cred,
+      public void IncreaseSuckZenoStyle( uint userId,
                                          uint trackKey )
       {
          _Trace( "[IncreaseSuckZenoStyle]" );
@@ -490,7 +485,7 @@ namespace byteheaven.tamjb.Engine
          {
             ++_changeCount;
 
-            uint level = _database.GetSuck( cred.id, trackKey );
+            uint level = _database.GetSuck( userId, trackKey );
 
             // The database shouldn't contain invalid attributes, right?
             Debug.Assert( level <= 10000 && level >= 0 );
@@ -504,11 +499,11 @@ namespace byteheaven.tamjb.Engine
             // Is our math correct?
             Debug.Assert( level <= 10000 && level >= 0 );
 
-            _database.SetSuck( cred.id, trackKey, level );
+            _database.SetSuck( userId, trackKey, level );
          }
       }
 
-      public void DecreaseSuckZenoStyle( Credentials cred,
+      public void DecreaseSuckZenoStyle( uint userId,
                                          uint trackKey )
       {
          _Trace( "[DecreaseSuckZenoStyle]" );
@@ -516,7 +511,7 @@ namespace byteheaven.tamjb.Engine
          lock (_serializer)
          {
             ++_changeCount;
-            uint level = _database.GetSuck( cred.id, trackKey );
+            uint level = _database.GetSuck( userId, trackKey );
 
             // The database shouldn't contain invalid attributes, right?
             Debug.Assert( level <= 10000 && level >= 0 );
@@ -526,11 +521,11 @@ namespace byteheaven.tamjb.Engine
 
             level /= 2;
 
-            _database.SetSuck( cred.id, trackKey, level );
+            _database.SetSuck( userId, trackKey, level );
          }
       }
 
-      public void IncreaseAppropriateZenoStyle( Credentials cred,
+      public void IncreaseAppropriateZenoStyle( uint userId,
                                                 Mood mood,
                                                 uint trackKey )
       {
@@ -540,7 +535,7 @@ namespace byteheaven.tamjb.Engine
          {
             ++_changeCount;
 
-            uint level = _database.GetAppropriate( cred.id, 
+            uint level = _database.GetAppropriate( userId, 
                                                    mood.id, 
                                                    trackKey );
 
@@ -556,11 +551,11 @@ namespace byteheaven.tamjb.Engine
             // Is our math correct?
             Debug.Assert( level <= 10000 && level >= 0 );
 
-            _database.SetAppropriate( cred.id, mood.id, trackKey, level );
+            _database.SetAppropriate( userId, mood.id, trackKey, level );
          }
       }
 
-      public void DecreaseAppropriateZenoStyle( Credentials cred,
+      public void DecreaseAppropriateZenoStyle( uint userId,
                                                 Mood mood,
                                                 uint trackKey )
       {
@@ -569,7 +564,7 @@ namespace byteheaven.tamjb.Engine
          lock (_serializer)
          {
             ++_changeCount;
-            uint level = _database.GetAppropriate( cred.id, 
+            uint level = _database.GetAppropriate( userId, 
                                                    mood.id,
                                                    trackKey );
 
@@ -581,7 +576,7 @@ namespace byteheaven.tamjb.Engine
 
             level /= 2;
 
-            _database.SetAppropriate( cred.id, 
+            _database.SetAppropriate( userId, 
                                       mood.id,
                                       trackKey, 
                                       level );
@@ -674,17 +669,17 @@ namespace byteheaven.tamjb.Engine
       ///
       /// IEngine interfaces
       ///
-      public void GetAttributes( Credentials cred,
-                                 Mood mood,
+      public void GetAttributes( uint userId,
+                                 uint moodId,
                                  uint trackKey,
                                  out double suck,
                                  out double appropriate )
       {
          lock (_serializer)
          {
-            suck = _database.GetSuck( cred.id, trackKey );
-            appropriate = _database.GetAppropriate( cred.id, 
-                                                    mood.id, 
+            suck = _database.GetSuck( userId, trackKey );
+            appropriate = _database.GetAppropriate( userId, 
+                                                    moodId, 
                                                     trackKey );
          }
       }
@@ -692,7 +687,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// GotoFile function with credentials for future expansion.
       ///
-      public void GotoNextFile( Credentials cred, uint currentTrackKey )
+      public void GotoNextFile( uint userId, uint currentTrackKey )
       {
          _Trace( "[GotoNextFile]" );
 
@@ -761,7 +756,7 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public void GotoPrevFile( Credentials cred, uint currentTrackKey )
+      public void GotoPrevFile( uint userId, uint currentTrackKey )
       {
          _Trace( "[GotoPrevFile]" );
 
@@ -1425,39 +1420,62 @@ namespace byteheaven.tamjb.Engine
       ///
       bool _WantToPlayTrack( PlayableData info )
       {
-         if (null == _controllingUser) // Nobody exists, just play it.
-            return true;
-
+         int nUsers = _controllers.Count;
          uint trackKey = info.key;
 
          // Now, decide whether we are going to actually PLAY this
-         // track. 
+         // track.  While we're at it, delete people who have abandoned
+         // us or closed their browsers.
+         double avgSuck = 0.0;  // Average suck 
+         double avgMood = 0.0;  // Average mood (from all users)
+         DateTime now = DateTime.Now; // cached for speed?
 
-         uint suck = _database.GetSuck( _controllingUser.id,
-                                        trackKey );
+         // make a copy of the hash table keys, cause otherwise we can't 
+         // delete things:
+         object [] keys = new object[_controllers.Count];
+         _controllers.Keys.CopyTo( keys, 0 );
+         for (int i = 0; i < keys.Length; i++)
+         {
+            uint key = (uint)keys[i];
+            Contributor contrib = (Contributor)_controllers[key];
+
+            // Check to see if this user has timed out.
+            if (now - contrib.lastPing > CONTRIBUTOR_TIMEOUT)
+            {
+               _controllers.Remove( key );
+               -- nUsers;
+               Debug.Assert( nUsers >= 0, "removed more users than existed?" );
+               continue;        // ** SKIP THIS LOGGED OUT DEADBEAT **
+            }
+
+            avgSuck += (double)_database.GetSuck( contrib.user.id,
+                                                  trackKey );
+
+            avgMood += _database.GetAppropriate( contrib.user.id,
+                                                 contrib.mood.id,
+                                                 trackKey );
+         }
+
+         if (0 >= nUsers)       // Nobody exists, just play it.
+            return true;
+
+         avgSuck /= (double)nUsers;
+         avgMood /= (double)nUsers;
 
          uint suckThresh = (uint)_rng.Next( 01000, 09000 );
-         if (suck > suckThresh)
+         if ((int)avgSuck > suckThresh)
          {
-            _Trace( " Rejected. suck:" + suck
+            _Trace( " Rejected. suck:" + avgSuck
                     + " suckThresh:" + suckThresh );
 
             info.evaluation = TrackEvaluation.SUCK_TOO_MUCH;
             return false;       // methinks it sucketh too much
          }
 
-         // If no controlling mood exists, we're happy with this track
-         if (null == _controllingMood)
-            return true;
-
-         uint mood = _database.GetAppropriate( _controllingUser.id,
-                                               _controllingMood.id,
-                                               trackKey );
-
          uint moodThresh = (uint)_rng.Next( 01000, 09000 );
-         if (mood < moodThresh)
+         if (avgMood < moodThresh)
          {
-            _Trace( " Rejected. mood:" + mood
+            _Trace( " Rejected. mood:" + avgMood
                     + " moodThresh:" + moodThresh );
 
             info.evaluation = TrackEvaluation.WRONG_MOOD;
@@ -1560,17 +1578,44 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public Credentials CreateUser( string name )
+      public Credentials CreateUser( string name, string password )
       {
          lock (_serializer)
          {
-            _database.CreateUser( name );
+            _database.CreateUser( name, password );
             Credentials cred;
             if (!_database.GetUser( name, out cred ))
             {
                throw new ApplicationException( 
                   "Internal error, could not retrieve just-created user" );
             }
+
+            return cred;
+         }
+      }
+
+      public Credentials LogIn( string name, string password )
+      {
+         // Who wants to log in? (I do I do!)
+         lock (_serializer)
+         {
+            Credentials cred;
+            if (!_database.GetUser( name, out cred ))
+            {
+               return null;
+            }
+
+            if (! _database.Authenticate( cred, password ))
+            {
+               return null;
+            }
+            
+            ///
+            /// \todo Retrieve last known mood here
+            ///
+
+            Contributor contrib = new Contributor( cred, new Mood() );
+            _controllers[contrib.user.id] = contrib;
 
             return cred;
          }
@@ -1586,7 +1631,7 @@ namespace byteheaven.tamjb.Engine
             _database.CreateMood( cred, name );
             Mood mood;
 
-            if (!_database.GetMood( cred, name, out mood ))
+            if (!_database.GetMood( cred.id, name, out mood ))
             {
                throw new ApplicationException( 
                   "Internal error, could not retrieve just-created mood" );
@@ -1595,20 +1640,16 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public void RenewLogon( Credentials cred )
+      public Credentials RenewLogon( uint userId )
       {
          lock (_serializer)
          {
-            if (null == cred)
-            {
-               throw new ApplicationException( "no credentials" );
-            }
+            Contributor contrib = (Contributor)_controllers[userId];
+            if (null == contrib)
+               return null;     // This person is NOT logged in. ;)
 
-            // TODO: see if this user is in the database.
-            ++_changeCount;
-            _controllingUser = (Credentials)cred;
-
-            _database.StoreController( _controllingUser, new Mood() );
+            contrib.lastPing = DateTime.Now;
+            return contrib.user;
          }
       }
 
@@ -1619,30 +1660,29 @@ namespace byteheaven.tamjb.Engine
             if (null == cred)
                throw new ArgumentException( "may not be null", "cred" );
 
-            if (_controllingUser.id != cred.id)
-               throw new ApplicationException( "You are not in control" );
+            Contributor contrib = (Contributor)_controllers[cred.id];
+            if (null == contrib)
+               throw new ApplicationException( "You are not logged in?" );
 
             ++_changeCount;
-            _controllingMood = GetMood( mood.id );
+            contrib.mood = GetMood( mood.id );
 
-            _database.StoreController( _controllingUser, 
-                                       _controllingMood );
+            ///
+            /// \todo Save the user's new current mood here. Somehow.
+            ///
          }
       }
 
       ///
       /// Get an existing mood by name for a given user
       ///
-      public Mood GetMood( Credentials cred, 
+      public Mood GetMood( uint userId, 
                            string name )
       {
          lock (_serializer)
          {
-            if (null == cred)
-               return null;
-
             Mood mood;
-            if (!_database.GetMood( cred, name, out mood ))
+            if (!_database.GetMood( userId, name, out mood ))
                return null;
 
             return mood;
@@ -1761,18 +1801,28 @@ namespace byteheaven.tamjb.Engine
       uint      _maxFinishedPlaying = 20;
 
       ///
-      /// Credentials of the current user 
+      /// A struct reperesenting one of the curently logged in
+      /// controlling accounts
       ///
-      /// \todo add multiuser support? maybe?
-      ///
-      Credentials _controllingUser = new Credentials();
+      class Contributor
+      {
+         internal Contributor( Credentials initCreds, Mood initMood )
+         {
+            user = initCreds;
+            mood = initMood;
+            lastPing = DateTime.Now;
+         }
+
+         internal Credentials user;
+         internal Mood        mood;
+         internal DateTime lastPing;
+      }
 
       ///
-      /// Controlling user's mood
+      /// A hash of all the currently controlling users. If you log
+      /// out, you stop controlling, except for the last one to log.
       ///
-      /// \todo Support multiple moods per-user. I think.
-      ///
-      Mood _controllingMood = new Mood();
+      Hashtable _controllers = new Hashtable();
 
       Random _rng = new MyRandom(); // Random numbers are cool
 

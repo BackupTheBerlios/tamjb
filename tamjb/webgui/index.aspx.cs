@@ -28,6 +28,7 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Data;
    using System.Web;
+   using System.Web.Security;
    using System.Web.UI.WebControls;
 
    using Anthem;
@@ -57,6 +58,8 @@ namespace byteheaven.tamjb.webgui
       protected Anthem.Panel    historyBox;
       protected Anthem.Repeater history;
 
+      protected uint _userId;
+
       // temporarily (?) hard-coded history size
       //
       const int MAX_HISTORY = 5;
@@ -66,6 +69,22 @@ namespace byteheaven.tamjb.webgui
          base.OnLoad( loadArgs );
 
          Manager.Register( this );
+
+         // Hack to allow unauthenticated users to see what is playing 
+         System.Security.Principal.IIdentity identity = 
+            HttpContext.Current.User.Identity;
+
+         if (! identity.IsAuthenticated)
+         {
+            throw new ApplicationException( 
+               "Internal error, anonymous access not supported" );
+         }
+         _userId = Convert.ToUInt32( identity.Name );
+         Credentials credentials = backend.RenewLogon( _userId );
+         if (null == credentials)
+         {
+            FormsAuthentication.RedirectToLoginPage();
+         }
 
          try
          {
@@ -80,8 +99,6 @@ namespace byteheaven.tamjb.webgui
                ViewState["futureVisible"] = false;
                showPast.Checked = false;
                showFuture.Checked = false;
-
-               SetFocusTo( userNameBtn );
             }
             
             if (Anthem.Manager.IsCallBack)
@@ -103,6 +120,10 @@ namespace byteheaven.tamjb.webgui
                   _FutureToggle();
                   ViewState["futureVisible"] = showFuture.Checked;
                }
+            }
+            else
+            {
+               userNameBtn.Text = credentials.name;
             }
          }
          catch (Exception)
@@ -173,15 +194,10 @@ namespace byteheaven.tamjb.webgui
                Console.WriteLine( "  Engine state changed {0} -> {1}",
                                   changeCount, newChangeCount );
 
-               Credentials credentials = new Credentials();
                Mood mood = new Mood();
-               
-               backend.GetCurrentUserAndMood( ref credentials, ref mood );
-Console.WriteLine( "Current: {0}:{1}", 
-                    credentials.name, mood.name );
+               backend.GetCurrentMood( _userId, ref mood );
 
                // Save what we THINK is the current state for later.
-               this.credentials = credentials;
                this.mood = mood;
             
                EngineState state = backend.GetState();
@@ -356,34 +372,6 @@ Console.WriteLine( "Current: {0}:{1}",
       }
 
       ///
-      /// Stores/retrieves the current user's credentials from viewstate
-      ///
-      Credentials credentials
-      {
-         get
-         {
-            if (null == ViewState["userIdKey"])
-            {
-               throw new ApplicationException( 
-                  "userIdKey is missing from view state" );
-            }
-
-            uint userId = (uint)ViewState["userIdKey"];
-
-            // The text is really unused on the server side and for
-            // validation, so there's no need to really check it:
-            return new Credentials( userNameBtn.Text, userId );
-         }
-
-         set
-         {
-            userNameBtn.Text = value.name;
-            userNameBtn.UpdateAfterCallBack = true;
-            ViewState["userIdKey"] = value.id;
-         }
-      }
-
-      ///
       /// get/save the current mood in the viewstate
       ///
       Mood mood
@@ -442,8 +430,8 @@ Console.WriteLine( "Current: {0}:{1}",
       {
          double suckPercent;
          double moodPercent;
-         backend.GetAttributes( this.credentials,
-                                this.mood,
+         backend.GetAttributes( _userId,
+                                this.mood.id,
                                 key,
                                 out suckPercent,
                                 out moodPercent );
@@ -484,7 +472,7 @@ Console.WriteLine( "Current: {0}:{1}",
                return;
 
             // Flag the previously playing track as suck
-            backend.IncreaseSuckZenoStyle( this.credentials, 
+            backend.IncreaseSuckZenoStyle( _userId, 
                                            this.currentTrack );
 
             // Reevaluate this track based on its new suck level, if
@@ -521,12 +509,12 @@ Console.WriteLine( "Current: {0}:{1}",
             // todo: there should be a way to do this with one call:
             for (int i = 0; i < 3; i++)
             {
-               backend.IncreaseSuckZenoStyle( this.credentials, 
+               backend.IncreaseSuckZenoStyle( _userId, 
                                               this.currentTrack );
             }
 
             // ANd, unconditionally go to the next track
-            backend.GotoNextFile( this.credentials, this.currentTrack );
+            backend.GotoNextFile( _userId, this.currentTrack );
 
          }
          catch (Exception e)
@@ -545,7 +533,7 @@ Console.WriteLine( "Current: {0}:{1}",
                return;
 
             // Flag the previously playing track as less sucky
-            backend.DecreaseSuckZenoStyle( this.credentials, 
+            backend.DecreaseSuckZenoStyle( _userId, 
                                            this.currentTrack );
 
          }
@@ -565,7 +553,7 @@ Console.WriteLine( "Current: {0}:{1}",
                return;
 
             // Flag the previously playing track as less sucky
-            backend.IncreaseAppropriateZenoStyle( this.credentials, 
+            backend.IncreaseAppropriateZenoStyle( _userId, 
                                                   this.mood,
                                                   this.currentTrack );
 
@@ -586,7 +574,7 @@ Console.WriteLine( "Current: {0}:{1}",
                return;
 
             // Flag the previously playing track as less sucky
-            backend.DecreaseAppropriateZenoStyle( this.credentials, 
+            backend.DecreaseAppropriateZenoStyle( _userId, 
                                                   this.mood,
                                                   this.currentTrack );
 
@@ -610,7 +598,7 @@ Console.WriteLine( "Current: {0}:{1}",
                return;
 
             // Go to the track before "this" one
-            backend.GotoPrevFile( this.credentials, this.currentTrack );
+            backend.GotoPrevFile( _userId, this.currentTrack );
 
          }
          catch (Exception e)
@@ -624,7 +612,7 @@ Console.WriteLine( "Current: {0}:{1}",
       {
          try
          {
-            backend.GotoNextFile( this.credentials, this.currentTrack );
+            backend.GotoNextFile( _userId, this.currentTrack );
          }
          catch (Exception e)
          {
@@ -677,21 +665,21 @@ Console.WriteLine( "Current: {0}:{1}",
             switch (command)
             {
             case "suckMore":
-               backend.IncreaseSuckZenoStyle( this.credentials, key );
+               backend.IncreaseSuckZenoStyle( _userId, key );
                break;
 
             case "suckLess":
-               backend.DecreaseSuckZenoStyle( this.credentials, key );
+               backend.DecreaseSuckZenoStyle( _userId, key );
                break;
 
             case "moodYes":
-               backend.IncreaseAppropriateZenoStyle( this.credentials, 
+               backend.IncreaseAppropriateZenoStyle( _userId, 
                                                      this.mood,
                                                      key );
                break;
 
             case "moodNo":
-               backend.DecreaseAppropriateZenoStyle( this.credentials, 
+               backend.DecreaseAppropriateZenoStyle( _userId, 
                                                      this.mood,
                                                      key );
                break;

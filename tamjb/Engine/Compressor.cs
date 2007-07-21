@@ -67,12 +67,12 @@ namespace byteheaven.tamjb.Engine
       public Compressor()
       {
          // Initially select 1/2 millisecond for the delay as a default.
-         _leftFifo.delay = 22;
-         _rightFifo.delay = 22;
+         _leftFifo.delay = 25;
+         _rightFifo.delay = 25;
 
          // Initialize compression times
-         compressAttack = 0.25; // seconds
-         compressDecay = 8.0;   // seconds
+         compressAttack = 0.40; // seconds
+         compressDecay = 8.5;   // seconds
 
          gateThreshold = 50;
          compressThreshold = 6000;

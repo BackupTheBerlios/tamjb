@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004-2006 Tom Surace.
+// Copyright (C) 2004-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -108,7 +108,7 @@ namespace byteheaven.tamjb.Engine
       ///
       void _CreateInitialData()
       {
-         CreateUser( "guest" );
+         CreateUser( "guest", "" );
 
          Credentials guest;
          GetUser( "guest", out guest );
@@ -208,6 +208,7 @@ namespace byteheaven.tamjb.Engine
       {
          //   id - unique id (autoincrement)
          //   name - string used to log in
+         //   password - yeah we don't even encrypt it
 
          try
          {
@@ -221,13 +222,15 @@ namespace byteheaven.tamjb.Engine
          string query = 
             "CREATE TABLE users ( \n" +
             "  id           INTEGER PRIMARY KEY NOT NULL,\n" +
-            "  name         TEXT NOT NULL\n" +
+            "  name         TEXT NOT NULL,\n" +
+            "  password     TEXT NOT NULL\n" +
             "  )";
 #elif USE_POSTGRESQL
          string query = 
             "CREATE TABLE users ( \n" +
             "  id           SERIAL,\n" +
-            "  name         TEXT NOT NULL\n" +
+            "  name         TEXT NOT NULL,\n" +
+            "  password     TEXT NOT NULL\n" +
             "  )";
 #else
 #error No database type found
@@ -469,7 +472,7 @@ namespace byteheaven.tamjb.Engine
             string moodName = reader.GetString(1);
 
             GetUser( userName, out controller );
-            GetMood( controller, moodName, out mood );
+            GetMood( controller.id, moodName, out mood );
          }
          catch (Exception e)
          {
@@ -598,13 +601,14 @@ namespace byteheaven.tamjb.Engine
       /// Create a user with this name. Doesn't give you the ID
       /// or anything, so there!
       ///
-      public void CreateUser( string name )
+      public void CreateUser( string name, string password )
       {
          // The default user: guest
          string query = _FixQuery( 
             "INSERT INTO users ("
-            + " name"
-            + " ) VALUES ( :newName ) "
+            + " name,"
+            + " password"
+            + " ) VALUES ( :newName, :newPass ) "
             );
 
          IDbConnection dbcon = null;
@@ -618,6 +622,11 @@ namespace byteheaven.tamjb.Engine
             IDbDataParameter param = _NewParameter( "newName",
                                                     DbType.String );
             param.Value = name;
+            cmd.Parameters.Add( param );
+
+            param = _NewParameter( "newPass",
+                                   DbType.String );
+            param.Value = password;
             cmd.Parameters.Add( param );
 
             cmd.ExecuteNonQuery();
@@ -825,6 +834,65 @@ namespace byteheaven.tamjb.Engine
          throw new ApplicationException( "not reached" );
       }
 
+      public bool Authenticate( Credentials cred, string password )
+      {
+         string query = _FixQuery( 
+            "SELECT password"
+            + " FROM users"
+            + " WHERE id = :uid"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         IDataReader reader = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            IDbDataParameter param = _NewParameter( "uid", DbType.Int32 );
+            param.Value = cred.id;
+            cmd.Parameters.Add( param );
+
+            reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+            {
+               return false;
+            }
+
+            string correctPass = reader.GetString(0);
+            return ( password == correctPass );
+         }
+         catch (Exception e)
+         {
+            _Trace( e.ToString() );
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != reader)
+            {
+               reader.Close();
+               reader.Dispose();
+            }
+
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
       public bool GetUser( uint uid,
                            out Credentials creds )
       {
@@ -960,7 +1028,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// \return true on success, false if this mood is not found
       ///   
-      public bool GetMood( Credentials credentials,
+      public bool GetMood( uint userId,
                            string name,
                            out Mood mood )
       {
@@ -986,7 +1054,7 @@ namespace byteheaven.tamjb.Engine
             cmd.Parameters.Add( param );
 
             param = _NewParameter( "userId", DbType.String );
-            param.Value = credentials.id;
+            param.Value = userId;
             cmd.Parameters.Add( param );
 
             reader = cmd.ExecuteReader();

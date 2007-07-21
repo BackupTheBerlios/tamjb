@@ -1,47 +1,10 @@
 <%@ Page language="C#" 
   EnableViewState="True" 
- %><%
-
-// $Id$
-// A simple login page, for a simple app. :)
-
-%>
-<script runat="server">
-override protected void OnLoad( EventArgs loadArgs )
-{
-   base.OnLoad( loadArgs );
-
-   if (! Page.IsPostBack)
-   {
-      errorBox.Visible = false;
-   }
-   else
-   {
-      string id = idBox.Text;
-      string password = passwordBox.Text;
-
-      // If no id was supplied, don't bail.
-      if ("" == id)
-         return;
-
-      if (FormsAuthentication.Authenticate( id, password ))
-         FormsAuthentication.RedirectFromLoginPage( id, false );
-      else
-         _Error( "Access Denied" );
-   }
-}
-
-void _Error( string msg )
-{
-   errorBox.Visible = true;
-   errorMsg.Text = msg;
-}
-
-</script>
-<html>
+  Inherits="byteheaven.tamjb.webgui.login" 
+ %><html>
 <head>
 <style type="text/css">
-  // Hmm.
+
 </style>
 
 <title>Yo!</title>

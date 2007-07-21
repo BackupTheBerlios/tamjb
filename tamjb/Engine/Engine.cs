@@ -63,10 +63,10 @@ namespace byteheaven.tamjb.Engine
       //
       // Get the current mood. May return null for either or both
       //
-      public void GetCurrentUserAndMood( ref Credentials cred,
-                                         ref Mood mood )
+      public void GetCurrentMood( uint userId,
+                                  ref Mood mood )
       {
-         Backend.theBackend.GetCurrentUserAndMood( ref cred, ref mood );
+         Backend.theBackend.GetCurrentMood( userId, ref mood );
       }
 
       public bool CheckState( ref EngineState state )
@@ -92,32 +92,32 @@ namespace byteheaven.tamjb.Engine
       /// current level and 100%. Thus it theoretically never reaches
       /// 100% (cause integer math rounds down).
       ///
-      public void IncreaseSuckZenoStyle( Credentials cred,
+      public void IncreaseSuckZenoStyle( uint userId,
                                          uint trackKey )
       {
-         Backend.theBackend.IncreaseSuckZenoStyle( cred, trackKey );
+         Backend.theBackend.IncreaseSuckZenoStyle( userId, trackKey );
       }
 
-      public void DecreaseSuckZenoStyle( Credentials cred,
+      public void DecreaseSuckZenoStyle( uint userId,
                                          uint trackKey )
       {
-         Backend.theBackend.DecreaseSuckZenoStyle( cred, trackKey );
+         Backend.theBackend.DecreaseSuckZenoStyle( userId, trackKey );
       }
 
-      public void IncreaseAppropriateZenoStyle( Credentials cred,
+      public void IncreaseAppropriateZenoStyle( uint userId,
                                                 Mood mood,
                                                 uint trackKey )
       {
-         Backend.theBackend.IncreaseAppropriateZenoStyle( cred, 
+         Backend.theBackend.IncreaseAppropriateZenoStyle( userId, 
                                                           mood, 
                                                           trackKey );
       }
 
-      public void DecreaseAppropriateZenoStyle( Credentials cred,
+      public void DecreaseAppropriateZenoStyle( uint userId,
                                                 Mood mood,
                                                 uint trackKey )
       {
-         Backend.theBackend.DecreaseAppropriateZenoStyle( cred, 
+         Backend.theBackend.DecreaseAppropriateZenoStyle( userId, 
                                                           mood, 
                                                           trackKey );
       }
@@ -130,14 +130,14 @@ namespace byteheaven.tamjb.Engine
       ///
       /// IEngine interfaces
       ///
-      public void GetAttributes( Credentials cred,
-                                 Mood mood,
+      public void GetAttributes( uint userId,
+                                 uint moodId,
                                  uint trackKey,
                                  out double suck,
                                  out double appropriate )
       {
-         Backend.theBackend.GetAttributes( cred,
-                                           mood,
+         Backend.theBackend.GetAttributes( userId,
+                                           moodId,
                                            trackKey,
                                            out suck,
                                            out appropriate );
@@ -146,14 +146,14 @@ namespace byteheaven.tamjb.Engine
       ///
       /// GotoFile function with credentials for future expansion.
       ///
-      public void GotoNextFile( Credentials cred, uint currentTrackKey )
+      public void GotoNextFile( uint userId, uint currentTrackKey )
       {
-         Backend.theBackend.GotoNextFile( cred, currentTrackKey );
+         Backend.theBackend.GotoNextFile( userId, currentTrackKey );
       }
 
-      public void GotoPrevFile( Credentials cred, uint currentTrackKey )
+      public void GotoPrevFile( uint userId, uint currentTrackKey )
       {
-         Backend.theBackend.GotoPrevFile( cred, currentTrackKey );
+         Backend.theBackend.GotoPrevFile( userId, currentTrackKey );
       }
 
       public void ReevaluateCurrentTrack()
@@ -334,9 +334,14 @@ namespace byteheaven.tamjb.Engine
          return Backend.theBackend.GetUserList();
       }
 
-      public Credentials CreateUser( string name )
+      public Credentials CreateUser( string name, string password )
       {
-         return Backend.theBackend.CreateUser( name );
+         return Backend.theBackend.CreateUser( name, password );
+      }
+
+      public Credentials LogIn( string name, string password )
+      {
+         return Backend.theBackend.LogIn( name, password );
       }
 
       ///
@@ -347,9 +352,9 @@ namespace byteheaven.tamjb.Engine
          return Backend.theBackend.CreateMood( cred, name );
       }
 
-      public void RenewLogon( Credentials cred )
+      public Credentials RenewLogon( uint userId )
       {
-         Backend.theBackend.RenewLogon( cred );
+         return Backend.theBackend.RenewLogon( userId );
       }
 
       public void SetMood( Credentials cred, Mood mood )
@@ -360,9 +365,9 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Get an existing mood by name for a given user
       ///
-      public Mood GetMood( Credentials cred, string name )
+      public Mood GetMood( uint userId, string name )
       {
-         return Backend.theBackend.GetMood( cred, name );
+         return Backend.theBackend.GetMood( userId, name );
       }
 
       ///

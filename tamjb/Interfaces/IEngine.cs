@@ -4,7 +4,7 @@
 /// Jukebox backend "Engine" base type for remoting
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -48,7 +48,13 @@ namespace byteheaven.tamjb.Interfaces
       ///
       Credentials GetUser( uint uid );
 
-      Mood GetMood( Credentials cred, string name );
+      ///
+      /// Find credentials by logging in. Adds the user as a current controller
+      /// on success.
+      ///
+      Credentials LogIn( string name, string password );
+
+      Mood GetMood( uint userId, string name );
 
       ///
       /// Return an array of user names that can be used to log in
@@ -65,7 +71,7 @@ namespace byteheaven.tamjb.Interfaces
       ///
       /// \throw exception if already exists, etc.
       ///
-      Credentials CreateUser( string name );
+      Credentials CreateUser( string name, string password );
 
       ///
       /// Create and return a new mood for this user
@@ -73,9 +79,12 @@ namespace byteheaven.tamjb.Interfaces
       Mood CreateMood( Credentials cred, string name );
 
       ///
-      /// Initialize or renew a logon using existing credentials
+      /// Reset a logon so it won't time out. we hope!
       ///
-      void RenewLogon( Credentials cred );
+      /// \return credentials if the logon was renewed, null if it timed out,
+      ///   or never existed!
+      ///
+      Credentials RenewLogon( uint userId );
 
       ///
       /// Set current mood for a logged-on user
@@ -83,10 +92,10 @@ namespace byteheaven.tamjb.Interfaces
       void SetMood( Credentials cred, Mood mood );
 
       /// 
-      /// Figure out who is currently in control, and what they think
+      /// Get the current mood for this user. Assumes the user is logged in.
       ///
-      void GetCurrentUserAndMood( ref Credentials cred,
-                                  ref Mood mood );
+      void GetCurrentMood( uint userId,
+                           ref Mood mood );
 
       ///
       /// Get a snapshot of the engine state. 
@@ -116,8 +125,8 @@ namespace byteheaven.tamjb.Interfaces
       // criteria using the unique keys.
       ITrackInfo GetFileInfo( uint key );
 
-      void GetAttributes( Credentials cred,
-                          Mood mood,
+      void GetAttributes( uint userId,
+                          uint moodId,
                           uint trackKey,
                           out double suck,
                           out double appropriate );
@@ -125,17 +134,17 @@ namespace byteheaven.tamjb.Interfaces
       // These could possibly be changed to indicate the percieved 
       // "current value" of the attribute, so the server can be more
       // intelligent.
-      void IncreaseSuckZenoStyle( Credentials cred,
+      void IncreaseSuckZenoStyle( uint userId,
                                   uint trackKey );
 
-      void DecreaseSuckZenoStyle( Credentials user,
+      void DecreaseSuckZenoStyle( uint userId,
                                   uint trackKey );
 
-      void IncreaseAppropriateZenoStyle( Credentials user,
+      void IncreaseAppropriateZenoStyle( uint userId,
                                          Mood mood,
                                          uint trackKey );
 
-      void DecreaseAppropriateZenoStyle( Credentials user,
+      void DecreaseAppropriateZenoStyle( uint userId,
                                          Mood mood,
                                          uint trackKey );
 
@@ -149,8 +158,8 @@ namespace byteheaven.tamjb.Interfaces
       // These need to take, as a parameter, some sort of clue as to 
       // what your application's  state is, to deal with multiple 
       // concurrent requests.
-      void GotoNextFile( Credentials user, uint currentTrackKey );
-      void GotoPrevFile( Credentials user, uint currentTrackKey );
+      void GotoNextFile( uint userId, uint currentTrackKey );
+      void GotoPrevFile( uint userId, uint currentTrackKey );
 
       ///
       /// Stops playback if started

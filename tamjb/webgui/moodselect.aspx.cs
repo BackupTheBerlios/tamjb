@@ -28,6 +28,7 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Data;
    using System.Web;
+   using System.Web.Security;
    using ASP = System.Web.UI.WebControls;
 
    using Anthem;
@@ -39,6 +40,8 @@ namespace byteheaven.tamjb.webgui
       protected ASP.Literal currentUserBox;
       protected TextBox newMoodBox;
 
+      Credentials _credentials;
+
       override protected void OnLoad( EventArgs loadArgs )
       {
          base.OnLoad( loadArgs );
@@ -46,6 +49,21 @@ namespace byteheaven.tamjb.webgui
          try
          {
             Manager.Register( this );
+
+            System.Security.Principal.IIdentity identity = 
+               HttpContext.Current.User.Identity;
+
+            if (! identity.IsAuthenticated)
+            {
+               throw new ApplicationException( 
+                  "Internal error, anonymous access not supported" );
+            }
+            uint userId = Convert.ToUInt32( identity.Name );
+            _credentials = backend.RenewLogon( userId );
+            if (null == _credentials)
+            {
+               FormsAuthentication.RedirectToLoginPage();
+            }
 
             // Special: handle command line parameters. :)
             string action = (string)Request.Params["action"];
@@ -103,19 +121,17 @@ namespace byteheaven.tamjb.webgui
 
       void _Refresh()
       {
-         Credentials currentUser = new Credentials();
          Mood currentMood = new Mood();
-         backend.GetCurrentUserAndMood( ref currentUser,
-                                        ref currentMood );
+         backend.GetCurrentMood( _credentials.id, ref currentMood );
 
-         currentUserBox.Text = currentUser.name;
+         currentUserBox.Text = _credentials.name;
 
          DataTable table = new DataTable();
          table.Columns.Add("moodKey", typeof(uint));
          table.Columns.Add("moodName", typeof(string));
          table.Columns.Add("status", typeof(string));
 
-         foreach (Mood mood in backend.GetMoodList( currentUser ))
+         foreach (Mood mood in backend.GetMoodList( _credentials ))
          {
             DataRow row = table.NewRow();
             row["moodKey"] = mood.id;
@@ -132,19 +148,6 @@ namespace byteheaven.tamjb.webgui
          moodSelect.DataSource = table;
          moodSelect.DataBind();  
          moodSelect.UpdateAfterCallBack = true;
-      }
-
-      ///
-      /// Get current credentials? Sloppy. Must deal with logins soon...
-      ///
-      Credentials _GetCredentials()
-      {
-         Credentials credentials = new Credentials();
-         Mood currentMood = new Mood();
-         backend.GetCurrentUserAndMood( ref credentials,
-                                        ref currentMood );
-
-         return credentials;
       }
 
 //       public void _OnMoodCommand( object sender,
@@ -186,12 +189,6 @@ namespace byteheaven.tamjb.webgui
 
       void _SetMood( string moodString )
       {
-         Credentials credentials = _GetCredentials();
-         // TODO: keep our credentials in the session or something, and then
-         // don't bother with "RenewLogon".
-
-         backend.RenewLogon( credentials ); // Why?
-
          uint newMood = Convert.ToUInt32( moodString );
 
          Console.WriteLine( "NewMood: {0}:{1}", newMood, moodString );
@@ -199,7 +196,7 @@ namespace byteheaven.tamjb.webgui
          // SetMood should take just the integer ID, not force creation
          // of a nameless object. :)
          Mood mood = new Mood( "", newMood );
-         backend.SetMood( credentials, mood );
+         backend.SetMood( _credentials, mood );
       }
                                      
 
@@ -213,13 +210,8 @@ namespace byteheaven.tamjb.webgui
             return;
          }
 
-         Credentials credentials = _GetCredentials();
-
-         // I really don't understand this:
-         backend.RenewLogon( credentials ); // Why?
-
-         Mood newMood = backend.CreateMood( credentials, newMoodBox.Text );
-         backend.SetMood( credentials, newMood );
+         Mood newMood = backend.CreateMood( _credentials, newMoodBox.Text );
+         backend.SetMood( _credentials, newMood );
 
          newMoodBox.Text = "";
          newMoodBox.UpdateAfterCallBack = true;

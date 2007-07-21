@@ -98,9 +98,9 @@ namespace byteheaven.tamjb.Engine
          Debug.Assert( (range & mask) == range, "Mask is too small?" );
 
          // Strictly for debugging this mess
-         Trace.WriteLine( "" );
-         Trace.WriteLine( "RANGE: " + range.ToString( "X8" ) );
-         Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
+//          Trace.WriteLine( "" );
+//          Trace.WriteLine( "RANGE: " + range.ToString( "X8" ) );
+//          Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
 
          while (true)           // loop forever (until "return")
          {
@@ -117,8 +117,8 @@ namespace byteheaven.tamjb.Engine
             // here:
             if (next < range)      // small enough?
             {
-               Trace.WriteLine( "NEXT:  " + next.ToString("X8") );
-               Trace.WriteLine( "" );
+//                Trace.WriteLine( "NEXT:  " + next.ToString("X8") );
+//                Trace.WriteLine( "" );
                return next;        // ** success ** quick exit **
             }
             
@@ -137,11 +137,11 @@ namespace byteheaven.tamjb.Engine
          Debug.Assert( range & mask == range, "Mask is too small?" );
 
          // Strictly for debugging this mess
-         Trace.WriteLine( "" );
-         Trace.WriteLine( "RANGE: " + range );
-         Trace.WriteLine( "BITS:  " + bits );
-         Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
-         Trace.WriteLine( "" );
+//          Trace.WriteLine( "" );
+//          Trace.WriteLine( "RANGE: " + range );
+//          Trace.WriteLine( "BITS:  " + bits );
+//          Trace.WriteLine( "MASK:  " + mask.ToString( "X8" ) );
+//          Trace.WriteLine( "" );
 
          while (true)           // loop forever (until "return")
          {
@@ -173,26 +173,27 @@ namespace byteheaven.tamjb.Engine
          return _binReader.ReadInt32() & 0x7fffffff;
       }
 
-      ///
-      /// Count the significant bits
-      ///
-      int CountBits( int number )
-      {
-         // The trivial, slow, iterative method. There's probably a standard
-         // api for doing this. So, in the meantime, I'll use the slow 
-         // method that won't need much debugging. Note that this counts
-         // the number of signifcant bits, not the number of SET bits. :)
-         //
-         // See: http://www-db.stanford.edu/~manku/bitcount/bitcount.html
-         // 
-         int nBits = 0;
-         while (number != 0)
-         {
-            ++ nBits;
-            number >>= 1;
-         }
-         return nBits;
-      }
+      // trs: not used.  Retained in case it should suddenly become useful again.
+//       ///
+//       /// Count the significant bits
+//       ///
+//       int CountBits( int number )
+//       {
+//          // The trivial, slow, iterative method. There's probably a standard
+//          // api for doing this. So, in the meantime, I'll use the slow 
+//          // method that won't need much debugging. Note that this counts
+//          // the number of signifcant bits, not the number of SET bits. :)
+//          //
+//          // See: http://www-db.stanford.edu/~manku/bitcount/bitcount.html
+//          // 
+//          int nBits = 0;
+//          while (number != 0)
+//          {
+//             ++ nBits;
+//             number >>= 1;
+//          }
+//          return nBits;
+//       }
 
       BinaryReader _binReader;
       FileStream _urandom;
