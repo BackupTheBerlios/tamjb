@@ -250,9 +250,13 @@ namespace byteheaven.tamjb.webgui
          {
 	    // Only show a little history:
             if (state.currentTrackIndex > MAX_HISTORY)
+            {
                index = state.currentTrackIndex - MAX_HISTORY;
+            }
 	    else
-               index = state.currentTrackIndex;
+            {
+               index = 0;
+            }
          }
 
 	 if (index < 0) // In case currentTrackIndex is negative?
