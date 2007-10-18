@@ -68,7 +68,7 @@ namespace byteheaven.tamjb.webgui
       {
          base.OnLoad( loadArgs );
 
-         Manager.Register( this );
+         Anthem.Manager.Register( this );
 
          // Hack to allow unauthenticated users to see what is playing 
          System.Security.Principal.IIdentity identity = 
@@ -80,8 +80,8 @@ namespace byteheaven.tamjb.webgui
                "Internal error, anonymous access not supported" );
          }
          _userId = Convert.ToUInt32( identity.Name );
-         Credentials credentials = backend.RenewLogon( _userId );
-         if (null == credentials)
+         UserInfo userInfo = backend.RenewLogon( _userId );
+         if (null == userInfo)
          {
             FormsAuthentication.RedirectToLoginPage();
          }
@@ -120,10 +120,14 @@ namespace byteheaven.tamjb.webgui
                   _FutureToggle();
                   ViewState["futureVisible"] = showFuture.Checked;
                }
+
+               ///
+               /// \todo store the current view config in the database.
+               ///
             }
             else
             {
-               userNameBtn.Text = credentials.name;
+               userNameBtn.Text = userInfo.name;
             }
          }
          catch (Exception)

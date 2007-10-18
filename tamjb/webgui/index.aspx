@@ -126,7 +126,8 @@
     EnableDuringCallback="false" />
  </div>
 
- <div id="transportBox">
+<!-- TODO: allow this to be visible for the MASTER login -->
+ <div id="transportBox" style="display: none;">
   <table class="transportTable">
   <tr>
     <td><anthem:Button id="prevBtn" runat="server" text="Prev"

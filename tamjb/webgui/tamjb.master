@@ -7,7 +7,7 @@
 %><%
 // Note: you want no spaces before the DOCTYPE element
 
-// Copyright (C) 2006 Tom Surace.
+// Copyright (C) 2006-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -57,18 +57,20 @@
         // TODO: alert popups are sad. Replace with a retry layer of some sort
         if ("NORESPONSE" == result.error)
         {
-            alert( "No response from server" );
+            window.location = window.location;
+            // alert( "No response from server" );
         }
         else if ("BADRESPONSE" == result.error)
         {
-            alert( "Bad/illegal response from server: " + result.responseText );
+            window.location = window.location;
+            // alert( "Bad/illegal response from server: " + result.responseText );
         }
         else
         {
             alert( "Unexpected result.error type in Anthem_Error" );
         }
 
-        window.location.href='<%= ResolveUrl( "~/index.aspx" ) %>';
+        // window.location.href='<%= ResolveUrl( "~/index.aspx" ) %>';
     }
 
     function StartUpdate()
@@ -112,7 +114,9 @@
 
 <div id="header" >
  <div style="float: left">
-   TAM Jukebox - The Header
+   TAM Jukebox - 
+   <anthem:HyperLink runat="server" id="listenUrl" 
+     text="Listen" />
  </div>
 
  <div id="working" >

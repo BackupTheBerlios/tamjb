@@ -13,6 +13,7 @@ body
   padding: 0px;
   border-width: 0px;
 
+  color: #000000;
   background-color: #400b5c;
 }
 
@@ -21,7 +22,6 @@ a:link, a:visited, a:active, a:hover {
   text-decoration: none;
   font-weight: bold;
 }
-
 
 /* todo: this style document and the master code go together. No way
    to easily change styles... */
@@ -46,6 +46,10 @@ a:link, a:visited, a:active, a:hover {
   border: 0px;
 
   float: left;
+}
+
+#header, #header a
+{ 
   background-color: #004b5c;
   color: #ffffff;
 }
@@ -136,8 +140,6 @@ input.megaSuckBtn
   background-color: rgb( 255, 90, 90 );
   color: rgb( 0, 0, 0 );
 }
-
-
 
 
 

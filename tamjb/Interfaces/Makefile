@@ -9,7 +9,7 @@ INTERFACE_DLL = ../bin/tamjb.Interfaces.dll
 all: $(INTERFACE_DLL)
 
 INTERFACE_SRCS = AssemblyInfo.cs \
-        Credentials.cs \
+        UserInfo.cs \
         EngineState.cs \
         Mood.cs \
         PlayableData.cs \

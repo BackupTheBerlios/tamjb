@@ -1,7 +1,7 @@
 /// \file
 /// $Id$
 
-// Copyright (C) 2004-2005 Tom Surace.
+// Copyright (C) 2004-2007 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -37,12 +37,17 @@ namespace byteheaven.tamjb.Engine
       : Random
    {
 
+      // If your system is short on randomness, you might run
+      // out of randomness using random, in which case you should
+      // use urandom. :)
+      static readonly string _RANDOM_DEV = "/dev/random";
+
       public MyRandom() 
       {
-         // If we can't open /dev/urandom, don't worry about it
+         // If we can't open the random device don't worry about it
          try
          {
-            _urandom = new FileStream( "/dev/urandom", 
+            _urandom = new FileStream( _RANDOM_DEV,
                                        FileMode.Open,
                                        FileAccess.Read );
 
@@ -50,7 +55,8 @@ namespace byteheaven.tamjb.Engine
          }
          catch
          {
-            Console.WriteLine( "Note: Could not open /dev/urandom" );
+            Console.WriteLine( "Note: Could not open {0}",
+                               _RANDOM_DEV );
 
             if (_urandom != null)
                _urandom.Close();

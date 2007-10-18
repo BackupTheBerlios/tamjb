@@ -75,11 +75,11 @@ namespace byteheaven.tamjb.webgui
             if ("" == id)
                return;
 
-            Credentials cred = backend.LogIn( id, password );
-            if (null != cred)
+            UserInfo userInfo = backend.LogIn( id, password );
+            if (null != userInfo)
             {
                // Store the numeric id as the forms "user id"
-               FormsAuthentication.RedirectFromLoginPage( cred.id.ToString(), false );
+               FormsAuthentication.RedirectFromLoginPage( userInfo.id.ToString(), false );
             }
             else
             {

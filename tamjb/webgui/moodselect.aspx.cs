@@ -40,7 +40,7 @@ namespace byteheaven.tamjb.webgui
       protected ASP.Literal currentUserBox;
       protected TextBox newMoodBox;
 
-      Credentials _credentials;
+      UserInfo _userInfo;
 
       override protected void OnLoad( EventArgs loadArgs )
       {
@@ -59,8 +59,8 @@ namespace byteheaven.tamjb.webgui
                   "Internal error, anonymous access not supported" );
             }
             uint userId = Convert.ToUInt32( identity.Name );
-            _credentials = backend.RenewLogon( userId );
-            if (null == _credentials)
+            _userInfo = backend.RenewLogon( userId );
+            if (null == _userInfo)
             {
                FormsAuthentication.RedirectToLoginPage();
             }
@@ -122,16 +122,16 @@ namespace byteheaven.tamjb.webgui
       void _Refresh()
       {
          Mood currentMood = new Mood();
-         backend.GetCurrentMood( _credentials.id, ref currentMood );
+         backend.GetCurrentMood( _userInfo.id, ref currentMood );
 
-         currentUserBox.Text = _credentials.name;
+         currentUserBox.Text = _userInfo.name;
 
          DataTable table = new DataTable();
          table.Columns.Add("moodKey", typeof(uint));
          table.Columns.Add("moodName", typeof(string));
          table.Columns.Add("status", typeof(string));
 
-         foreach (Mood mood in backend.GetMoodList( _credentials ))
+         foreach (Mood mood in backend.GetMoodList( _userInfo.id ))
          {
             DataRow row = table.NewRow();
             row["moodKey"] = mood.id;
@@ -196,7 +196,7 @@ namespace byteheaven.tamjb.webgui
          // SetMood should take just the integer ID, not force creation
          // of a nameless object. :)
          Mood mood = new Mood( "", newMood );
-         backend.SetMood( _credentials, mood );
+         backend.SetMood( _userInfo.id, mood.id );
       }
                                      
 
@@ -210,8 +210,8 @@ namespace byteheaven.tamjb.webgui
             return;
          }
 
-         Mood newMood = backend.CreateMood( _credentials, newMoodBox.Text );
-         backend.SetMood( _credentials, newMood );
+         Mood newMood = backend.CreateMood( _userInfo.id, newMoodBox.Text );
+         backend.SetMood( _userInfo.id, newMood.id );
 
          newMoodBox.Text = "";
          newMoodBox.UpdateAfterCallBack = true;

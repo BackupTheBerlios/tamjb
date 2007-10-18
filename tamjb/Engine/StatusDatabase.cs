@@ -110,17 +110,17 @@ namespace byteheaven.tamjb.Engine
       {
          CreateUser( "guest", "" );
 
-         Credentials guest;
+         UserInfo guest;
          GetUser( "guest", out guest );
 
-         CreateMood( guest, "unknown" );
+         CreateMood( guest.id, "unknown" );
 
          // Default settings (will only be UPDATEd from now on)
          string query = 
             "INSERT INTO settings ( \n" +
-            "  control_user, control_mood, compression )\n" +
+            "  compression )\n" +
             " VALUES (\n" +
-            "  'guest', 'unknown', ''\n" +
+            "  'unknown', ''\n" +
             " )"
             ;
 
@@ -368,14 +368,41 @@ namespace byteheaven.tamjb.Engine
          // application state for restart. Whee.
          //
          // is_playing - 1 if playing, 0 if stopped
-         // control_user - controlling user's name (yes, not text)
-         // control_mood - controlling user's name (yes, not text)
          // compression - compression settings (serialized xml)
          //
          string query = 
-            "CREATE TABLE settings ( \n" +
-            "  control_user TEXT NOT NULL,\n" +
-            "  control_mood TEXT NOT NULL,\n" +
+            "CREATE TABLE user_prefs ( \n" +
+            "  userid INTEGER PRIMARY KEY NOT NULL\n" +
+            "  prefs  TEXT NOT NULL\n" +
+            "  )";
+
+         _ExecuteNonQuery( query );
+         query = 
+            "CREATE INDEX settings_userid_ix \n" +
+            "  ON user_prefs ( userid )";
+
+         _ExecuteNonQuery( query );
+      }
+
+      void _CreateUserPrefsTable()
+      {
+         try
+         {
+            _ExecuteNonQuery( "drop table user_prefs" );
+         }
+         catch
+         {
+         }
+
+         //
+         // This table contains one row only, which contains all the
+         // application state for restart. Whee.
+         //
+         // is_playing - 1 if playing, 0 if stopped
+         // compression - compression settings (serialized xml)
+         //
+         string query = 
+            "CREATE TABLE user_prefs ( \n" +
             "  compression  TEXT NOT NULL\n" +
             "  )";
 
@@ -383,17 +410,20 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Store the current controlling user and mood.
+      /// Store the user's preferences.
       ///
-      public void StoreController( Credentials cred, Mood mood )
+      public void StorePreferences( uint userId, string xmlPrefs )
       {
-         Debug.Assert( null != cred, "controlling user is required" );
-         Debug.Assert( null != mood, "mood is required" );
+         Debug.Assert( null != xmlPrefs, "xmlPrefs is required" );
+
+         //
+         // Add or update user preferences
+         //
 
          string query = _FixQuery(
-            "UPDATE settings"
-            + " SET control_user = :user,"
-            + " control_mood = :mood"
+            "UPDATE user_prefs"
+            + " SET prefs = :prefs"
+            + " WHERE userid = :user"
             );
 
          IDbConnection dbcon = null;
@@ -404,16 +434,23 @@ namespace byteheaven.tamjb.Engine
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
-            IDbDataParameter param = _NewParameter( "user", DbType.String );
-            param.Value = cred.name;
+            IDbDataParameter param = _NewParameter( "prefs", DbType.String );
+            param.Value = xmlPrefs;
             cmd.Parameters.Add( param );
             
-            param = _NewParameter( "mood", DbType.String );
-            param.Value = mood.name;
+            param = _NewParameter( "user", DbType.Int32 );
+            param.Value = userId;
             cmd.Parameters.Add( param );
             
-            cmd.ExecuteNonQuery();
-            return;
+            if (0 >= cmd.ExecuteNonQuery()) // No rows updated. Try insert.
+            {
+               query = _FixQuery(
+                  "INSERT INTO user_prefs ( userid, prefs )"
+                  + " VALUES ( :user, :prefs )"
+                  );
+
+               cmd.ExecuteNonQuery();
+            }
          }
          catch (Exception e)
          {
@@ -433,8 +470,6 @@ namespace byteheaven.tamjb.Engine
                dbcon.Dispose();
             }
          }
-
-         throw new ApplicationException( "not reached" );
       }
 
       ///
@@ -446,58 +481,58 @@ namespace byteheaven.tamjb.Engine
       /// configured. On the other hand, if the controlling user
       /// or mood does not exist, this will throw an exception.
       ///
-      public void GetController( out Credentials controller,
-                                 out Mood mood )
-      {
-         string query = "SELECT control_user, control_mood FROM settings";
+//       public void GetController( out Credentials controller,
+//                                  out Mood mood )
+//       {
+//          string query = "SELECT control_user, control_mood FROM settings";
 
-         IDbConnection dbcon = null;
-         IDbCommand cmd = null;
-         IDataReader reader = null;
-         controller = null;     // Default: failure
-         mood = null;
-         try
-         {
-            dbcon = _GetDbConnection();
-            cmd = dbcon.CreateCommand();
-            cmd.CommandText = query;
-            reader = cmd.ExecuteReader();
+//          IDbConnection dbcon = null;
+//          IDbCommand cmd = null;
+//          IDataReader reader = null;
+//          controller = null;     // Default: failure
+//          mood = null;
+//          try
+//          {
+//             dbcon = _GetDbConnection();
+//             cmd = dbcon.CreateCommand();
+//             cmd.CommandText = query;
+//             reader = cmd.ExecuteReader();
 
-            if (!reader.Read())
-            {
-               // Query returned nothing?
-               return; // controller and mood are null. That's OK.
-            }
-            string userName = reader.GetString(0);
-            string moodName = reader.GetString(1);
+//             if (!reader.Read())
+//             {
+//                // Query returned nothing?
+//                return; // controller and mood are null. That's OK.
+//             }
+//             string userName = reader.GetString(0);
+//             string moodName = reader.GetString(1);
 
-            GetUser( userName, out controller );
-            GetMood( controller.id, moodName, out mood );
-         }
-         catch (Exception e)
-         {
-            _Rethrow( query, e );
-         }
-         finally
-         {
-            if (null != reader)
-            {
-               reader.Close();
-               reader.Dispose();
-            }
+//             GetUser( userName, out controller );
+//             GetMood( controller.id, moodName, out mood );
+//          }
+//          catch (Exception e)
+//          {
+//             _Rethrow( query, e );
+//          }
+//          finally
+//          {
+//             if (null != reader)
+//             {
+//                reader.Close();
+//                reader.Dispose();
+//             }
 
-            if (null != cmd)
-            {
-               cmd.Dispose();
-            }
+//             if (null != cmd)
+//             {
+//                cmd.Dispose();
+//             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
-         }
-      }
+//             if (null != dbcon)
+//             {
+//                dbcon.Close();
+//                dbcon.Dispose();
+//             }
+//          }
+//       }
 
 
       ///
@@ -654,7 +689,7 @@ namespace byteheaven.tamjb.Engine
          throw new ApplicationException( "not reached" );
       }
 
-      public void CreateMood( Credentials cred,
+      public void CreateMood( uint userId,
                               string name )
       {
          // The default mood: unknown
@@ -675,7 +710,7 @@ namespace byteheaven.tamjb.Engine
             // Should I be using mono's generic database wrapper?
             IDbDataParameter param = _NewParameter( "userId",
                                                     DbType.Int32 );
-            param.Value = cred.id;
+            param.Value = userId;
             cmd.Parameters.Add( param );
 
             IDbDataParameter p2 = _NewParameter( "userName", DbType.String );
@@ -731,7 +766,7 @@ namespace byteheaven.tamjb.Engine
             {
                uint id = (uint)reader.GetInt32(0); 
                string name = reader.GetString(1);
-               returnList.Add( new Credentials( name, id ) );
+               returnList.Add( new UserInfo( name, id ) );
             }
 
             return returnList;
@@ -773,7 +808,7 @@ namespace byteheaven.tamjb.Engine
       /// \return true on success, false if user does not exist
       ///
       public bool GetUser( string name,
-                           out Credentials creds )
+                           out UserInfo user )
       {
          string query = _FixQuery( 
             "SELECT id"
@@ -799,12 +834,12 @@ namespace byteheaven.tamjb.Engine
             // PlayableData returnData;
             if (!reader.Read())
             {
-               creds = null;
+               user = null;
                return false;
             }
 
             uint id = (uint)reader.GetInt32(0); 
-            creds = new Credentials( name, id );
+            user = new UserInfo( name, id );
             return true;        // found user, return true!
          }
          catch (Exception e)
@@ -834,7 +869,7 @@ namespace byteheaven.tamjb.Engine
          throw new ApplicationException( "not reached" );
       }
 
-      public bool Authenticate( Credentials cred, string password )
+      public bool Authenticate( UserInfo cred, string password )
       {
          string query = _FixQuery( 
             "SELECT password"
@@ -894,7 +929,7 @@ namespace byteheaven.tamjb.Engine
       }
 
       public bool GetUser( uint uid,
-                           out Credentials creds )
+                           out UserInfo creds )
       {
          string query = _FixQuery( 
             "SELECT name"
@@ -925,7 +960,7 @@ namespace byteheaven.tamjb.Engine
             }
 
             string name = reader.GetString(0); 
-            creds = new Credentials( name, uid );
+            creds = new UserInfo( name, uid );
             return true;        // found user, return true!
          }
          catch (Exception e)
@@ -961,7 +996,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// \return ArrayList full of Mood objects
       ///
-      public ArrayList GetMoodList( Credentials cred )
+      public ArrayList GetMoodList( uint userId )
       {
          string query = _FixQuery(
             "SELECT id, name"
@@ -980,7 +1015,7 @@ namespace byteheaven.tamjb.Engine
 
             IDbDataParameter param;
             param = _NewParameter( "userId", DbType.String );
-            param.Value = cred.id;
+            param.Value = userId;
             cmd.Parameters.Add( param );
 
             reader = cmd.ExecuteReader();
@@ -1589,7 +1624,7 @@ namespace byteheaven.tamjb.Engine
       ///   a suck value > the max possible threshold. Hmmm.
       ///
       public uint PickRandom( Random rng,
-                              Credentials cred,
+                              UserInfo cred,
                               Mood mood,
                               int suckThreshold,
                               int moodThreshold,
@@ -1710,7 +1745,7 @@ namespace byteheaven.tamjb.Engine
          throw new ApplicationException( "not reached" );
      }
 
-      string _BuildFullQuery( Credentials cred,
+      string _BuildFullQuery( UserInfo cred,
                               Mood mood,
                               int suckThreshold,
                               int moodThreshold )
@@ -1746,7 +1781,7 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Build a subquery that selects based on suck
       ///
-      string _BuildPartialQuerySuck( Credentials cred,
+      string _BuildPartialQuerySuck( UserInfo cred,
                                      int suckThreshold )
       {
          string query = 

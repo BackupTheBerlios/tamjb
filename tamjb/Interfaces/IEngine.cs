@@ -41,55 +41,55 @@ namespace byteheaven.tamjb.Interfaces
       ///
       /// Find user by name (name is unique, so this will work).
       ///
-      Credentials GetUser( string name );
+      UserInfo GetUser( string name );
 
       ///
-      /// Find credentials by uid. 
+      /// Find all info for this uid
       ///
-      Credentials GetUser( uint uid );
+      UserInfo GetUser( uint uid );
 
       ///
-      /// Find credentials by logging in. Adds the user as a current controller
+      /// Find User Info by logging in. Adds the user as a current controller
       /// on success.
       ///
-      Credentials LogIn( string name, string password );
+      UserInfo LogIn( string name, string password );
 
       Mood GetMood( uint userId, string name );
 
       ///
-      /// Return an array of user names that can be used to log in
+      /// Return info for all logged-in users.
       ///
-      Credentials [] GetUserList();
+      UserInfo [] GetUserList();
 
       ///
-      /// Return the list of available moods
+      /// Return the list of available moods for this user.
       ///
-      Mood [] GetMoodList( Credentials cred );
+      Mood [] GetMoodList( uint userId );
 
       ///
-      /// Create new user, returns new user's credentials.
+      /// Create new user, returns new user's info.
       ///
       /// \throw exception if already exists, etc.
       ///
-      Credentials CreateUser( string name, string password );
+      UserInfo CreateUser( string name, string password );
 
       ///
       /// Create and return a new mood for this user
       ///
-      Mood CreateMood( Credentials cred, string name );
+      Mood CreateMood( uint userId, string name );
 
       ///
       /// Reset a logon so it won't time out. we hope!
       ///
-      /// \return credentials if the logon was renewed, null if it timed out,
+      /// \return info if the logon was renewed, null if it timed out,
       ///   or never existed!
       ///
-      Credentials RenewLogon( uint userId );
+      UserInfo RenewLogon( uint userId );
 
       ///
       /// Set current mood for a logged-on user
       ///
-      void SetMood( Credentials cred, Mood mood );
+      void SetMood( uint userId, uint moodId );
 
       /// 
       /// Get the current mood for this user. Assumes the user is logged in.

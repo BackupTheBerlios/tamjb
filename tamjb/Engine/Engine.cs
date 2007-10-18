@@ -324,22 +324,22 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Return the list of available moods (as Mood)
       ///
-      public Mood [] GetMoodList( Credentials cred )
+      public Mood [] GetMoodList( uint userId )
       {
-         return Backend.theBackend.GetMoodList( cred );
+         return Backend.theBackend.GetMoodList( userId );
       }
 
-      public Credentials [] GetUserList()
+      public UserInfo [] GetUserList()
       {
          return Backend.theBackend.GetUserList();
       }
 
-      public Credentials CreateUser( string name, string password )
+      public UserInfo CreateUser( string name, string password )
       {
          return Backend.theBackend.CreateUser( name, password );
       }
 
-      public Credentials LogIn( string name, string password )
+      public UserInfo LogIn( string name, string password )
       {
          return Backend.theBackend.LogIn( name, password );
       }
@@ -347,19 +347,19 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Create and return a new mood for this user
       ///
-      public Mood CreateMood( Credentials cred, string name )
+      public Mood CreateMood( uint userId, string name )
       {
-         return Backend.theBackend.CreateMood( cred, name );
+         return Backend.theBackend.CreateMood( userId, name );
       }
 
-      public Credentials RenewLogon( uint userId )
+      public UserInfo RenewLogon( uint userId )
       {
          return Backend.theBackend.RenewLogon( userId );
       }
 
-      public void SetMood( Credentials cred, Mood mood )
+      public void SetMood( uint userId, uint moodId )
       {
-         Backend.theBackend.SetMood( cred, mood );
+         Backend.theBackend.SetMood( userId, moodId );
       }
 
       ///
@@ -373,12 +373,12 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Get the credentials for this user
       ///
-      public Credentials GetUser( string name )
+      public UserInfo GetUser( string name )
       {
          return Backend.theBackend.GetUser( name );
       }
 
-      public Credentials GetUser( uint uid )
+      public UserInfo GetUser( uint uid )
       {
          return Backend.theBackend.GetUser( uid );
       }

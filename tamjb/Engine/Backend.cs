@@ -230,11 +230,6 @@ namespace byteheaven.tamjb.Engine
             
          _player.OnReadBuffer +=
             new ReadBufferHandler( _TrackReadCallback );
-
-         Contributor contrib = 
-            new Contributor( new Credentials(), new Mood() );
-
-         _controllers[contrib.user.id] = contrib;
       }
       
       ~Backend()
@@ -445,8 +440,9 @@ namespace byteheaven.tamjb.Engine
 
        PlayableData nextTrack = null;
 
-       // Yeah, don't even bother if we don't know the index of this track.
-       if ((trackIndex > 0) && ((double)_rng.Next(1024) < (chance * 1024.0)))
+       // Don't even bother if we don't know the index of this track.
+       // If we do, roll the dice using the prng
+       if ((trackIndex > 0) && ((double)_cheapRandom.Next(1024) < (chance * 1024.0)))
        {
           // Pick the next track, or if it's missing, fall back to random
           nextTrack = _database.GetTrackByIndex( artist, 
@@ -457,7 +453,7 @@ namespace byteheaven.tamjb.Engine
        if (null == nextTrack)
        {
          // Pick a song totally randomly.
-         uint count = _database.PickRandom( _rng, out nextTrack );
+         uint count = _database.PickRandom( _qualityRandom, out nextTrack );
 
          if (0 == count)
          {
@@ -685,7 +681,7 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// GotoFile function with credentials for future expansion.
+      /// GotoFile function
       ///
       public void GotoNextFile( uint userId, uint currentTrackKey )
       {
@@ -1434,6 +1430,8 @@ namespace byteheaven.tamjb.Engine
          // delete things:
          object [] keys = new object[_controllers.Count];
          _controllers.Keys.CopyTo( keys, 0 );
+
+         _Trace( "Averaging contributor opinions..." );
          for (int i = 0; i < keys.Length; i++)
          {
             uint key = (uint)keys[i];
@@ -1448,6 +1446,7 @@ namespace byteheaven.tamjb.Engine
                Debug.Assert( nUsers >= 0, "removed more users than existed?" );
                continue;        // ** SKIP THIS LOGGED OUT DEADBEAT **
             }
+            _Trace( " - " + contrib.user.name );
 
             avgSuck += (double)_database.GetSuck( contrib.user.id,
                                                   trackKey );
@@ -1463,7 +1462,7 @@ namespace byteheaven.tamjb.Engine
          avgSuck /= (double)nUsers;
          avgMood /= (double)nUsers;
 
-         uint suckThresh = (uint)_rng.Next( 01000, 09000 );
+         uint suckThresh = (uint)_cheapRandom.Next( 01000, 09000 );
          if ((int)avgSuck > suckThresh)
          {
             _Trace( " Rejected. suck:" + avgSuck
@@ -1473,7 +1472,7 @@ namespace byteheaven.tamjb.Engine
             return false;       // methinks it sucketh too much
          }
 
-         uint moodThresh = (uint)_rng.Next( 01000, 09000 );
+         uint moodThresh = (uint)_cheapRandom.Next( 01200, 08800 );
          if (avgMood < moodThresh)
          {
             _Trace( " Rejected. mood:" + avgMood
@@ -1561,46 +1560,46 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Return the list of available moods (as Mood)
       ///
-      public Mood [] GetMoodList( Credentials cred )
+      public Mood [] GetMoodList( uint userId )
       {
          lock (_serializer)
          {
-            ArrayList moodList = _database.GetMoodList( cred );
+            ArrayList moodList = _database.GetMoodList( userId );
             return (Mood[])moodList.ToArray(typeof(Mood));
          }
       }
 
-      public Credentials [] GetUserList()
+      public UserInfo [] GetUserList()
       {
          lock (_serializer)
          {
             ArrayList credList = _database.GetUserList();
-            return (Credentials[])credList.ToArray(typeof(Credentials));
+            return (UserInfo[])credList.ToArray(typeof(UserInfo));
          }
       }
 
-      public Credentials CreateUser( string name, string password )
+      public UserInfo CreateUser( string name, string password )
       {
          lock (_serializer)
          {
             _database.CreateUser( name, password );
-            Credentials cred;
-            if (!_database.GetUser( name, out cred ))
+            UserInfo user;
+            if (!_database.GetUser( name, out user ))
             {
                throw new ApplicationException( 
                   "Internal error, could not retrieve just-created user" );
             }
 
-            return cred;
+            return user;
          }
       }
 
-      public Credentials LogIn( string name, string password )
+      public UserInfo LogIn( string name, string password )
       {
          // Who wants to log in? (I do I do!)
          lock (_serializer)
          {
-            Credentials cred;
+            UserInfo cred;
             if (!_database.GetUser( name, out cred ))
             {
                return null;
@@ -1625,14 +1624,14 @@ namespace byteheaven.tamjb.Engine
       ///
       /// Create and return a new mood for this user
       ///
-      public Mood CreateMood( Credentials cred, string name )
+      public Mood CreateMood( uint userId, string name )
       {
          lock (_serializer)
          {
-            _database.CreateMood( cred, name );
+            _database.CreateMood( userId, name );
             Mood mood;
 
-            if (!_database.GetMood( cred.id, name, out mood ))
+            if (!_database.GetMood( userId, name, out mood ))
             {
                throw new ApplicationException( 
                   "Internal error, could not retrieve just-created mood" );
@@ -1641,7 +1640,7 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public Credentials RenewLogon( uint userId )
+      public UserInfo RenewLogon( uint userId )
       {
          lock (_serializer)
          {
@@ -1654,19 +1653,16 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public void SetMood( Credentials cred, Mood mood )
+      public void SetMood( uint userId, uint moodId )
       {
          lock (_serializer)
          {
-            if (null == cred)
-               throw new ArgumentException( "may not be null", "cred" );
-
-            Contributor contrib = (Contributor)_controllers[cred.id];
+            Contributor contrib = (Contributor)_controllers[userId];
             if (null == contrib)
                throw new ApplicationException( "You are not logged in?" );
 
             ++_changeCount;
-            contrib.mood = GetMood( mood.id );
+            contrib.mood = GetMood( moodId );
 
             ///
             /// \todo Save the user's new current mood here. Somehow.
@@ -1703,13 +1699,13 @@ namespace byteheaven.tamjb.Engine
       }
 
       ///
-      /// Get the credentials for this user
+      /// Get the info for this user
       ///
-      public Credentials GetUser( string name )
+      public UserInfo GetUser( string name )
       {
          lock (_serializer)
          {
-            Credentials cred;
+            UserInfo cred;
             if (!_database.GetUser( name, out cred ))
                return null;
 
@@ -1717,11 +1713,11 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
-      public Credentials GetUser( uint uid )
+      public UserInfo GetUser( uint uid )
       {
          lock (_serializer)
          {
-            Credentials cred;
+            UserInfo cred;
             if (!_database.GetUser( uid, out cred ))
                return null;
 
@@ -1807,14 +1803,14 @@ namespace byteheaven.tamjb.Engine
       ///
       class Contributor
       {
-         internal Contributor( Credentials initCreds, Mood initMood )
+         internal Contributor( UserInfo userInfo, Mood initMood )
          {
-            user = initCreds;
+            user = userInfo;
             mood = initMood;
             lastPing = DateTime.Now;
          }
 
-         internal Credentials user;
+         internal UserInfo    user;
          internal Mood        mood;
          internal DateTime lastPing;
       }
@@ -1825,7 +1821,16 @@ namespace byteheaven.tamjb.Engine
       ///
       Hashtable _controllers = new Hashtable();
 
-      Random _rng = new MyRandom(); // Random numbers are cool
+      ///
+      /// High quality rng based on /dev/random, to prevent song-banding
+      ///
+      Random _qualityRandom = new MyRandom(); // Random numbers are cool
+
+      ///
+      /// Ordinary "cheap" pseudo-rng used where only the illusion of
+      /// randomness is needed
+      ///
+      Random _cheapRandom = new Random();
 
       ///
       /// Singleton object -- the only backend object that should exist
