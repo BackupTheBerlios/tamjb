@@ -6,6 +6,6 @@
 # keys. 
 #
 all:
+	make --directory=dojo
 	make --directory=mp3sharp
 	make --directory=esd-sharp
-
