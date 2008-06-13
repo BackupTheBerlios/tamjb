@@ -1,0 +1,7 @@
+syntax: glob
+tamjb/bin/*.mdb
+tamjb/bin/*.exe
+tamjb/bin/*.dll
+tamjb/assykey.snk
+tamjb/SimpleMp3Player/*.exe
+tamjb/SimpleMp3Player/*.mdb
