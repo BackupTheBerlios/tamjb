@@ -40,10 +40,12 @@ namespace Jayrock.JsonRpc.Web
         public JsonRpcTester(IService service) : 
             base(service) {}
 
+#if ! NET_2_0                 // this is "internal" in the future.
         protected override string Title
         {
             get { return "Test " + base.Title; }
         }
+#endif
 
         protected override void AddHeader()
         {
