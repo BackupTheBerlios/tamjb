@@ -6,7 +6,7 @@
 # Please, somebody explain why people use nant to build the most trivial
 # projects? It's not like C# has any sort of complicated dependencies.
 
-DEFINES = -define:NET_2_0
+DEFINES = -debug -define:TRACE -define:NET_2_0
 
 REFERENCES = -r:System.Data -r:System.Web
 
@@ -22,15 +22,24 @@ JAYROCK_JSON_DLL = bin/Jayrock.Json.dll
 JAYROCK_SOURCES = $(shell find Jayrock -name '*.cs') \
 	$(SHARED_SOURCES)
 
+JAYROCK_RES = -resource:Jayrock/json.js,Jayrock.json.js
+
 JAYROCK_JSON_SOURCES = $(shell find Jayrock.Json -name '*.cs') \
 	$(SHARED_SOURCES)
 
+
 all: $(JAYROCK_DLL) $(JAYROCK_JSON_DLL)
 
+install_tamjb: all
+	cp $(JAYROCK_JSON_DLL) ../../tamjb/webgui/bin/.
+	cp $(JAYROCK_JSON_DLL).mdb ../../tamjb/webgui/bin/.
+	cp $(JAYROCK_DLL) ../../tamjb/webgui/bin/.
+	cp $(JAYROCK_DLL).mdb ../../tamjb/webgui/bin/.
 
 $(JAYROCK_DLL): $(JAYROCK_JSON_DLL) $(JAYROCK_SOURCES) Makefile
 	gmcs $(DEFINES) $(REFERENCES) -r:$(JAYROCK_JSON_DLL) \
-		 $(JAYROCK_SOURCES) \
+		$(JAYROCK_SOURCES) \
+		$(JAYROCK_RES) \
 		-target:library -out:$@
 
 $(JAYROCK_JSON_DLL): $(JAYROCK_JSON_SOURCES) Makefile

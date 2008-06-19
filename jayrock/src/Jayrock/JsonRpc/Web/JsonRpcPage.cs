@@ -143,12 +143,13 @@ namespace Jayrock.JsonRpc.Web
 
 // Conditional for gmcs / .net 2.0
 #if NET_2_0
+        protected new string Title
 #else
         protected virtual string Title
+#endif
         {
             get { return ServiceClass.Name; }
         }
-#endif
 
         private sealed class MethodNameComparer : IComparer
         {
