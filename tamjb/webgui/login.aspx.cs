@@ -1,8 +1,7 @@
 /// \file
-/// $Id: moodselect.aspx.cs 200 2007-04-02 22:00:04Z tekhedd $
 ///
 
-// Copyright (C) 2007-2007 Tom Surace.
+// Copyright (C) 2007-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -31,35 +30,33 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Web;
    using System.Web.Security;
-   using ASP = System.Web.UI.WebControls;
-   
-   using Anthem;
+   using System.Web.UI.WebControls;
    
    public class login : byteheaven.tamjb.webgui.WebPageBase
    {
-      protected ASP.Panel errorBox;
-      protected ASP.TextBox idBox;
-      protected ASP.TextBox passwordBox;
-      protected ASP.Label errorMsg;
+      protected Panel errorBox;
+      protected TextBox idBox;
+      protected TextBox passwordBox;
+      protected Label errorMsg;
 
       override protected void OnLoad( EventArgs loadArgs )
       {
          base.OnLoad( loadArgs );
 
 
-         // A hack to make anthem errors less cryptic
-         if (Request.QueryString["Anthem_Callback"] == "true")
-         {
-            Anthem.Manager.Register(this);
+//          // A hack to make anthem errors less cryptic
+//          if (Request.QueryString["Anthem_Callback"] == "true")
+//          {
+//             Anthem.Manager.Register(this);
 
-            string alertScript = String.Format(
-               "alert('Your session has timed out.');\n"
-               + "window.location='{0}';",
-               ResolveUrl( "~/" ) 
-               );
+//             string alertScript = String.Format(
+//                "alert('Your session has timed out.');\n"
+//                + "window.location='{0}';",
+//                ResolveUrl( "~/" ) 
+//                );
                   
-            Anthem.Manager.AddScriptForClientSideEval( alertScript );
-         }
+//             Anthem.Manager.AddScriptForClientSideEval( alertScript );
+//          }
 
 
          if (! Page.IsPostBack)

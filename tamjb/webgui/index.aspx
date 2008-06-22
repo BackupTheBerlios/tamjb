@@ -1,16 +1,12 @@
 <%@ Page language="C#" 
-  MasterPageFile="~/tamjb.master"
-  Inherits="byteheaven.tamjb.webgui.index" 
-  Codebehind="index.aspx.cs"
-  EnableViewState="true"
+  EnableViewState="false"
   AutoEventWireup="false"
-  Title="T.A.M. Jukebox Index"
-%>
-<%@ Register Assembly="Anthem" Namespace="Anthem" TagPrefix="anthem" %>
+%><!DOCTYPE html PUBLIC PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head runat="server">
 <script runat="server">
 //
-// $Id$
-// Copyright (C) 2006-2007 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -31,242 +27,136 @@
 //   Tom Surace <tekhedd@byteheaven.net>
 //
 </script>
+<title>T.A.M. Jukebox</title>
 
-<asp:Content id="content" contentplaceholderid="mainContent" runat="server">
-<script type="text/javascript">
+<script type="text/javascript" src="tjbfunctions.ashx?proxy"></script>
+<script type="text/javascript" src="js/json.js"></script>
+<script type="text/javascript" src="js/dojo/dojo.js" djConfig="parseOnLoad:true, isDebug:true, usePlainJson:true"></script>
+<script type="text/javascript" src="index.aspx.js"></script>
 
-    function historyCommand(action,keystring)
-    {
-        StartUpdate();
-        setTimeout('historyCommandPtTwo("' + action + '","' + keystring + '")', 1 );
-    }
+<style type="text/css">
+   @import "js/dijit/themes/tundra/tundra.css";
+   @import "js/dojo/resources/dojo.css";
 
-    function historyCommandPtTwo(action,keystring)
-    {
-        Anthem_InvokePageMethod('_OnHistoryCommand', [action,keystring], null);
-        FinishUpdate();
-    }
+/* Fit to viewport, so that status bar will be at the bottom */
+html, body {
+  width: 100%; height: 100%;
+  border: 0; padding: 0; margin: 0;
+}
 
-</script>
+/* Doesn't work in comma list with html,body? Why? */
+#mainFrame {
+  width: 100%; height: 100%;
+  border: 0; padding: 0; margin: 0;
+}
+</style>
+
+</head>
+<body class="tundra">
+<div dojoType="dijit.layout.BorderContainer" id="mainFrame">
+
+<div dojoType="dijit.layout.ContentPane" id="content" region="center">
 
  <div style="float: right; margin: 0.6em;">
-   <anthem:Timer id="refreshTimer" runat="server" 
-     Enabled="true"
-     Interval="5000"
-     OnTick="_OnRefresh"
-     />
-    <anthem:Button id="refreshButton" runat="server" 
-       cssclass="stdButton"
-       text="-1"
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       OnClick="_OnRefresh" />
+    <button id="refreshButton" onClick="forceRefresh();">Refresh</button>
  </div>
 
- <div id="moodBox">
+ <div id="moodBox" dojoType="dijit.layout.ContentPane">
   <table class="suckTable">
   <tr>
     <th>Opinion of</th>
-    <td colspan="2"><anthem:LinkButton id="userNameBtn" runat="server" text="(unknown)" 
-        OnClick="_OnUserClick" /></td>
+    <td colspan="2"><a href="#">(unknown user)</a></td>
   </tr>
 
   <tr>
-    <th>Suck Amount<br />
-       <anthem:Label
-         id="nowSuckLevel" runat="server" text="100" />%</th>
-    <td><anthem:Button id="ruleBtn" runat="server" text="Rule"
-       cssclass="stdButton"
-       OnClick="_OnRule"
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="false"
-       />
-       <anthem:Button id="suckBtn" runat="server" text="Suck"
-       cssclass="stdButton"
-       OnClick="_OnSuck"
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="False" /></td>
+    <th>Suck Amount<br /><span id="suckLevel">(suck)</span>%</th>
+    <td>
+      <button dojoType="dijit.form.Button" id="ruleBtn">
+        Rule
+        <script type="dojo/method" event="onClick">onRule()</script>
+      </button>
+      <button dojoType="dijit.form.Button" id="suckBtn">
+        Suck
+        <script type="dojo/method" event="onClick">onSuck()</script>
+      </button>
   </tr>
 
   <tr>
-    <th><anthem:LinkButton runat="server" 
-       id="moodBtn" 
-       EnableCallback="false"
-       text="(unknown)" 
-       OnClick="_OnMoodClick" /><br />
-       <anthem:Label cssclass="nowPlayingData"
-        id="nowMoodLevel" runat="server" text="0" />%</th>
+    <th><button dojoType="dijit.form.Button" id="moodBtn">
+        (current mood)
+        <script type="dojo/method" event="onMood">onMood()</script>
+        </button><br />
+        <span id="moodLevel">(mood)</span>%</th>
     </th>
-    <td><anthem:Button id="yesBtn" runat="server" text="Yes"
-       cssclass="stdButton"
-       OnClick="_OnYes" 
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="false"
-       />
-       <anthem:Button id="noBtn" runat="server" text="No"
-       cssclass="stdButton"
-       OnClick="_OnNo" 
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="false"
-       /></td>
+    <td>Yes | No</td>
   </tr>
   </table>
  </div>
 
- <div id="megaSuckBox">
-  <anthem:Button id="megaSuckBtn" runat="server" text="Mega-Suck"
-    cssclass="megaSuckBtn"
-    OnClick="_OnMegaSuck"
-    PreCallbackFunction="StartUpdate"
-    PostCallbackFunction="FinishUpdate"
-    EnableDuringCallback="false" />
+ <div id="megaSuckBox" dojoType="dijit.layout.ContentPane">
+  <button dojoType="dijit.form.Button" id="megaSuckBtn">
+    Mega-Suck
+    <script type="dojo/method" event="onClick">onMegaSuck()</script>
+  </button>
  </div>
 
-<!-- TODO: allow this to be visible for the MASTER login -->
- <div id="transportBox" style="display: none;">
+ <!-- TODO: allow this to be visible for the MASTER login -->
+ <div id="transportBox">
   <table class="transportTable">
   <tr>
-    <td><anthem:Button id="prevBtn" runat="server" text="Prev"
-       OnClick="_OnPrev"
-       cssclass="stdButton"
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="False" 
-       /></td>
-    <td><anthem:Button id="nextBtn" runat="server" text="Next"
-       cssclass="stdButton"
-       OnClick="_OnNext" 
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="false"
-       /></td>
-    <td><anthem:Button id="stopBtn" runat="server" text="Stop"
-       cssclass="stdButton"
-       OnClick="_OnStop" 
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="false"
-       /></td>
-    <td><anthem:Button id="playBtn" runat="server" text="Play"
-       cssclass="stdButton"
-       OnClick="_OnPlay" 
-       PreCallbackFunction="StartUpdate"
-       PostCallbackFunction="FinishUpdate"
-       EnableDuringCallback="false"
-       /></td>
+    <td>Prev</td>
+    <td>Next</td>
+    <td>Stop</td>
+    <td>Play</td>
   </tr>
   </table>
  </div>
 
- <div id="nowPlayingBox">
+ <div id="nowPlayingBox" dojoType="dijit.layout.ContentPane">
   <!-- I say this wants a little table -->
   <table class="nowPlaying">
   <tr>
     <th>Title</th>
-    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
-      id="nowTitle" runat="server" text="(unknown)" /></div></td>
+    <td>(<span id="trackId"></span>) <span id="title" class="widthLimit"></span></td>
   </tr>
   <tr>
     <th>Artist</th>
-    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
-      id="nowArtist" runat="server" text="" /></div></td>
+    <td><span id="artist"> class="widthLimit"></span></td>
   </tr>
   <tr>
     <th>Album</th>
-    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
-      id="nowAlbum" runat="server" text="" /></div></td>
+    <td><span id="album" class="widthLimit"></span></td>
   </tr>
   <tr>
     <th>File</th>
-    <td><div class="widthLimit"><anthem:Label cssclass="nowPlayingData" 
-      id="nowFileName" runat="server" text="" /></div></td>
-  </tr>
-  <tr>
-    <th>&nbsp;</th>
-    <td><anthem:CheckBox id="showPast" runat="server" 
-     Text="The Past" 
-     EnableDuringCallback="false"
-     PreCallbackFunction="StartUpdate"
-     PostCallbackFunction="FinishUpdate"
-     Checked="false"
-     AutoCallback="true"
-    />
-    &nbsp;
-    <anthem:CheckBox id="showFuture" runat="server" 
-     Text="The Future" 
-     EnableDuringCallback="false"
-     PreCallbackFunction="StartUpdate"
-     PostCallbackFunction="FinishUpdate"
-     Checked="false"
-     AutoCallback="true"
-     /></td>
+    <td><span id="filename" class="widthLimit"></span></td>
   </tr>
   </table>
  </div>
 
- <anthem:Panel id="historyBox" runat="server" 
-     cssclass="historyBox" >
+ <div dojoType="dijit.TitlePane" open="true"
+   title="The Past" style="width:100%">
+   Why a title pane?
+ </div>
+</div><!-- content -->
 
-  <anthem:Repeater id="history" runat="server" 
-    EnableViewState="false"
-    >
-    <HeaderTemplate>
-      <table id="historyTable" class="history">
-      <thead>
-      <tr>
-        <th>Title</th>
-        <th>Artist</th>
-        <th>Album</th>
-        <th>Suck</th>
-        <th>Mood</th>
-      </tr>
-      </thead>
-      <tbody>
-    </HeaderTemplate>
+ <div id="status" dojoType="dijit.layout.ContentPane" region="bottom"
+     orientation="horizontal"
+     sizerWidth="8"
+     style="border:2px;" >
+   <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:1.5em;width:100%;">
+    <div dojoType="dijit.layout.ContentPane" sizeShare="50" splitter="true" region="center">
+      <div dojoType="dijit.ProgressBar"
+          jsId="jsProgressBar" id="downloadProgress" 
+          indeterminate="true"
+          report="progressReport"></div>
+    </div>
+    <div dojoType="dijit.layout.ContentPane" sizeShare="50" region="left"> TAM Jukebox - 
+      <a href="#">Tune In</a></div>
+   </div>
+ </div>
 
-    <FooterTemplate>
-      </tbody>
-      </table>
-    </FooterTemplate>
-
-    <ItemTemplate>
-      <tr class='<%# DataBinder.Eval(Container.DataItem, "when") %> <%# DataBinder.Eval(Container.DataItem, "status") %> <%# DataBinder.Eval(Container.DataItem, "probability" ) %>' >
-
-      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
-          "title") %></div></td>
-
-      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
-          "artist") %></div></td>
-
-      <td><div class="widthLimit"><%# DataBinder.Eval(Container.DataItem, 
-          "album") %></div></td>
-
-      <td class="suck"><div class="suck"><%# DataBinder.Eval(Container.DataItem, "suck") %>%
-        <a href="#"
-           OnClick='<%# "javascript:historyCommand(\"suckMore\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
-           >Suck</a>
-        |
-        <a href="#"
-           OnClick='<%# "javascript:historyCommand(\"suckLess\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
-           >Rule</a></div></td>
-
-      <td class="mood"><div class="mood"><%# DataBinder.Eval(Container.DataItem, "Mood") %>%
-        <a href="#"
-           OnClick='<%# "javascript:historyCommand(\"moodNo\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
-           >No</a>
-        |
-        <a href="#"
-           OnClick='<%# "javascript:historyCommand(\"moodYes\",\"" + DataBinder.Eval(Container.DataItem, "key") + "\"); return false;" %>' 
-           >Yes</a></div></td>
-
-      </tr>
-    </ItemTemplate>
-  </anthem:Repeater>
- </anthem:Panel>
-
-</asp:Content>
+</div><!-- frame -->
+</body>
+</html>
 

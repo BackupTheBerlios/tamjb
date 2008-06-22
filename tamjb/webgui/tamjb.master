@@ -3,11 +3,10 @@
  Inherits="byteheaven.tamjb.webgui.master" 
  EnableViewState="false" 
  AutoEventWireup="false"
- %><%@ Register TagPrefix="anthem" Namespace="Anthem" Assembly="Anthem" 
-%><%
+ %><%
 // Note: you want no spaces before the DOCTYPE element
 
-// Copyright (C) 2006-2007 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -27,102 +26,37 @@
 //
 //   Tom Surace <tekhedd@byteheaven.net>
 
-%><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+%><!DOCTYPE html PUBLIC PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <head runat="server">
 <title>T.A.M. Jukebox - Untitled</title>
-<link href="~/style.css" rel="stylesheet" type="text/css" />
 
-<script type="text/javascript">
-
-    function Anthem_PreCallBack()
-    {
-       var working = document.getElementById('working');
-       if (working != null) { 
-          working.style.visibility = 'visible'; 
-       }
-       return true;
-    }
-
-    function Anthem_PostCallBack()
-    {
-       var working = document.getElementById('working');
-       if (working != null) {
-          working.style.visibility = 'hidden'; 
-       }
-       return true;
-    }
-
-    function Anthem_Error( result )
-    {
-        // TODO: alert popups are sad. Replace with a retry layer of some sort
-        if ("NORESPONSE" == result.error)
-        {
-            window.location = window.location;
-            // alert( "No response from server" );
-        }
-        else if ("BADRESPONSE" == result.error)
-        {
-            window.location = window.location;
-            // alert( "Bad/illegal response from server: " + result.responseText );
-        }
-        else
-        {
-            alert( "Unexpected result.error type in Anthem_Error" );
-        }
-
-        // window.location.href='<%= ResolveUrl( "~/index.aspx" ) %>';
-    }
-
-    function StartUpdate()
-    {
-       document.getElementById('updating').style.visibility = 'visible'; 
-       document.getElementById('updatingContent').style.visibility = 'visible';
-    }
-
-    function FinishUpdate()
-    {
-       document.getElementById('updating').style.visibility = 'hidden'; 
-       document.getElementById('updatingContent').style.visibility = 'hidden'; 
-    }
-
-</script>
+<script type="text/javascript" src="tjbfunctions.ashx?proxy"></script>
+<script type="text/javascript" src="js/json.js"></script>
+<script type="text/javascript" src="js/dojo/dojo.js" djConfig="parseOnLoad:true, isDebug:true, usePlainJson:true"></script>
 
 <style type="text/css">
-
-#working
-{
-  float: right;
-  color: rgb( 50, 255, 50 );
-  visibility: hidden;
-}
-
+   @import "js/dijit/themes/tundra/tundra.css";
+   @import "js/dojo/resources/dojo.css"
 </style>
+
+<script type="text/javascript">
+  dojo.require("dojo.parser");
+</script>
+
 </head>
-<body>
+<body class="tundra">
 <form id="mainForm" runat="server">
-
-<div id="updating" class="OverlayBase">
-  &nbsp;
-</div>
-<div id="updatingContent" class="OverlayWindowFormat">
-  <div class="OverlayWindow">
-    Updating...
-  </div>
-</div>
-
-<div id="wrapper">
 
 <div id="header" >
  <div style="float: left">
    TAM Jukebox - 
-   <anthem:HyperLink runat="server" id="listenUrl" 
+   <asp:HyperLink runat="server" id="listenUrl" 
      text="Listen" />
  </div>
 
  <div id="working" >
    *
  </div>
-
 </div>
 
 <div id="content">

@@ -5,3 +5,11 @@ tamjb/bin/*.dll
 tamjb/assykey.snk
 tamjb/SimpleMp3Player/*.exe
 tamjb/SimpleMp3Player/*.mdb
+tamjb/webgui/bin/*.dll
+tamjb/webgui/bin/*.mdb
+tamjb/webgui/js/dijit
+tamjb/webgui/js/dojo
+tamjb/webgui/js/dojox
+tamjb/webgui/js/util
+tamjb/webgui/js/json.js
+jayrock/src/bin/*.dll

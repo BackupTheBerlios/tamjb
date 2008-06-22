@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2006-2007 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -28,7 +28,7 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Configuration;
    using System.Web;
-   using Anthem;
+   using System.Web.UI.WebControls;
 
    public class master : System.Web.UI.MasterPage
    {
@@ -38,11 +38,9 @@ namespace byteheaven.tamjb.webgui
       {
          base.OnLoad( loadArgs );
 
-         Anthem.Manager.Register( this );
-
          try
          {
-            if ((! IsPostBack) && (! Manager.IsCallBack))
+            if (! IsPostBack)
             {
                listenUrl.NavigateUrl = 
                   ConfigurationManager.AppSettings["ListenUrl"];

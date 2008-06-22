@@ -2,4 +2,15 @@ $Id$
 
 Check the readme in the tamjb/ directory.
 
-You don't have to build the other libraries separately. I think. :)
+You don't have to build the other libraries separately at this time.
+
+What the other libraries are:
+
+  esd-sharp: a c# library that uses esd for sound output.
+    - I keep thinking this will be obsoleted, but GStreamer is
+      like a huge glacier.
+
+  mp3sharp: a port of the java mp3 player to c#. Pretty bitchin.
+
+  dojo-baked: a copy of the baked version of dojo, for convenience.
+

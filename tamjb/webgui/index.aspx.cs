@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2006-2007 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -31,32 +31,27 @@ namespace byteheaven.tamjb.webgui
    using System.Web.Security;
    using System.Web.UI.WebControls;
 
-   using Anthem;
    using byteheaven.tamjb.Interfaces;
 
    public class index : byteheaven.tamjb.webgui.WebPageBase
    {
-      protected Anthem.Timer refreshTimer;
+      protected LinkButton userNameBtn;
+      protected LinkButton moodBtn;
 
-      protected Anthem.LinkButton userNameBtn;
-      protected Anthem.LinkButton moodBtn;
+      protected Label nowSuckLevel;
+      protected Label nowMoodLevel;
 
-      protected Anthem.Label nowSuckLevel;
-      protected Anthem.Label nowMoodLevel;
+      protected Label nowTitle;
+      protected Label nowArtist;
+      protected Label nowAlbum;
+      protected Label nowFileName;
 
-      protected Anthem.Label nowTitle;
-      protected Anthem.Label nowArtist;
-      protected Anthem.Label nowAlbum;
-      protected Anthem.Label nowFileName;
+      protected Button megaSuckBtn;
 
-      protected Anthem.Button megaSuckBtn;
+      protected Button refreshButton;
 
-      protected Anthem.Button refreshButton;
-
-      protected Anthem.CheckBox showPast;
-      protected Anthem.CheckBox showFuture;
-      protected Anthem.Panel    historyBox;
-      protected Anthem.Repeater history;
+      protected CheckBox showPast;
+      protected CheckBox showFuture;
 
       protected uint _userId;
 
@@ -68,8 +63,6 @@ namespace byteheaven.tamjb.webgui
       {
          base.OnLoad( loadArgs );
 
-         Anthem.Manager.Register( this );
-
          // Hack to allow unauthenticated users to see what is playing 
          System.Security.Principal.IIdentity identity = 
             HttpContext.Current.User.Identity;
@@ -80,59 +73,11 @@ namespace byteheaven.tamjb.webgui
                "Internal error, anonymous access not supported" );
          }
          _userId = Convert.ToUInt32( identity.Name );
+
          UserInfo userInfo = backend.RenewLogon( _userId );
          if (null == userInfo)
          {
             FormsAuthentication.RedirectToLoginPage();
-         }
-
-         try
-         {
-            // Make sure the mood button does a postback instead of
-            // trying to use AJAX, cause we want to server.transfer:
-            moodBtn.EnableCallBack = false;
-
-            if (!IsPostBack)
-            {
-               historyBox.Visible = false;
-               ViewState["pastVisible"] = false;
-               ViewState["futureVisible"] = false;
-               showPast.Checked = false;
-               showFuture.Checked = false;
-            }
-            
-            if (Anthem.Manager.IsCallBack)
-            {
-               // Workaround for the "OnCheckedChanged handler never called"
-               // bug:
-               if (null == ViewState["pastVisible"] 
-                   || 
-                   ((bool)ViewState["pastVisible"] != showPast.Checked))
-               {
-                  _PastToggle();
-                  ViewState["pastVisible"] = showPast.Checked;
-               }
-
-               if (null == ViewState["futureVisible"] 
-                   || 
-                   ((bool)ViewState["futureVisible"] != showFuture.Checked))
-               {
-                  _FutureToggle();
-                  ViewState["futureVisible"] = showFuture.Checked;
-               }
-
-               ///
-               /// \todo store the current view config in the database.
-               ///
-            }
-            else
-            {
-               userNameBtn.Text = userInfo.name;
-            }
-         }
-         catch (Exception)
-         {
-            throw;              // let it fly
          }
       }
 
@@ -152,30 +97,6 @@ namespace byteheaven.tamjb.webgui
 
 
       ///
-      /// Update the history panel visibility
-      /// 
-      void _PastToggle()
-      {
-         historyBox.Visible = showPast.Checked || showFuture.Checked;
-         historyBox.UpdateAfterCallBack = true;
-         
-         // Force a refresh of the history box
-         changeCount = -1;
-      }
-
-      ///
-      /// Update the future panel visibility
-      /// 
-      void _FutureToggle()
-      {
-         historyBox.Visible = showPast.Checked || showFuture.Checked;
-         historyBox.UpdateAfterCallBack = true;
-         
-         // Force a refresh of the history box
-         changeCount = -1;
-      }
-
-      ///
       /// Refresh all now-playing related display:
       ///
       protected void _OnRefresh( object sender, EventArgs ea )
@@ -184,10 +105,12 @@ namespace byteheaven.tamjb.webgui
       }
 
       //
+      // This will have to be moved to a special dojo page to provide
+      // updates.
+      //
       // Note signature must be right for Anthem_InvokePageMethod to work,
       // which is to say it must be public and return int!
       //
-      [Anthem.Method]
       public int _Refresh()
       {
          try
@@ -203,7 +126,7 @@ namespace byteheaven.tamjb.webgui
 
                // Save what we THINK is the current state for later.
                this.mood = mood;
-            
+         
                EngineState state = backend.GetState();
                _UpdateNowPlayingInfo( state );
                _BuildGrid( state );
@@ -211,7 +134,6 @@ namespace byteheaven.tamjb.webgui
                changeCount = state.changeCount; // save for later
 
                refreshButton.Text = changeCount.ToString();
-               refreshButton.UpdateAfterCallBack = true;
             }
 
             return 0;
@@ -220,7 +142,7 @@ namespace byteheaven.tamjb.webgui
          {
             // OK, so this error message will be unpleasant.
             string msg = "Couldn't connect to the server";
-            
+         
             // For now just rethrow.
             throw new ApplicationException( msg, snw );
          }
@@ -333,7 +255,6 @@ namespace byteheaven.tamjb.webgui
 
          history.DataSource = table;
          history.DataBind();  
-         history.UpdateAfterCallBack = true;
       }
 
       ///
@@ -399,7 +320,6 @@ namespace byteheaven.tamjb.webgui
          set
          {
             moodBtn.Text = value.name;
-            moodBtn.UpdateAfterCallBack = true;
             ViewState["moodIdKey"] = value.id;
          }
       }
@@ -414,24 +334,18 @@ namespace byteheaven.tamjb.webgui
          this.currentTrack = current.key;
 
          nowTitle.Text = current.title;
-         nowTitle.UpdateAfterCallBack = true;
 
          nowArtist.Text = current.artist;
-         nowArtist.UpdateAfterCallBack = true;
          
          nowAlbum.Text = current.album;
-         nowAlbum.UpdateAfterCallBack = true;
          
          nowFileName.Text = current.filePath;
-         nowFileName.UpdateAfterCallBack = true;
 
          int suck;
          int mood;
          _GetSuckAsInt( current.key, out suck, out mood );
          nowSuckLevel.Text = suck.ToString();
-         nowSuckLevel.UpdateAfterCallBack = true;
          nowMoodLevel.Text = mood.ToString();
-         nowMoodLevel.UpdateAfterCallBack = true;
       }
 
       void _GetSuckAsInt( uint key, out int suck, out int mood )
@@ -660,7 +574,6 @@ namespace byteheaven.tamjb.webgui
       /// Handler for the javascript callbacks from the history grid.
       /// (Makes use of viewstate unnecessary)
       ///
-      [Anthem.Method]
       public void _OnHistoryCommand( string command,
                                      string keyString )
                                      

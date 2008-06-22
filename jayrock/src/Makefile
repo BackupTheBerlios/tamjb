@@ -30,11 +30,15 @@ JAYROCK_JSON_SOURCES = $(shell find Jayrock.Json -name '*.cs') \
 
 all: $(JAYROCK_DLL) $(JAYROCK_JSON_DLL)
 
+#
+# Helper to install stuff into the tamjb test web dir.
+#
 install_tamjb: all
 	cp $(JAYROCK_JSON_DLL) ../../tamjb/webgui/bin/.
 	cp $(JAYROCK_JSON_DLL).mdb ../../tamjb/webgui/bin/.
 	cp $(JAYROCK_DLL) ../../tamjb/webgui/bin/.
 	cp $(JAYROCK_DLL).mdb ../../tamjb/webgui/bin/.
+	cp ../www/json.js ../../tamjb/webgui/js/.
 
 $(JAYROCK_DLL): $(JAYROCK_JSON_DLL) $(JAYROCK_SOURCES) Makefile
 	gmcs $(DEFINES) $(REFERENCES) -r:$(JAYROCK_JSON_DLL) \

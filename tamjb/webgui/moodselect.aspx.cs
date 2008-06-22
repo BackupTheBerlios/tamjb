@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2006-2007 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -29,15 +29,14 @@ namespace byteheaven.tamjb.webgui
    using System.Data;
    using System.Web;
    using System.Web.Security;
-   using ASP = System.Web.UI.WebControls;
+   using System.Web.UI.WebControls;
 
-   using Anthem;
    using byteheaven.tamjb.Interfaces;
 
    public class moodselect : byteheaven.tamjb.webgui.WebPageBase
    {
-      protected Anthem.Repeater moodSelect;
-      protected ASP.Literal currentUserBox;
+      protected Repeater moodSelect;
+      protected Literal currentUserBox;
       protected TextBox newMoodBox;
 
       UserInfo _userInfo;
@@ -48,8 +47,6 @@ namespace byteheaven.tamjb.webgui
 
          try
          {
-            Manager.Register( this );
-
             System.Security.Principal.IIdentity identity = 
                HttpContext.Current.User.Identity;
 
@@ -108,7 +105,7 @@ namespace byteheaven.tamjb.webgui
          {
             // If the list needs to be updated on a callback, the 
             // callback function shall explicitly call _Refresh().
-            if (!Anthem.Manager.IsCallBack || Page.IsPostBack)
+            if (Page.IsPostBack)
             {
                _Refresh();
             }
@@ -147,7 +144,6 @@ namespace byteheaven.tamjb.webgui
 
          moodSelect.DataSource = table;
          moodSelect.DataBind();  
-         moodSelect.UpdateAfterCallBack = true;
       }
 
 //       public void _OnMoodCommand( object sender,
@@ -214,8 +210,6 @@ namespace byteheaven.tamjb.webgui
          backend.SetMood( _userInfo.id, newMood.id );
 
          newMoodBox.Text = "";
-         newMoodBox.UpdateAfterCallBack = true;
-         moodSelect.UpdateAfterCallBack = true;
       }
 
    }

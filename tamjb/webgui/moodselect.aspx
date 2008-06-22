@@ -6,11 +6,10 @@
   AutoEventWireup="false"
   Title="T.A.M. Jukebox - Mood Select"
 %>
-<%@ Register Assembly="Anthem" Namespace="Anthem" TagPrefix="anthem" %>
 <script runat="server">
 //
 // $Id$
-// Copyright (C) 2006 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -36,7 +35,7 @@
  <div id="moodSelectBox">
   Moods for <asp:Literal runat="server" id="currentUserBox" />:
 
-  <anthem:Repeater id="moodSelect" runat="server" >
+  <asp:Repeater id="moodSelect" runat="server" >
     <HeaderTemplate>
       <div id="moodSelect">
     </HeaderTemplate>
@@ -50,13 +49,13 @@
         <a href="moodselect.aspx?mood=<%# DataBinder.Eval(Container.DataItem, "moodKey") %>&action=select" ><%# DataBinder.Eval(Container.DataItem, "moodName") %></a>
       </div>
     </ItemTemplate>
-  </anthem:Repeater>
+  </asp:Repeater>
  </div>
 
  <div id="moodCreateBox">
-   <anthem:TextBox id="newMoodBox" runat="server"
+   <asp:TextBox id="newMoodBox" runat="server"
       Columns="20" />
-   <anthem:Button id="createBtn" runat="server" text="Create"
+   <asp:Button id="createBtn" runat="server" text="Create"
        cssclass="stdButton"
        OnClick="_OnCreate" 
        PreCallbackFunction="StartUpdate"

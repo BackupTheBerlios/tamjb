@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyDescription ("Web Interface for TAM Jukebox")]
 [assembly: AssemblyCompany ("BYTE HEAVEN")]
 [assembly: AssemblyProduct("TAM Jukebox")]
-[assembly: AssemblyCopyright ("2006 Tom Surace")]
+[assembly: AssemblyCopyright ("2006-2008 Tom Surace")]
 [assembly: AssemblyVersion("1.0.*.*")]
 
 [assembly: AssemblyDelaySign(false)]

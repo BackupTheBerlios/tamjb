@@ -9,3 +9,4 @@ all:
 	make --directory=dojo
 	make --directory=mp3sharp
 	make --directory=esd-sharp
+	make --directory=../../jayrock/src install_tamjb

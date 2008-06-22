@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2006 Tom Surace.
+// Copyright (C) 2006-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -39,9 +39,9 @@ namespace byteheaven.tamjb.webgui
    {
       // Used to optimize retrieval of the back end pointer in a single
       // call.
-      private IEngine _backend = null;
+      private static IEngine _backend = null;
 
-      protected string serverUrl
+      protected static string serverUrl
       {
          get
          {
@@ -56,14 +56,17 @@ namespace byteheaven.tamjb.webgui
       ///
       /// get a reference to the jukebox engine. Somehow.
       ///
-      protected IEngine backend
+      /// \todo: make this "internal" when the RPC services are compiled
+      ///   into the same DLL.
+      ///
+      public static IEngine backend
       {
          get
          {
             if (null == _backend)
             {
                _backend = (IEngine) Activator.GetObject( typeof(IEngine), 
-                                                         this.serverUrl );
+                                                         serverUrl );
             }
 
             return _backend;
@@ -75,17 +78,10 @@ namespace byteheaven.tamjb.webgui
       ///
       protected void SetFocusTo( WebControl control )
       {
-         // If you don't call SetFocus in the initial page load,
-         // uncomment this: (But it can have unhappy side effects.)
-         // Anthem.Manager.IncludePageScripts = true; 
-
-         Anthem.Manager.AddScriptForClientSideEval(
-            String.Format( "document.getElementById('{0}').focus();",
-                           control.ClientID ) );
-
+         // Does dojo make this unnecessary?
 //          Anthem.Manager.AddScriptForClientSideEval(
-//             string.Format( "WebForm_AutoFocus('{0}');",
-//                            control.ClientID) ); 
+//             String.Format( "document.getElementById('{0}').focus();",
+//                            control.ClientID ) );
       }
 
 
