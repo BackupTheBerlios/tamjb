@@ -105,20 +105,20 @@ namespace byteheaven.tamjb.Engine
       }
 
       public void IncreaseAppropriateZenoStyle( uint userId,
-                                                Mood mood,
+                                                uint moodId,
                                                 uint trackKey )
       {
          Backend.theBackend.IncreaseAppropriateZenoStyle( userId, 
-                                                          mood, 
+                                                          moodId, 
                                                           trackKey );
       }
 
       public void DecreaseAppropriateZenoStyle( uint userId,
-                                                Mood mood,
+                                                uint moodId,
                                                 uint trackKey )
       {
          Backend.theBackend.DecreaseAppropriateZenoStyle( userId, 
-                                                          mood, 
+                                                          moodId, 
                                                           trackKey );
       }
 

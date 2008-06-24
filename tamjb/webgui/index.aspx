@@ -36,12 +36,20 @@
 
 <style type="text/css">
    @import "js/dijit/themes/tundra/tundra.css";
+   @import "js/dojox/grid/_grid/tundraGrid.css";
    @import "js/dojo/resources/dojo.css";
+</style>
 
+<style type="text/css">
 /* Fit to viewport, so that status bar will be at the bottom */
 html, body {
   width: 100%; height: 100%;
   border: 0; padding: 0; margin: 0;
+}
+
+/* We do not use pixel sizes because we are not on crack. */
+body {
+   font-size: 10pt;
 }
 
 /* Doesn't work in comma list with html,body? Why? */
@@ -49,7 +57,31 @@ html, body {
   width: 100%; height: 100%;
   border: 0; padding: 0; margin: 0;
 }
+
+table.nowPlaying {
+  border: thin solid;
+}
+
+table.nowPlaying tr th {
+  text-align: right;
+}
+
+#megaSuckBtn {
+  background: red;
+}
+
 </style>
+
+<script type="text/javascript>
+var moodStructure = {
+  cells: [
+    [{name: 'Mood', field: "name", width: "25em"}]
+  ]
+};
+
+var moodLayout = [ moodStructure ];
+
+</script>
 
 </head>
 <body class="tundra">
@@ -58,7 +90,9 @@ html, body {
 <div dojoType="dijit.layout.ContentPane" id="content" region="center">
 
  <div style="float: right; margin: 0.6em;">
-    <button id="refreshButton" onClick="forceRefresh();">Refresh</button>
+    <button dojoType="dijit.form.Button"
+      id="refreshBtn" 
+      onClick="refresh(true);">Refresh</button>
  </div>
 
  <div id="moodBox" dojoType="dijit.layout.ContentPane">
@@ -69,35 +103,39 @@ html, body {
   </tr>
 
   <tr>
-    <th>Suck Amount<br /><span id="suckLevel">(suck)</span>%</th>
+    <th><span id="suckLevel">-</span>% suck</th>
     <td>
-      <button dojoType="dijit.form.Button" id="ruleBtn">
+      <button dojoType="dijit.form.Button" id="ruleBtn" jsId="jsRuleBtn">
         Rule
         <script type="dojo/method" event="onClick">onRule()</script>
       </button>
-      <button dojoType="dijit.form.Button" id="suckBtn">
+      <button dojoType="dijit.form.Button" id="suckBtn" jsId="jsSuckBtn">
         Suck
         <script type="dojo/method" event="onClick">onSuck()</script>
+      </button>
+      <button dojoType="dijit.form.Button" id="megaSuckBtn" jsId="jsMegaSuckBtn">
+        Mega-Suck
+        <script type="dojo/method" event="onClick">onMegaSuck()</script>
       </button>
   </tr>
 
   <tr>
-    <th><button dojoType="dijit.form.Button" id="moodBtn">
+    <th><span id="moodLevel">-</span>% 
+      <button dojoType="dijit.form.Button" id="moodBtn" jsId="jsMoodBtn">
         (current mood)
-        <script type="dojo/method" event="onMood">onMood()</script>
-        </button><br />
-        <span id="moodLevel">(mood)</span>%</th>
+        <script type="dojo/method" event="onClick">onMood()</script>
+      </button></th>
     </th>
-    <td>Yes | No</td>
+    <td><button dojoType="dijit.form.Button" id="yesBtn" jsId="jsYesBtn">
+        Yes
+        <script type="dojo/method" event="onClick">onYes()</script>
+      </button>
+      <button dojoType="dijit.form.Button" id="noBtn" jsId="jsNoBtn">
+        No
+        <script type="dojo/method" event="onClick">onNo()</script>
+      </button></td>
   </tr>
   </table>
- </div>
-
- <div id="megaSuckBox" dojoType="dijit.layout.ContentPane">
-  <button dojoType="dijit.form.Button" id="megaSuckBtn">
-    Mega-Suck
-    <script type="dojo/method" event="onClick">onMegaSuck()</script>
-  </button>
  </div>
 
  <!-- TODO: allow this to be visible for the MASTER login -->
@@ -117,11 +155,12 @@ html, body {
   <table class="nowPlaying">
   <tr>
     <th>Title</th>
-    <td>(<span id="trackId"></span>) <span id="title" class="widthLimit"></span></td>
+    <td><span id="title" class="widthLimit"></span> 
+      (<span id="trackId"></span>)</td>
   </tr>
   <tr>
     <th>Artist</th>
-    <td><span id="artist"> class="widthLimit"></span></td>
+    <td><span id="artist" class="widthLimit"></span></td>
   </tr>
   <tr>
     <th>Album</th>
@@ -134,11 +173,42 @@ html, body {
   </table>
  </div>
 
- <div dojoType="dijit.TitlePane" open="true"
+ <div dojoType="dijit.TitlePane" open="false"
    title="The Past" style="width:100%">
-   Why a title pane?
+   (The past goes here!)
  </div>
+   (The present goes here!)
+ <div dojoType="dijit.TitlePane" open="false"
+   title="The Future" style="width:100%">
+   (The future goes here!)
+ </div>
+
 </div><!-- content -->
+
+  <div dojoType="dojo.data.ItemFileReadStore"
+      jsId="testStore" url="dijits.txt">
+  </div>
+
+ <div dojoType="dojox.data.QueryReadStore" jsId="jsMoodReadStore"
+   url="moodstore.ashx"
+   requestMethod="post"
+   doClientPaging="false" >
+ </div>
+ <div dojoType="dojox.grid.data.DojoData" jsId="jsMoodModel"
+   rowsPerPage="15" store="testStore" query="{ namespace: '*' }">
+ </div>
+
+ <div dojoType="dijit.Dialog" id="moodPopup" title="Set Mood" 
+   jsId="jsMoodPopup"
+   style="display:none;">
+   <div dojoType="dojox.Grid" 
+     model="jsMoodModel"
+     structure="moodStructure"
+     style="height: 15em; width: 40em; border: thick solid blue"></div>
+
+   <button dojoType="dijit.form.Button" 
+     onclick="dijit.byId('moodPopup').hide();">Cancel</button> 
+ </div>
 
  <div id="status" dojoType="dijit.layout.ContentPane" region="bottom"
      orientation="horizontal"

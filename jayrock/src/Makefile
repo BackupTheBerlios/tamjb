@@ -38,7 +38,7 @@ install_tamjb: all
 	cp $(JAYROCK_JSON_DLL).mdb ../../tamjb/webgui/bin/.
 	cp $(JAYROCK_DLL) ../../tamjb/webgui/bin/.
 	cp $(JAYROCK_DLL).mdb ../../tamjb/webgui/bin/.
-	cp ../www/json.js ../../tamjb/webgui/js/.
+	cp -f ../www/json.js ../../tamjb/webgui/js/.
 
 $(JAYROCK_DLL): $(JAYROCK_JSON_DLL) $(JAYROCK_SOURCES) Makefile
 	gmcs $(DEFINES) $(REFERENCES) -r:$(JAYROCK_JSON_DLL) \

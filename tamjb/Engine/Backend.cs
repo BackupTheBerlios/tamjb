@@ -522,7 +522,7 @@ namespace byteheaven.tamjb.Engine
       }
 
       public void IncreaseAppropriateZenoStyle( uint userId,
-                                                Mood mood,
+                                                uint moodId,
                                                 uint trackKey )
       {
          _Trace( "[IncreaseAppropriateZenoStyle]" );
@@ -532,7 +532,7 @@ namespace byteheaven.tamjb.Engine
             ++_changeCount;
 
             uint level = _database.GetAppropriate( userId, 
-                                                   mood.id, 
+                                                   moodId, 
                                                    trackKey );
 
             // The database shouldn't contain invalid attributes, right?
@@ -547,12 +547,12 @@ namespace byteheaven.tamjb.Engine
             // Is our math correct?
             Debug.Assert( level <= 10000 && level >= 0 );
 
-            _database.SetAppropriate( userId, mood.id, trackKey, level );
+            _database.SetAppropriate( userId, moodId, trackKey, level );
          }
       }
 
       public void DecreaseAppropriateZenoStyle( uint userId,
-                                                Mood mood,
+                                                uint moodId,
                                                 uint trackKey )
       {
          _Trace( "[DecreaseAppropriateZenoStyle]" );
@@ -561,7 +561,7 @@ namespace byteheaven.tamjb.Engine
          {
             ++_changeCount;
             uint level = _database.GetAppropriate( userId, 
-                                                   mood.id,
+                                                   moodId,
                                                    trackKey );
 
             // The database shouldn't contain invalid attributes, right?
@@ -573,7 +573,7 @@ namespace byteheaven.tamjb.Engine
             level /= 2;
 
             _database.SetAppropriate( userId, 
-                                      mood.id,
+                                      moodId,
                                       trackKey, 
                                       level );
          }

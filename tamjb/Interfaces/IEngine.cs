@@ -141,11 +141,11 @@ namespace byteheaven.tamjb.Interfaces
                                   uint trackKey );
 
       void IncreaseAppropriateZenoStyle( uint userId,
-                                         Mood mood,
+                                         uint moodId,
                                          uint trackKey );
 
       void DecreaseAppropriateZenoStyle( uint userId,
-                                         Mood mood,
+                                         uint moodId,
                                          uint trackKey );
 
       /// Forces the backend to reconsider the currently playing track.

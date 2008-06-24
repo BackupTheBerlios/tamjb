@@ -14,42 +14,88 @@ namespace byteheaven.tamjb.webgui
 
    using byteheaven.tamjb.Interfaces;
 
-   public class StatusInfo
+   ///
+   /// Structure returned (on success) to the javascript calls that
+   /// describes the current now-playing track and user status.
+   ///
+   public class StatusBase
+   {
+      public StatusBase( bool changed )
+      {
+         statusChanged = changed;
+      }
+
+      public bool statusChanged;
+   }
+
+   public class NoChangeStatus : StatusBase
+   {
+      public NoChangeStatus()
+         : base(false)
+      {
+      }
+   }
+
+   public class StatusInfo : StatusBase
    {
       public StatusInfo()
+         : base(true)
       {
-         userID = 0;
          nowPlaying = null;
       }
 
-      public StatusInfo( uint id )
-      {
-         userID = id;
-         this.nowPlaying = null;
-      }
-
-      public uint userID;
       public uint moodID;
       public string moodName;
       public ITrackInfo nowPlaying;
       public int suckPercent = 100;
       public int moodPercent = 0;
+      public long changeCount = -1;
    }
 
-
+   ///
+   /// Jayrock interface to T.A.M. Jukebox
+   ///
+   /// Thought: all public entry points shoul dhave try/catch wrappers
+   /// that _Trace exceptions on the backend, for debugging.
+   ///
    public class TJBFunctions : JsonRpcHandler
    {
       ///
-      /// Gets the current status as a StatusInfo struct.
+      /// Gets the current status as a StatusBase struct.
+      /// pass -1 as oldChangeCount to force refresh, otherwise will return
+      /// a "nothing changed" status if the index has not changed.
       ///
       [ JsonRpcMethod("getStatus") ]
-      public StatusInfo GetStatus()
+      public StatusBase GetStatus( int oldChangeCount )
       {
          try
          {
-            _Authenticate();
+            IEngine backend = WebPageBase.backend;
+            long newChangeCount = backend.changeCount;
+            if (oldChangeCount == newChangeCount)
+               return new NoChangeStatus();
 
-            return _MakeStatus( WebPageBase.backend );
+            try 
+            {
+               _Authenticate();
+               return _MakeStatus( WebPageBase.backend );
+            }
+            catch 
+            {
+               StatusInfo status = new StatusInfo();
+               EngineState engineState = WebPageBase.backend.GetState();
+               if (engineState.currentTrackIndex < 0)
+                  status.nowPlaying = null;
+               else
+                  status.nowPlaying = engineState.currentTrack;
+               
+               status.moodID = 0;
+               status.moodName = "(unknown)";
+               status.suckPercent = 0;
+               status.moodPercent = 100;
+               status.changeCount = newChangeCount;
+               return status;
+            }
          }
          catch (Exception ex)
          {
@@ -59,7 +105,7 @@ namespace byteheaven.tamjb.webgui
       }
 
       [ JsonRpcMethod("suckLess") ]
-      public StatusInfo OnSuckLess( int trackId )
+      public StatusBase OnSuckLess( int trackId )
       {
          try 
          {
@@ -79,7 +125,7 @@ namespace byteheaven.tamjb.webgui
       }
 
       [ JsonRpcMethod("suckMore") ]
-      public StatusInfo OnSuckMore( int trackId )
+      public StatusBase OnSuckMore( int trackId )
       {
          try 
          {
@@ -99,7 +145,7 @@ namespace byteheaven.tamjb.webgui
       }
 
       [ JsonRpcMethod("megaSuck") ]
-      public StatusInfo OnMegaSuck( int trackId )
+      public StatusBase OnMegaSuck( int trackId )
       {
          try 
          {
@@ -125,6 +171,54 @@ namespace byteheaven.tamjb.webgui
          }
       }
 
+      [ JsonRpcMethod("moodYes") ]
+      public StatusBase OnMoodYes( int trackId, int moodId )
+      {
+         try 
+         {
+            Console.WriteLine( "[OnMoodYes] {0}:{1}", moodId, trackId );
+
+            _Authenticate();
+
+            IEngine backend = WebPageBase.backend;
+            
+            backend.IncreaseAppropriateZenoStyle( _userId, 
+                                                  (uint)trackId, 
+                                                  (uint)moodId );
+
+            return _MakeStatus( backend );
+         }
+         catch (Exception ex)
+         {
+            _Trace( ex.ToString() );
+            throw;
+         }
+      }
+
+      [ JsonRpcMethod("moodNo") ]
+      public StatusBase OnMoodNo( int trackId, int moodId )
+      {
+         try 
+         {
+            Console.WriteLine( "[OnMoodNo] {0}:{1}", moodId, trackId );
+
+            _Authenticate();
+
+            IEngine backend = WebPageBase.backend;
+            backend.DecreaseAppropriateZenoStyle( _userId, 
+                                                  (uint)trackId, 
+                                                  (uint)moodId );
+
+            return _MakeStatus( backend );
+         }
+         catch (Exception ex)
+         {
+            _Trace( ex.ToString() );
+            throw;
+         }
+      }
+
+
       ///
       /// Sets the suck and mood values for the supplied status structure
       /// by querying the back end. Assumes status.nowPlaying.key is set.
@@ -133,7 +227,7 @@ namespace byteheaven.tamjb.webgui
       {
          double suckPercent;
          double moodPercent;
-         WebPageBase.backend.GetAttributes( status.userID,
+         WebPageBase.backend.GetAttributes( _userId,
                                             status.moodID,
                                             status.nowPlaying.key,
                                             out suckPercent,
@@ -150,11 +244,12 @@ namespace byteheaven.tamjb.webgui
       ///
       /// Helper for all the functions that return current status.
       ///
-      StatusInfo _MakeStatus( IEngine backend )
+      StatusBase _MakeStatus( IEngine backend )
       {
          EngineState engineState = backend.GetState();
-         StatusInfo status = new StatusInfo( _userId );
+         StatusInfo status = new StatusInfo();
          
+         status.changeCount = backend.changeCount;
          Mood currentMood = new Mood();
          WebPageBase.backend.GetCurrentMood( _userId, ref currentMood );
          status.moodID = currentMood.id;
@@ -182,13 +277,19 @@ namespace byteheaven.tamjb.webgui
  
          if (! identity.IsAuthenticated)
          {
-            throw new ApplicationException( "Not authenticated" );
+            throw new ApplicationException( "login" );
          }
 
          // If we got here, "It's cool, man"!
          _userId = Convert.ToUInt32( identity.Name );
-      }
 
+         // And.. we'd like to stay logged in. OK?
+         UserInfo userInfo = WebPageBase.backend.RenewLogon( _userId );
+         if (null == userInfo)
+         {
+            throw new ApplicationException( "login" );
+         }
+      }
 
       void _Trace( string msg )
       {
