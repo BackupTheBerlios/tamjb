@@ -13,3 +13,9 @@ tamjb/webgui/js/dojox
 tamjb/webgui/js/util
 tamjb/webgui/js/json.js
 jayrock/src/bin/*.dll
+jayrock/src/bin/*.mdb
+jayrock/www/bin/*.dll
+jayrock/www/bin/*.pdb
+jayrock/www/bin/*.mdb
+jayrock/tests
+jayrock/samples
