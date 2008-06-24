@@ -1,7 +1,4 @@
-<%@ Page language="C#" 
-  EnableViewState="false"
-  AutoEventWireup="false"
-%><!DOCTYPE html PUBLIC PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html PUBLIC PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head runat="server">
 <script runat="server">
@@ -32,7 +29,7 @@
 <script type="text/javascript" src="tjbfunctions.ashx?proxy"></script>
 <script type="text/javascript" src="js/json.js"></script>
 <script type="text/javascript" src="js/dojo/dojo.js" djConfig="parseOnLoad:true, isDebug:true, usePlainJson:true"></script>
-<script type="text/javascript" src="index.aspx.js"></script>
+<script type="text/javascript" src="index.js"></script>
 
 <style type="text/css">
    @import "js/dijit/themes/tundra/tundra.css";
@@ -68,6 +65,11 @@ table.nowPlaying tr th {
 
 #megaSuckBtn {
   background: red;
+}
+
+#loginError {
+  text-align: center;
+  color: red;
 }
 
 </style>
@@ -174,8 +176,23 @@ table.nowPlaying tr th {
 
  <div dojoType="dijit.Dialog" id="loginPopup" title="Login" 
    jsId="jsLoginPopup"
-   href="login.aspx"
    style="display:none;">
+  <div id="loginError"></div>
+  <br />
+  ID:
+  <div dojoType="dijit.form.ValidationTextBox" id="idBox" 
+     regExp=".+"
+     required="true"
+     invalidMessage="Identify"
+     columns="20" ></div>
+  <br />
+  Password:
+  <div dojoType="dijit.form.TextBox" type="password"
+     id="passwordBox" columns="20" ></div>
+  <br />
+  <button dojoType="dijit.form.Button" id="loginBtn"
+     onclick="onIdentify" >Identify
+  </button>
  </div>
 
  <div id="status" dojoType="dijit.layout.ContentPane" region="top"
@@ -183,18 +200,19 @@ table.nowPlaying tr th {
      sizerWidth="8"
      style="border:2px;" >
    <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:1.5em;width:100%;">
-    <div dojoType="dijit.layout.ContentPane" splitter="true" region="center">
+    <div dojoType="dijit.layout.ContentPane" splitter="true" region="center" >
       <div dojoType="dijit.ProgressBar"
           jsId="jsProgressBar" id="downloadProgress" 
           indeterminate="true"
           report="progressReport"
-          style="width: 80%;"></div>
+          style="width: 60%;margin-left:auto; margin-right:auto;""></div>
     </div>
     <div dojoType="dijit.layout.ContentPane" sizeShare="50" region="left"> TAM Jukebox - 
-      <a href="http://tekhedd.is-a-geek.net:8000/tamjb.ogg">Tune In</a> (if I said you can)</div>
+      <a href="http://tekhedd.is-a-geek.net:8000/tamjb.ogg.m3u">Tune In</a> (if I said you can)</div>
     <div dojoType="dijit.layout.ContentPane" region="right">
      <button dojoType="dijit.form.Button"
        id="refreshBtn" 
+       style="height:1.1em;"
        onClick="refresh(true);">Refresh</button>
     </div>
    </div>

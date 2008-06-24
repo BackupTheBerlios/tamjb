@@ -58,7 +58,7 @@ namespace byteheaven.tamjb.webgui
    /// Jayrock interface to T.A.M. Jukebox
    ///
    /// Thought: all public entry points shoul dhave try/catch wrappers
-   /// that _Trace exceptions on the backend, for debugging.
+   /// that Console.WriteLine exceptions on the backend, for debugging.
    ///
    public class TJBFunctions : JsonRpcHandler
    {
@@ -73,8 +73,7 @@ namespace byteheaven.tamjb.webgui
          try
          {
             IEngine backend = WebPageBase.backend;
-            long newChangeCount = backend.changeCount;
-            if (oldChangeCount == newChangeCount)
+            if (oldChangeCount == backend.changeCount)
                return new NoChangeStatus();
 
             try 
@@ -84,25 +83,12 @@ namespace byteheaven.tamjb.webgui
             }
             catch 
             {
-               StatusInfo status = new StatusInfo();
-               EngineState engineState = WebPageBase.backend.GetState();
-               if (engineState.currentTrackIndex < 0)
-                  status.nowPlaying = null;
-               else
-                  status.nowPlaying = engineState.currentTrack;
-
-               status.userName = "";
-               status.moodID = 0;
-               status.moodName = "(unknown)";
-               status.suckPercent = 0;
-               status.moodPercent = 100;
-               status.changeCount = newChangeCount;
-               return status;
+               return _MakeAnonStatus( WebPageBase.backend );
             }
          }
          catch (Exception ex)
          {
-            _Trace( ex.ToString() );
+            Console.WriteLine( ex.ToString() );
             throw;
          }
       }
@@ -122,7 +108,7 @@ namespace byteheaven.tamjb.webgui
          }
          catch (Exception ex)
          {
-            _Trace( ex.ToString() );
+            Console.WriteLine( ex.ToString() );
             throw;
          }
       }
@@ -142,7 +128,7 @@ namespace byteheaven.tamjb.webgui
          }
          catch (Exception ex)
          {
-            _Trace( ex.ToString() );
+            Console.WriteLine( ex.ToString() );
             throw;
          }
       }
@@ -169,7 +155,7 @@ namespace byteheaven.tamjb.webgui
          }
          catch (Exception ex)
          {
-            _Trace( ex.ToString() );
+            Console.WriteLine( ex.ToString() );
             throw;
          }
       }
@@ -184,16 +170,16 @@ namespace byteheaven.tamjb.webgui
             WebPageBase.Authenticate( out _userId );
 
             IEngine backend = WebPageBase.backend;
-            
+
             backend.IncreaseAppropriateZenoStyle( _userId, 
-                                                  (uint)trackId, 
-                                                  (uint)moodId );
+                                                  (uint)moodId, 
+                                                  (uint)trackId );
 
             return _MakeStatus( backend );
          }
          catch (Exception ex)
          {
-            _Trace( ex.ToString() );
+            Console.WriteLine( ex.ToString() );
             throw;
          }
       }
@@ -209,14 +195,14 @@ namespace byteheaven.tamjb.webgui
 
             IEngine backend = WebPageBase.backend;
             backend.DecreaseAppropriateZenoStyle( _userId, 
-                                                  (uint)trackId, 
-                                                  (uint)moodId );
+                                                  (uint)moodId, 
+                                                  (uint)trackId );
 
             return _MakeStatus( backend );
          }
          catch (Exception ex)
          {
-            _Trace( ex.ToString() );
+            Console.WriteLine( ex.ToString() );
             throw;
          }
       }
@@ -233,6 +219,47 @@ namespace byteheaven.tamjb.webgui
 
          WebPageBase.backend.SetMood( _userId, (uint)moodID );
          return _MakeStatus( WebPageBase.backend );
+      }
+
+      [ JsonRpcMethod("login") ]
+      public StatusBase Login( string id, string password )
+      {
+         IEngine backend = WebPageBase.backend;
+
+         // If no id was supplied, don't bail.
+         if (id.Length > 0)
+         {
+            UserInfo userInfo = backend.LogIn( id, password );
+            if (null == userInfo)
+               return _MakeAnonStatus( backend );
+
+            _userId = userInfo.id;
+
+            FormsAuthenticationTicket ticket = 
+               new FormsAuthenticationTicket( 1, // version 1!
+                                              userInfo.id.ToString(),
+                                              DateTime.Now,   
+                                              DateTime.Now.AddMinutes(90),
+                                              true, // persistent
+                                              userInfo.name, // user data for us
+                                              FormsAuthentication.FormsCookiePath );
+
+            // Encrypt the ticket.
+            string encTicket = FormsAuthentication.Encrypt( ticket );
+
+            // Create the cookie.
+            Response.Cookies.Add(new HttpCookie(FormsAuthentication.FormsCookieName, 
+                                                encTicket));
+
+
+            // Get the redirect url, but don't redirect! :)
+            FormsAuthentication.GetRedirectUrl( userInfo.id.ToString(), 
+                                                false );
+
+            return _MakeStatus( backend );
+         }
+
+         return _MakeAnonStatus( backend );
       }
 
       [ JsonRpcMethod("logout") ]
@@ -290,10 +317,29 @@ namespace byteheaven.tamjb.webgui
          return status;
       }
 
-      void _Trace( string msg )
+      ///
+      /// Return a status structure suitable to a non-logged-in user
+      ///
+      /// userName is empty? That's your clue.
+      ///
+      StatusInfo _MakeAnonStatus( IEngine backend )
       {
-         Trace.WriteLine( "tjbfunctions.ashx: " + msg ) ;
+         StatusInfo status = new StatusInfo();
+         EngineState engineState = WebPageBase.backend.GetState();
+         if (engineState.currentTrackIndex < 0)
+            status.nowPlaying = null;
+         else
+            status.nowPlaying = engineState.currentTrack;
+         
+         status.userName = String.Empty;
+         status.moodID = 0;
+         status.moodName = String.Empty;
+         status.suckPercent = 0;
+         status.moodPercent = 100;
+         status.changeCount = backend.changeCount;
+         return status;
       }
+
 
       // Variables initialized in WebPageBase.Authenticate( out _userId )
       uint _userId = 0;

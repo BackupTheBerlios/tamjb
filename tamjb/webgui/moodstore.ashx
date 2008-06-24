@@ -42,12 +42,12 @@ namespace byteheaven.tamjb.webgui
 
       public void ProcessRequest( HttpContext context ) 
       {
-         Console.WriteLine( "[ProcessRequest]" );
-
-         WebPageBase.Authenticate( out _userID );
+         // Console.WriteLine( "[ProcessRequest]" );
 
          try
          {
+            WebPageBase.Authenticate( out _userID );
+
             string queryParam = context.Request["queryParam"];
             string startStr = context.Request["start"];
             string countStr = context.Request["count"];
@@ -85,8 +85,8 @@ namespace byteheaven.tamjb.webgui
             if (marker > moodArray.Length)
                marker = moodArray.Length;
 
-            Console.WriteLine( "MoodStore first:{0} marker:{1} length:{2}",
-                               first, marker, moodArray.Length );
+            // Console.WriteLine( "MoodStore first:{0} marker:{1} length:{2}",
+            //                    first, marker, moodArray.Length );
 
             TextWriter textWriter = new StringWriter();
             using (JsonWriter writer = new JsonTextWriter(textWriter))
@@ -104,7 +104,7 @@ namespace byteheaven.tamjb.webgui
 
                for (int i = first; i < marker; i++ )
                {
-                  Console.WriteLine( "I:{0}", i );
+                  // Console.WriteLine( "I:{0}", i );
                   Mood mood = moodArray[i];
 
                   writer.WriteStartObject();
@@ -129,7 +129,10 @@ namespace byteheaven.tamjb.webgui
          catch (Exception ex)
          {
             Console.WriteLine( "moodstore.ashx: {0}", ex.ToString() );
-            throw;
+            context.Response.ContentType = "text/json";
+
+            // Sloppy, should use the JsonTextWriter.
+            context.Response.Write( "{error:\"" + ex.Message + "\"}" );
          }
       }
 

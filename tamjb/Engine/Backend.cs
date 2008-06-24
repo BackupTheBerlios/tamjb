@@ -4,7 +4,7 @@
 /// The jukebox player back end.
 ///
 
-// Copyright (C) 2004-2007 Tom Surace.
+// Copyright (C) 2004-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //

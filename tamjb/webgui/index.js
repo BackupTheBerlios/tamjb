@@ -22,6 +22,8 @@
 dojo.require("dojo.parser");
 dojo.require("dijit.form.Button");
 dojo.require("dijit.form.CheckBox");
+dojo.require("dijit.form.ValidationTextBox");
+dojo.require("dijit.form.TextBox");
 dojo.require("dijit.Dialog");
 dojo.require("dijit.ProgressBar");
 dojo.require("dijit.TitlePane");
@@ -39,7 +41,15 @@ var tjb = new TJBFunctions();
 
 // Status for status bar
 var updateStatus = "idle";
-var g_currentTrackStatus = { changeCount: -1 };
+// Dummy structure for first login
+var g_currentTrackStatus = { 
+   moodID: -1,
+   changeCount: -1,
+   nowPlaying: {
+      key: -1
+   }
+};
+
 var g_timer;
 var g_moodDlg;
 
@@ -48,8 +58,19 @@ var g_waitingForRefresh = false;
 var g_refreshAgain = false;
 
 function index_init() {
-  refresh();
 
+   _initMoodGrid();
+  jsMoodGrid.selection.multiSelect = false;
+
+  refresh();
+}
+
+dojo.addOnLoad( index_init );
+// dojo.addOnLoad();
+
+// Initializes or refreshes the mood grid data
+function _initMoodGrid()
+{
   var moodView1 = {
      cells: [
         [{name: 'Mood', field: 1, width: "25em"},
@@ -63,7 +84,7 @@ function index_init() {
                                    identifier: 'id',
                                    requestMethod: 'post',
                                    });
-  moodModel =
+  var moodModel =
      new dojox.grid.data.DojoData(null,null,
                                   {store: store, 
                                    clientSort: false} );
@@ -71,11 +92,8 @@ function index_init() {
   // Now set the model and structure
   jsMoodGrid.setModel( moodModel );
   jsMoodGrid.setStructure( moodLayout );
-  jsMoodGrid.selection.multiSelect = false;
 }
 
-dojo.addOnLoad( index_init );
-// dojo.addOnLoad();
 
 function refresh(force) {
    if (force)
@@ -118,7 +136,8 @@ function refreshCallback( response ) {
          return;
       }
 
-      updateNowPlaying(response.result);
+      if (response.result)
+         updateNowPlaying(response.result);
    }
    finally
    {
@@ -134,28 +153,36 @@ function refreshCallback( response ) {
    }
 }
 
-function alertErrorResponse(response) {
-  var exceptionType = "unknown";
-  if (response.name) {
-     exceptionType = response.name;
-  }
+function alertErrorResponse(response)
+{
+   if (undefined == response)
+   {
+      // What to do?
+      alert("Null response from server?");
+      return;
+   }
 
-  if (response.error.errors.length > 0) {
-    exceptionType = response.error.errors[0].name;
-  }
+   var exceptionType = "unknown";
+   if (response.name) {
+      exceptionType = response.name;
+   }
+
+   if (response.error.errors.length > 0) {
+      exceptionType = response.error.errors[0].name;
+   }
   
-  var message = response.error.message;
-  if ("ApplicationException" == exceptionType && "login" == message) 
-  {
-     // Redirect to login page the ugly way, for now.
-     jsLoginPopup.show();
-     return;
-  }
+   var message = response.error.message;
+   if ("ApplicationException" == exceptionType && "login" == message) 
+   {
+      // Redirect to login page the ugly way, for now.
+      jsLoginPopup.show();
+      return;
+   }
 
-  alert("Unhandled exception (" +
-    exceptionType + 
-    "): " + 
-    response.error.message);
+   alert("Unhandled exception (" +
+         exceptionType + 
+         "): " + 
+         response.error.message);
 }
 
 /* status is byteheaven.tamjb.webgui.StatusInfo */
@@ -167,10 +194,18 @@ function updateNowPlaying(status)
 
    g_currentTrackStatus = status;
 
-   if (status.userName == "")   // empty?
+   if ("" == status.userName)
+   {
       jsLogin.setLabel("Log In");
+      jsMoodBtn.setLabel("unknown");
+      jsMoodBtn.setAttribute("disabled",true);
+   }
    else
+   {
       jsLogin.setLabel( status.userName );
+      jsMoodBtn.setLabel( status.moodName );
+      jsMoodBtn.setAttribute("disabled",false);
+   }
 
    dojo.byId("trackId").innerHTML = status.nowPlaying.key;
    dojo.byId("title").innerHTML = status.nowPlaying.title;  
@@ -180,7 +215,6 @@ function updateNowPlaying(status)
    dojo.byId("suckLevel").innerHTML = status.suckPercent;
    dojo.byId("moodLevel").innerHTML = status.moodPercent;
 
-   jsMoodBtn.setLabel( status.moodName );
 }
 
 /* Marks current state unknown, and so on */
@@ -189,7 +223,6 @@ function startUpdate(msg)
    updateStatus=msg;
    jsProgressBar.update({indeterminate: true});
 
-   jsMoodBtn.setAttribute("disabled",true);
    jsSuckBtn.setAttribute("disabled",true);
    jsMegaSuckBtn.setAttribute("disabled",true);
    jsRuleBtn.setAttribute("disabled",true);
@@ -203,7 +236,6 @@ function finishUpdate()
    updateStatus="OK";
    jsProgressBar.update({indeterminate: false});
 
-   jsMoodBtn.setAttribute("disabled",false);
    jsSuckBtn.setAttribute("disabled",false);
    jsMegaSuckBtn.setAttribute("disabled",false);
    jsRuleBtn.setAttribute("disabled",false);
@@ -260,7 +292,7 @@ function onSuck()
    try 
    {
       var trackId = g_currentTrackStatus.nowPlaying.key;
-      if (!trackId || (-1 == trackId)) {
+      if (-1 == trackId) {
          alert("Track ID is not valid. Hmm.");
          return;
       }
@@ -281,7 +313,7 @@ function onMegaSuck() {
    try 
    {
       var trackId = g_currentTrackStatus.nowPlaying.key;
-      if (!trackId || (-1 == trackId)) {
+      if (-1 == trackId) {
          alert("Track ID is -1, not valid. Hmm.");
          return;
       }
@@ -302,7 +334,7 @@ function onYes() {
    try
    {
       var trackId = g_currentTrackStatus.nowPlaying.key;
-      if (undefined == trackId || -1 == trackId) {
+      if (-1 == trackId) {
          alert("Track ID is not valid. Hmm.");
          return;
       }
@@ -352,7 +384,8 @@ function onNo() {
    }
 }
 
-function onMood() {
+function onMood() 
+{
    // Initialize the selection to the current mood:
    if (g_currentTrackStatus.moodID < 0)
       return;
@@ -405,4 +438,52 @@ function _setMood(moodID)
 function onLogin()
 {
    jsLoginPopup.show();
+}
+
+///
+/// Called when the login is complete
+///
+function onIdentify()
+{
+   dojo.byId("loginError").innerHTML = "";
+   startUpdate( "Authenticating" );
+   var id = dijit.byId("idBox").getValue();
+   var pass = dijit.byId("passwordBox").getValue();
+
+   dijit.byId("passwordBox").setValue("");
+
+   tjb.login( id, pass, onIdentifyCallback );
+}
+
+
+function onIdentifyCallback(response)
+{
+   try
+   {
+      // If we got here, we're logged in.
+      if (undefined == response
+          || response.error)
+      {
+         alertErrorResponse(response);
+         return;
+      }
+
+      if (response.result.userName == "")
+      {
+         dojo.byId("loginError").innerHTML = "Authentication Failure";
+         return;
+      }
+
+      jsLoginPopup.hide();
+
+      // This will update the logged-in status and everything
+      // if we are now logged in. 
+      updateNowPlaying(response.result);
+
+      _initMoodGrid();          // refresh mood for current user!
+   }
+   finally
+   {
+      finishUpdate();
+   }
 }
