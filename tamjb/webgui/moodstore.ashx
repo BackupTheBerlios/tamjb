@@ -30,18 +30,6 @@ namespace byteheaven.tamjb.webgui
    ///
    /// Jayrock interface to T.A.M. Jukebox
    ///
-   // {
-   //    query: {name: "A*"},
-   //    queryOptions: {ignoreCase: true},
-   //    sort: [{attribute:"name", descending:false}],
-   //    start: 0,
-   //    count: 10
-   // }
-   //
-   // reply as in:
-   // { "identifier" : "id", "numRows" : 30,
-   //  "items" : [ { "id" : 10, "login" : "user", "email" : "user@..." }, ... ] }
-   //
    public class MoodStore : IHttpHandler
    {
       public bool IsReusable
@@ -56,51 +44,95 @@ namespace byteheaven.tamjb.webgui
       {
          Console.WriteLine( "[ProcessRequest]" );
 
-         // Read the incoming data and parse it
-         Stream stream = context.Request.InputStream;
-         long length = stream.Length;
-         
-         byte[] theBytes = new byte[length];
-         stream.Read( theBytes, 0, (int)length );
-         string request = Encoding.UTF8.GetString( theBytes, 0, (int)length );
+         WebPageBase.Authenticate( out _userID );
 
-         Console.WriteLine( request );
-
-         // Parse the request:
-         
-
-         // string response = "{ "identifier" : "id", "numRows" : 30,
-         //  "items" : [ { "id" : 10, "login" : "user", "email" : "user@..." }, ... ] }
-
-         // Write a response suitable for use by the dojo json-based data 
-         // store thingy
-
-         TextWriter textWriter = new StringWriter();
-         using (JsonWriter writer = new JsonTextWriter(textWriter))
+         try
          {
-            writer.WriteStartObject();        
+            string queryParam = context.Request["queryParam"];
+            string startStr = context.Request["start"];
+            string countStr = context.Request["count"];
+         
+            if (null == startStr)
+               throw new ArgumentException("start");
 
-            writer.WriteMember( "identifier" ); 
-            writer.WriteString( "name" ); 
+            if (null == startStr)
+               throw new ArgumentException("count");
 
-            writer.WriteMember( "numRows");
-            writer.WriteNumber( "1" );
+            int first = Convert.ToInt32( startStr );
+            int count = Convert.ToInt32( countStr );
+            int marker = first + count;
 
-            writer.WriteMember( "items");
-            writer.WriteStartArray();
+            if (first < 0)
+               first = 0;
+         
+            if (marker < first)
+               marker = first;
+
+            // 
+            // reply as in:
+            // { "identifier" : "id", "numRows" : 30,
+            //  "items" : [ { "id" : 10, "name" : "MyName"}, ... ] }
+            //
+
+            // Get the requested moods, and send a response suitable 
+            // for use by the dojo json-based data store thingy
+
+            Mood [] moodArray = WebPageBase.backend.GetMoodList( _userID );
+         
+            if (first > moodArray.Length)
+               first = moodArray.Length;
+
+            if (marker > moodArray.Length)
+               marker = moodArray.Length;
+
+            Console.WriteLine( "MoodStore first:{0} marker:{1} length:{2}",
+                               first, marker, moodArray.Length );
+
+            TextWriter textWriter = new StringWriter();
+            using (JsonWriter writer = new JsonTextWriter(textWriter))
+            {
+               writer.WriteStartObject();        
+
+               writer.WriteMember( "identifier" ); 
+               writer.WriteString( "name" ); 
+
+               writer.WriteMember( "numRows");
+               writer.WriteNumber( marker - first );
+
+               writer.WriteMember( "items");
+               writer.WriteStartArray();
+
+               for (int i = first; i < marker; i++ )
+               {
+                  Console.WriteLine( "I:{0}", i );
+                  Mood mood = moodArray[i];
+
+                  writer.WriteStartObject();
+
+                  writer.WriteMember( "id" );
+                  writer.WriteNumber( mood.id );
+
+                  writer.WriteMember( "name" );
+                  writer.WriteString( mood.name );
+
+                  writer.WriteEndObject();
+               }
             
-            // foreach (Item item 
-            // writer.WriteStartObject();
-            // ...
-            // writer.WriteEndObject();
-               
-            writer.WriteEndArray();
+               writer.WriteEndArray();
 
-            writer.WriteEndObject();
+               writer.WriteEndObject();
+            }
+
+            context.Response.ContentType = "text/json";
+            context.Response.Write( textWriter.ToString() );
          }
-
-         context.Response.ContentType = "text/json";
-         context.Response.Write( textWriter.ToString() );
+         catch (Exception ex)
+         {
+            Console.WriteLine( "moodstore.ashx: {0}", ex.ToString() );
+            throw;
+         }
       }
+
+      uint _userID;
    }
 }

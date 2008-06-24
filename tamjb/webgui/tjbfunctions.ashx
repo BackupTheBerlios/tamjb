@@ -7,6 +7,7 @@ namespace byteheaven.tamjb.webgui
    using System.Text;
    using System.Threading;
    using System.Web;
+   using System.Web.Security;
 
    using Jayrock.Json;
    using Jayrock.JsonRpc;
@@ -44,6 +45,7 @@ namespace byteheaven.tamjb.webgui
          nowPlaying = null;
       }
 
+      public string userName;
       public uint moodID;
       public string moodName;
       public ITrackInfo nowPlaying;
@@ -77,7 +79,7 @@ namespace byteheaven.tamjb.webgui
 
             try 
             {
-               _Authenticate();
+               WebPageBase.Authenticate( out _userId );
                return _MakeStatus( WebPageBase.backend );
             }
             catch 
@@ -88,7 +90,8 @@ namespace byteheaven.tamjb.webgui
                   status.nowPlaying = null;
                else
                   status.nowPlaying = engineState.currentTrack;
-               
+
+               status.userName = "";
                status.moodID = 0;
                status.moodName = "(unknown)";
                status.suckPercent = 0;
@@ -111,7 +114,7 @@ namespace byteheaven.tamjb.webgui
          {
             Console.WriteLine( "[OnSuckLess] {0}", trackId );
 
-            _Authenticate();
+            WebPageBase.Authenticate( out _userId );
 
             IEngine backend = WebPageBase.backend;
             backend.DecreaseSuckZenoStyle( _userId, (uint)trackId );
@@ -131,7 +134,7 @@ namespace byteheaven.tamjb.webgui
          {
             Console.WriteLine( "[OnSuckMore] {0}", trackId );
 
-            _Authenticate();
+            WebPageBase.Authenticate( out _userId );
 
             IEngine backend = WebPageBase.backend;
             backend.IncreaseSuckZenoStyle( _userId, (uint)trackId );
@@ -151,7 +154,7 @@ namespace byteheaven.tamjb.webgui
          {
             Console.WriteLine( "[OnMegaSuck] {0}", trackId );
 
-            _Authenticate();
+            WebPageBase.Authenticate( out _userId );
 
             IEngine backend = WebPageBase.backend;
             for (int i = 0; i < 3; i++)
@@ -178,7 +181,7 @@ namespace byteheaven.tamjb.webgui
          {
             Console.WriteLine( "[OnMoodYes] {0}:{1}", moodId, trackId );
 
-            _Authenticate();
+            WebPageBase.Authenticate( out _userId );
 
             IEngine backend = WebPageBase.backend;
             
@@ -202,7 +205,7 @@ namespace byteheaven.tamjb.webgui
          {
             Console.WriteLine( "[OnMoodNo] {0}:{1}", moodId, trackId );
 
-            _Authenticate();
+            WebPageBase.Authenticate( out _userId );
 
             IEngine backend = WebPageBase.backend;
             backend.DecreaseAppropriateZenoStyle( _userId, 
@@ -218,6 +221,26 @@ namespace byteheaven.tamjb.webgui
          }
       }
 
+      [ JsonRpcMethod("setMood") ]
+      public StatusBase SetMood( int moodID )
+      {
+         WebPageBase.Authenticate( out _userId );
+
+         if (moodID < 0)
+            throw new ArgumentException( "moodID" );
+
+         Console.WriteLine( "NewMood: {0}", moodID );
+
+         WebPageBase.backend.SetMood( _userId, (uint)moodID );
+         return _MakeStatus( WebPageBase.backend );
+      }
+
+      [ JsonRpcMethod("logout") ]
+      public void Logout() 
+      {
+         Session.Abandon();
+         FormsAuthentication.SignOut();
+      }
 
       ///
       /// Sets the suck and mood values for the supplied status structure
@@ -248,7 +271,9 @@ namespace byteheaven.tamjb.webgui
       {
          EngineState engineState = backend.GetState();
          StatusInfo status = new StatusInfo();
-         
+
+         UserInfo userInfo = WebPageBase.backend.GetUser( _userId );
+         status.userName = userInfo.name;
          status.changeCount = backend.changeCount;
          Mood currentMood = new Mood();
          WebPageBase.backend.GetCurrentMood( _userId, ref currentMood );
@@ -265,38 +290,12 @@ namespace byteheaven.tamjb.webgui
          return status;
       }
 
-      ///
-      /// Confirms that the user is logged in, and initialized
-      /// user ID and other user state from the authentication
-      /// info.
-      ///
-      void _Authenticate()
-      {
-         System.Security.Principal.IIdentity identity = 
-            HttpContext.Current.User.Identity;
- 
-         if (! identity.IsAuthenticated)
-         {
-            throw new ApplicationException( "login" );
-         }
-
-         // If we got here, "It's cool, man"!
-         _userId = Convert.ToUInt32( identity.Name );
-
-         // And.. we'd like to stay logged in. OK?
-         UserInfo userInfo = WebPageBase.backend.RenewLogon( _userId );
-         if (null == userInfo)
-         {
-            throw new ApplicationException( "login" );
-         }
-      }
-
       void _Trace( string msg )
       {
          Trace.WriteLine( "tjbfunctions.ashx: " + msg ) ;
       }
 
-      // Variables initialized in _Authenticate()
+      // Variables initialized in WebPageBase.Authenticate( out _userId )
       uint _userId = 0;
    }
 }

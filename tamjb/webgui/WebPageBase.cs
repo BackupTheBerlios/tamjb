@@ -84,6 +84,31 @@ namespace byteheaven.tamjb.webgui
 //                            control.ClientID ) );
       }
 
+      ///
+      /// Confirms that the user is logged in, and initialized
+      /// user ID and other user state from the authentication
+      /// info.
+      ///
+      public static void Authenticate(out uint userId)
+      {
+         System.Security.Principal.IIdentity identity = 
+            HttpContext.Current.User.Identity;
+ 
+         if (! identity.IsAuthenticated)
+         {
+            throw new ApplicationException( "login" );
+         }
+
+         // If we got here, "It's cool, man"!
+         userId = Convert.ToUInt32( identity.Name );
+
+         // And.. we'd like to stay logged in. OK?
+         UserInfo userInfo = WebPageBase.backend.RenewLogon( userId );
+         if (null == userInfo)
+         {
+            throw new ApplicationException( "login" );
+         }
+      }
 
    }
 }

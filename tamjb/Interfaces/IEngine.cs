@@ -64,6 +64,8 @@ namespace byteheaven.tamjb.Interfaces
       ///
       /// Return the list of available moods for this user.
       ///
+      /// \todo Implement mood paging.
+      ///
       Mood [] GetMoodList( uint userId );
 
       ///

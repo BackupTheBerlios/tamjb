@@ -39,10 +39,9 @@ var tjb = new TJBFunctions();
 
 // Status for status bar
 var updateStatus = "idle";
-var g_currentTrackStatus;
+var g_currentTrackStatus = { changeCount: -1 };
 var g_timer;
 var g_moodDlg;
-var g_changeCount = -1;
 
 // Variables to handle background refresh
 var g_waitingForRefresh = false;
@@ -50,6 +49,29 @@ var g_refreshAgain = false;
 
 function index_init() {
   refresh();
+
+  var moodView1 = {
+     cells: [
+        [{name: 'Mood', field: 1, width: "25em"},
+         {name: 'ID', field: 0}]
+        ]
+  };
+  var moodLayout = [ moodView1 ];
+
+  var store = 
+     new dojox.data.QueryReadStore({url: 'moodstore.ashx', 
+                                   identifier: 'id',
+                                   requestMethod: 'post',
+                                   });
+  moodModel =
+     new dojox.grid.data.DojoData(null,null,
+                                  {store: store, 
+                                   clientSort: false} );
+
+  // Now set the model and structure
+  jsMoodGrid.setModel( moodModel );
+  jsMoodGrid.setStructure( moodLayout );
+  jsMoodGrid.selection.multiSelect = false;
 }
 
 dojo.addOnLoad( index_init );
@@ -57,7 +79,7 @@ dojo.addOnLoad( index_init );
 
 function refresh(force) {
    if (force)
-      g_changeCount = -1;
+      g_currentTrackStatus.changeCount = -1;
 
    // Prevent overlapping refresh calls.
    // Note: assumes javascript is not reentrant. It isn't, right?
@@ -75,7 +97,7 @@ function refresh(force) {
 
       startUpdate("Refreshing all");
       g_waitingForRefresh = true;
-      tjb.getStatus( g_changeCount, refreshCallback );
+      tjb.getStatus( g_currentTrackStatus.changeCount, refreshCallback );
    }
    catch(err)
    {
@@ -96,11 +118,6 @@ function refreshCallback( response ) {
          return;
       }
 
-      // If this is false, there is no data in the status object.
-      if (false == response.result.statusChanged)
-         return;
-
-      g_changeCount = response.result.changeCount;
       updateNowPlaying(response.result);
    }
    finally
@@ -131,8 +148,7 @@ function alertErrorResponse(response) {
   if ("ApplicationException" == exceptionType && "login" == message) 
   {
      // Redirect to login page the ugly way, for now.
-     alert("You are not logged in.");
-     window.location="login.aspx";
+     jsLoginPopup.show();
      return;
   }
 
@@ -142,11 +158,20 @@ function alertErrorResponse(response) {
     response.error.message);
 }
 
+/* status is byteheaven.tamjb.webgui.StatusInfo */
 function updateNowPlaying(status)
 {
+   // If this is false, there is no data in the status object.
+   if (false == status.statusChanged)
+      return;
+
    g_currentTrackStatus = status;
 
-   /* status is byteheaven.tamjb.webgui.StatusInfo */
+   if (status.userName == "")   // empty?
+      jsLogin.setLabel("Log In");
+   else
+      jsLogin.setLabel( status.userName );
+
    dojo.byId("trackId").innerHTML = status.nowPlaying.key;
    dojo.byId("title").innerHTML = status.nowPlaying.title;  
    dojo.byId("artist").innerHTML = status.nowPlaying.artist;
@@ -168,6 +193,8 @@ function startUpdate(msg)
    jsSuckBtn.setAttribute("disabled",true);
    jsMegaSuckBtn.setAttribute("disabled",true);
    jsRuleBtn.setAttribute("disabled",true);
+   jsYesBtn.setAttribute("disabled",true);
+   jsNoBtn.setAttribute("disabled",true);
 }
 
 function finishUpdate()
@@ -180,6 +207,8 @@ function finishUpdate()
    jsSuckBtn.setAttribute("disabled",false);
    jsMegaSuckBtn.setAttribute("disabled",false);
    jsRuleBtn.setAttribute("disabled",false);
+   jsYesBtn.setAttribute("disabled",false);
+   jsNoBtn.setAttribute("disabled",false);
 }
 
 // Helper for the progress bar
@@ -323,7 +352,57 @@ function onNo() {
    }
 }
 
-
 function onMood() {
-  jsMoodPopup.show();
+   // Initialize the selection to the current mood:
+   if (g_currentTrackStatus.moodID < 0)
+      return;
+
+   // jsMoodGrid.selection.select( row );
+   jsMoodPopup.show();
+}
+
+function onMoodRowClick(evt)
+{
+   var row = evt.rowIndex;
+   if (row < 0)
+      return;
+
+   // offset 0 is id.
+   var moodID = jsMoodGrid.model.getDatum( row, 0 );
+   _setMood( moodID );
+
+   return true;
+}
+
+function onMoodSelectClick()
+{
+   var row = jsMoodGrid.selection.getFirstSelected();
+   if (row < 0)
+      return;
+
+   var moodID = jsMoodGrid.model.getDatum( row, 0 );
+   _setMood( moodID );
+}
+
+function _setMood(moodID)
+{
+   try
+   {
+      startUpdate( "Setting mood" );
+      tjb.setMood( moodID, onTransportCtrlFinished );
+      jsMoodPopup.hide();
+   }
+   catch(err)
+   {
+      finishUpdate();
+      alert(err);
+   }
+}
+
+///
+/// Toggle login
+///
+function onLogin()
+{
+   jsLoginPopup.show();
 }

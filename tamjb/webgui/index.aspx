@@ -72,34 +72,20 @@ table.nowPlaying tr th {
 
 </style>
 
-<script type="text/javascript>
-var moodStructure = {
-  cells: [
-    [{name: 'Mood', field: "name", width: "25em"}]
-  ]
-};
-
-var moodLayout = [ moodStructure ];
-
-</script>
-
 </head>
 <body class="tundra">
 <div dojoType="dijit.layout.BorderContainer" id="mainFrame">
 
 <div dojoType="dijit.layout.ContentPane" id="content" region="center">
 
- <div style="float: right; margin: 0.6em;">
-    <button dojoType="dijit.form.Button"
-      id="refreshBtn" 
-      onClick="refresh(true);">Refresh</button>
- </div>
-
  <div id="moodBox" dojoType="dijit.layout.ContentPane">
   <table class="suckTable">
   <tr>
     <th>Opinion of</th>
-    <td colspan="2"><a href="#">(unknown user)</a></td>
+    <td colspan="2"><button dojoType="dijit.form.Button"
+       id="login" 
+       jsId="jsLogin"
+       onClick="onLogin();">Log In</button></td>
   </tr>
 
   <tr>
@@ -134,18 +120,6 @@ var moodLayout = [ moodStructure ];
         No
         <script type="dojo/method" event="onClick">onNo()</script>
       </button></td>
-  </tr>
-  </table>
- </div>
-
- <!-- TODO: allow this to be visible for the MASTER login -->
- <div id="transportBox">
-  <table class="transportTable">
-  <tr>
-    <td>Prev</td>
-    <td>Next</td>
-    <td>Stop</td>
-    <td>Play</td>
   </tr>
   </table>
  </div>
@@ -185,44 +159,44 @@ var moodLayout = [ moodStructure ];
 
 </div><!-- content -->
 
-  <div dojoType="dojo.data.ItemFileReadStore"
-      jsId="testStore" url="dijits.txt">
-  </div>
-
- <div dojoType="dojox.data.QueryReadStore" jsId="jsMoodReadStore"
-   url="moodstore.ashx"
-   requestMethod="post"
-   doClientPaging="false" >
- </div>
- <div dojoType="dojox.grid.data.DojoData" jsId="jsMoodModel"
-   rowsPerPage="15" store="testStore" query="{ namespace: '*' }">
- </div>
-
  <div dojoType="dijit.Dialog" id="moodPopup" title="Set Mood" 
    jsId="jsMoodPopup"
    style="display:none;">
-   <div dojoType="dojox.Grid" 
-     model="jsMoodModel"
-     structure="moodStructure"
-     style="height: 15em; width: 40em; border: thick solid blue"></div>
-
+   <div jsId="jsMoodGrid" dojoType="dojox.Grid" 
+     style="height: 19em; width: 40em;"
+     onRowDblClick="onMoodRowClick"
+     ></div>
    <button dojoType="dijit.form.Button" 
-     onclick="dijit.byId('moodPopup').hide();">Cancel</button> 
+     onclick="onMoodSelectClick();">Select</button> 
+   <button dojoType="dijit.form.Button" 
+     onclick="jsMoodPopup.hide();">Cancel</button> 
  </div>
 
- <div id="status" dojoType="dijit.layout.ContentPane" region="bottom"
+ <div dojoType="dijit.Dialog" id="loginPopup" title="Login" 
+   jsId="jsLoginPopup"
+   href="login.aspx"
+   style="display:none;">
+ </div>
+
+ <div id="status" dojoType="dijit.layout.ContentPane" region="top"
      orientation="horizontal"
      sizerWidth="8"
      style="border:2px;" >
    <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:1.5em;width:100%;">
-    <div dojoType="dijit.layout.ContentPane" sizeShare="50" splitter="true" region="center">
+    <div dojoType="dijit.layout.ContentPane" splitter="true" region="center">
       <div dojoType="dijit.ProgressBar"
           jsId="jsProgressBar" id="downloadProgress" 
           indeterminate="true"
-          report="progressReport"></div>
+          report="progressReport"
+          style="width: 80%;"></div>
     </div>
     <div dojoType="dijit.layout.ContentPane" sizeShare="50" region="left"> TAM Jukebox - 
-      <a href="#">Tune In</a></div>
+      <a href="http://tekhedd.is-a-geek.net:8000/tamjb.ogg">Tune In</a> (if I said you can)</div>
+    <div dojoType="dijit.layout.ContentPane" region="right">
+     <button dojoType="dijit.form.Button"
+       id="refreshBtn" 
+       onClick="refresh(true);">Refresh</button>
+    </div>
    </div>
  </div>
 
