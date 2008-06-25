@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
-<head runat="server">
-<script runat="server">
+<head>
+<!--
 //
 // Copyright (C) 2006-2008 Tom Surace.
 //
@@ -21,8 +21,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
-//   Tom Surace <tekhedd@byteheaven.net>
+//   Tom Surace -- tekhedd@byteheaven.net
 //
+-->
 </script>
 <title>T.A.M. Jukebox</title>
 
@@ -55,12 +56,25 @@ body {
   border: 0; padding: 0; margin: 0;
 }
 
+#nowPlayingBox
+{
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+}
+
 table.nowPlaying {
-  border: thin solid;
+  border: thin solid black;
+  background: 0x303030;
+  width: 100%;
 }
 
 table.nowPlaying tr th {
   text-align: right;
+  width: 4em;
+  padding-right: 0.3em; 
+  font-weight: bold;
 }
 
 #megaSuckBtn {
@@ -71,6 +85,11 @@ table.nowPlaying tr th {
   text-align: center;
   color: red;
 }
+
+button {
+  width: 10em;
+}
+
 
 </style>
 
@@ -131,20 +150,20 @@ table.nowPlaying tr th {
   <table class="nowPlaying">
   <tr>
     <th>Title</th>
-    <td><span id="title" class="widthLimit"></span> 
+    <td><span id="title"></span> 
       (<span id="trackId"></span>)</td>
   </tr>
   <tr>
     <th>Artist</th>
-    <td><span id="artist" class="widthLimit"></span></td>
+    <td><span id="artist"></span></td>
   </tr>
   <tr>
     <th>Album</th>
-    <td><span id="album" class="widthLimit"></span></td>
+    <td><span id="album"></span></td>
   </tr>
   <tr>
     <th>File</th>
-    <td><span id="filename" class="widthLimit"></span></td>
+    <td><span id="filename"></span></td>
   </tr>
   </table>
  </div>
@@ -196,24 +215,26 @@ table.nowPlaying tr th {
  </div>
 
  <div id="status" dojoType="dijit.layout.ContentPane" region="top"
-     orientation="horizontal"
-     sizerWidth="8"
-     style="border:2px;" >
-   <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:1.5em;width:100%;">
+     orientation="horizontal" style="border-bottom: black thick solid;">
+   <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:3em;width:100%;">
     <div dojoType="dijit.layout.ContentPane" splitter="true" region="center" >
       <div dojoType="dijit.ProgressBar"
           jsId="jsProgressBar" id="downloadProgress" 
           indeterminate="true"
           report="progressReport"
-          style="width: 60%;margin-left:auto; margin-right:auto;""></div>
+          style="width: 10em;margin-left:auto; margin-right:auto;""></div>
     </div>
-    <div dojoType="dijit.layout.ContentPane" sizeShare="50" region="left"> TAM Jukebox - 
-      <a href="http://tekhedd.is-a-geek.net:8000/tamjb.ogg.m3u">Tune In</a> (if I said you can)</div>
+    <div dojoType="dijit.layout.ContentPane" region="left">
+      TAM Jukebox - 
+      <a href="http://tekhedd.is-a-geek.net:8000/tamjb.ogg.m3u">Tune 
+         In</a> (if I said you can)</div>
     <div dojoType="dijit.layout.ContentPane" region="right">
      <button dojoType="dijit.form.Button"
        id="refreshBtn" 
-       style="height:1.1em;"
        onClick="refresh(true);">Refresh</button>
+     <button dojoType="dijit.form.Button"
+       id="logOutBtn" 
+       onClick="onLogOut();">Log Out</button>
     </div>
    </div>
  </div>

@@ -440,6 +440,16 @@ function onLogin()
    jsLoginPopup.show();
 }
 
+function onLogOut()
+{
+   tjb.logout( logOutCallback );
+}
+
+function logOutCallback( result )
+{
+   refresh(true);
+}
+
 ///
 /// Called when the login is complete
 ///

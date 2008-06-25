@@ -73,12 +73,12 @@ namespace byteheaven.tamjb.webgui
          try
          {
             IEngine backend = WebPageBase.backend;
+            WebPageBase.Authenticate( out _userId ); // Don't get logged out!
             if (oldChangeCount == backend.changeCount)
                return new NoChangeStatus();
 
             try 
             {
-               WebPageBase.Authenticate( out _userId );
                return _MakeStatus( WebPageBase.backend );
             }
             catch 
@@ -124,6 +124,11 @@ namespace byteheaven.tamjb.webgui
 
             IEngine backend = WebPageBase.backend;
             backend.IncreaseSuckZenoStyle( _userId, (uint)trackId );
+
+            EngineState engineState = backend.GetState();
+            if (engineState.currentTrack.key == (uint)trackId)
+               backend.ReevaluateCurrentTrack();
+
             return _MakeStatus( backend );
          }
          catch (Exception ex)
@@ -198,6 +203,10 @@ namespace byteheaven.tamjb.webgui
                                                   (uint)moodId, 
                                                   (uint)trackId );
 
+            EngineState engineState = backend.GetState();
+            if (engineState.currentTrack.key == (uint)trackId)
+               backend.ReevaluateCurrentTrack();
+
             return _MakeStatus( backend );
          }
          catch (Exception ex)
@@ -239,7 +248,7 @@ namespace byteheaven.tamjb.webgui
                new FormsAuthenticationTicket( 1, // version 1!
                                               userInfo.id.ToString(),
                                               DateTime.Now,   
-                                              DateTime.Now.AddMinutes(90),
+                                              DateTime.Now.AddMinutes(10),
                                               true, // persistent
                                               userInfo.name, // user data for us
                                               FormsAuthentication.FormsCookiePath );
@@ -265,8 +274,9 @@ namespace byteheaven.tamjb.webgui
       [ JsonRpcMethod("logout") ]
       public void Logout() 
       {
-         Session.Abandon();
+         Console.WriteLine( "LOGOUT?" );
          FormsAuthentication.SignOut();
+         Session.Abandon();
       }
 
       ///

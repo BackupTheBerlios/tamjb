@@ -28,6 +28,7 @@ namespace byteheaven.tamjb.webgui
    using System.Collections;
    using System.Configuration;
    using System.Web;
+   using System.Web.Security;
    using System.Web.UI.WebControls;
 
    using byteheaven.tamjb.Interfaces; // IEngine
@@ -91,6 +92,7 @@ namespace byteheaven.tamjb.webgui
       ///
       public static void Authenticate(out uint userId)
       {
+
          System.Security.Principal.IIdentity identity = 
             HttpContext.Current.User.Identity;
  
@@ -98,6 +100,14 @@ namespace byteheaven.tamjb.webgui
          {
             throw new ApplicationException( "login" );
          }
+
+         if (HttpContext.Current.User.Identity is FormsIdentity)
+         {
+            // Causes a sliding authentication window
+            FormsAuthentication.RenewTicketIfOld( ((FormsIdentity)identity).Ticket );
+         }
+
+         Console.WriteLine( identity.Name );
 
          // If we got here, "It's cool, man"!
          userId = Convert.ToUInt32( identity.Name );
