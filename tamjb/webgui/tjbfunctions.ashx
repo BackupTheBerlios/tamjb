@@ -274,7 +274,6 @@ namespace byteheaven.tamjb.webgui
       [ JsonRpcMethod("logout") ]
       public void Logout() 
       {
-         Console.WriteLine( "LOGOUT?" );
          FormsAuthentication.SignOut();
          Session.Abandon();
       }

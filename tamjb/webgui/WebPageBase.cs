@@ -107,7 +107,7 @@ namespace byteheaven.tamjb.webgui
             FormsAuthentication.RenewTicketIfOld( ((FormsIdentity)identity).Ticket );
          }
 
-         Console.WriteLine( identity.Name );
+         // Console.WriteLine( identity.Name );
 
          // If we got here, "It's cool, man"!
          userId = Convert.ToUInt32( identity.Name );

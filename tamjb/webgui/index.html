@@ -24,7 +24,6 @@
 //   Tom Surace -- tekhedd@byteheaven.net
 //
 -->
-</script>
 <title>T.A.M. Jukebox</title>
 
 <script type="text/javascript" src="tjbfunctions.ashx?proxy"></script>
@@ -56,29 +55,54 @@ body {
   border: 0; padding: 0; margin: 0;
 }
 
-#nowPlayingBox
-{
-  width: 90%;
+#controlsBox {
+  background: lightGreen;
+  border: thin solid black;
   margin-left: auto;
   margin-right: auto;
+  width: 90%;
+}
+
+#nowPlaying {
+  background: 0x303030;
+  width: 100%;
   overflow: hidden;
 }
 
-table.nowPlaying {
-  border: thin solid black;
-  background: 0x303030;
-  width: 100%;
-}
-
-table.nowPlaying tr th {
+#nowPlaying tr th {
   text-align: right;
   width: 4em;
   padding-right: 0.3em; 
   font-weight: bold;
 }
 
+#nowPlaying tr td {
+  width: 100%;
+  background: white;
+  border: thin solid lightGray;
+  padding: 0.01em;
+  padding-left: 0.02em;
+}
+
+#moodTable { /* fills moodBox */
+  width: 46em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#moodTable tr th {
+  text-align: center;
+}
+.moodLabel {
+  font-weight: bold;
+}
+
 #megaSuckBtn {
   background: red;
+}
+
+#title, #artist, #album, #filename {
+  white-space: nowrap;
 }
 
 #loginError {
@@ -90,19 +114,17 @@ button {
   width: 10em;
 }
 
-
 </style>
-
 </head>
 <body class="tundra">
 <div dojoType="dijit.layout.BorderContainer" id="mainFrame">
 
 <div dojoType="dijit.layout.ContentPane" id="content" region="center">
+<div id="controlsBox" dojoType="dijit.layout.ContentPane">
 
- <div id="moodBox" dojoType="dijit.layout.ContentPane">
-  <table class="suckTable">
+ <table id="moodTable" dojoType="dijit.layout.ContentPane">
   <tr>
-    <th>Opinion of</th>
+    <th class="moodLabel">Opinion of</th>
     <td colspan="2"><button dojoType="dijit.form.Button"
        id="login" 
        jsId="jsLogin"
@@ -110,7 +132,7 @@ button {
   </tr>
 
   <tr>
-    <th><span id="suckLevel">-</span>% suck</th>
+    <th class="moodLabel"><span id="suckLevel">-</span>% suck</th>
     <td>
       <button dojoType="dijit.form.Button" id="ruleBtn" jsId="jsRuleBtn">
         Rule
@@ -127,7 +149,7 @@ button {
   </tr>
 
   <tr>
-    <th><span id="moodLevel">-</span>% 
+    <th><span class="moodLabel"><span id="moodLevel">-</span>%</span>
       <button dojoType="dijit.form.Button" id="moodBtn" jsId="jsMoodBtn">
         (current mood)
         <script type="dojo/method" event="onClick">onMood()</script>
@@ -142,12 +164,10 @@ button {
         <script type="dojo/method" event="onClick">onNo()</script>
       </button></td>
   </tr>
-  </table>
- </div>
+ </table>
 
- <div id="nowPlayingBox" dojoType="dijit.layout.ContentPane">
-  <!-- I say this wants a little table -->
-  <table class="nowPlaying">
+ <!-- I say this wants a little table -->
+ <table id="nowPlaying" dojoType="dijit.layout.ContentPane">
   <tr>
     <th>Title</th>
     <td><span id="title"></span> 
@@ -165,8 +185,8 @@ button {
     <th>File</th>
     <td><span id="filename"></span></td>
   </tr>
-  </table>
- </div>
+ </table>
+</div><!-- controlsBox -->
 
  <div dojoType="dijit.TitlePane" open="false"
    title="The Past" style="width:100%">
@@ -214,8 +234,8 @@ button {
   </button>
  </div>
 
- <div id="status" dojoType="dijit.layout.ContentPane" region="top"
-     orientation="horizontal" style="border-bottom: black thick solid;">
+ <div id="status" dojoType="dijit.layout.ContentPane" region="bottom"
+     orientation="horizontal" style="border-bottom: black thin solid;">
    <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:3em;width:100%;">
     <div dojoType="dijit.layout.ContentPane" splitter="true" region="center" >
       <div dojoType="dijit.ProgressBar"
