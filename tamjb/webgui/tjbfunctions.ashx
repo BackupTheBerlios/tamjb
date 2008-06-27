@@ -224,9 +224,15 @@ namespace byteheaven.tamjb.webgui
          if (moodID < 0)
             throw new ArgumentException( "moodID" );
 
-         Console.WriteLine( "NewMood: {0}", moodID );
+         // Console.WriteLine( "NewMood: {0}", moodID );
 
          WebPageBase.backend.SetMood( _userId, (uint)moodID );
+        
+         // Here's yet another thing that should check that the track hasn't
+         // changed since the user set his mood: the mood changed, see if this
+         // track is appropriate to this mood.
+         WebPageBase.backend.ReevaluateCurrentTrack();
+
          return _MakeStatus( WebPageBase.backend );
       }
 

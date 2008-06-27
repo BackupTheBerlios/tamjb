@@ -384,30 +384,30 @@ namespace byteheaven.tamjb.Engine
          _ExecuteNonQuery( query );
       }
 
-      void _CreateUserPrefsTable()
-      {
-         try
-         {
-            _ExecuteNonQuery( "drop table user_prefs" );
-         }
-         catch
-         {
-         }
-
-         //
-         // This table contains one row only, which contains all the
-         // application state for restart. Whee.
-         //
-         // is_playing - 1 if playing, 0 if stopped
-         // compression - compression settings (serialized xml)
-         //
-         string query = 
-            "CREATE TABLE user_prefs ( \n" +
-            "  compression  TEXT NOT NULL\n" +
-            "  )";
-
-         _ExecuteNonQuery( query );
-      }
+//       void _CreateUserPrefsTable()
+//       {
+//          try
+//          {
+//             _ExecuteNonQuery( "drop table user_prefs" );
+//          }
+//          catch
+//          {
+//          }
+// 
+//          //
+//          // This table contains one row only, which contains all the
+//          // preferences for one user?
+//          //
+//          // is_playing - 1 if playing, 0 if stopped
+//          // compression - compression settings (serialized xml)
+//          //
+//          string query = 
+//             "CREATE TABLE user_prefs ( \n" +
+//             "  compression  TEXT NOT NULL\n" +
+//             "  )";
+// 
+//          _ExecuteNonQuery( query );
+//       }
 
       ///
       /// Store the user's preferences.

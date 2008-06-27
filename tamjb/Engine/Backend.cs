@@ -1482,6 +1482,10 @@ namespace byteheaven.tamjb.Engine
             return false;       // not in the mood
          }
 
+         _Trace( String.Format( 
+                    " Accepted. suck:{0}, suckThresh:{1}, mood:{2}, moodThresh{3}",
+                    avgSuck, suckThresh, avgMood, moodThresh ));
+
          info.evaluation = TrackEvaluation.ALL_GOOD;
          return true;           // good enough
       }

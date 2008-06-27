@@ -54,7 +54,6 @@ var g_timer;
 var g_moodDlg;
 
 // Variables to handle background refresh
-var g_waitingForRefresh = false;
 var g_refreshAgain = false;
 
 function index_init() {
@@ -99,59 +98,66 @@ function refresh(force) {
    if (force)
       g_currentTrackStatus.changeCount = -1;
 
-   // Prevent overlapping refresh calls.
-   // Note: assumes javascript is not reentrant. It isn't, right?
-   if (g_waitingForRefresh)
-   {
-      g_refreshAgain = true;
-      return;
-   }
-
    // really this is unlikely to fail, but we don't want to lose the
    // background refresh ever!
    try
    {
+      // Don't want refresh to happen while we're refreshing.
       if (g_timer) clearTimeout(g_timer);
 
       startUpdate("Refreshing all");
-      g_waitingForRefresh = true;
-      tjb.getStatus( g_currentTrackStatus.changeCount, refreshCallback );
+      var status = tjb.getStatus( g_currentTrackStatus.changeCount );
+      updateNowPlaying( status );
    }
-   catch(err)
+   catch (response_error)
    {
-      // Don't give up!
-      g_waitingForRefresh = false;
-      g_timer = setTimeout("refresh()",30000);
-
-      finishUpdate();
-   }
-}
-
-function refreshCallback( response ) {
-   try
-   {
-      if (response.error)
+      var exceptionType;
+      if (response_error.errors.length > 0) {
+         exceptionType = response_error.errors[0].name;
+      }
+  
+      var message = response_error.message;
+      if ("ApplicationException" == exceptionType && "login" == message) 
       {
-         alertErrorResponse(response);
+         // Redirect to login page the ugly way, for now.
+         jsLoginPopup.show();
          return;
       }
-
-      if (response.result)
-         updateNowPlaying(response.result);
    }
    finally
    {
-      g_waitingForRefresh = false;
+      // Don't give up!
       g_timer = setTimeout("refresh()",15000);
+
       finishUpdate();
    }
-
-   // Did state change while we were refreshing? *sigh*
-   if (g_refreshAgain) {
-      g_refreshAgain = false;
-      refresh();
-   }
 }
+
+// function refreshCallback( response ) {
+//    try
+//    {
+//       if (response.error)
+//       {
+//          alertErrorResponse(response);
+//          return;
+//       }
+
+//       if (response.result)
+//          updateNowPlaying(response.result);
+//    }
+//    finally
+//    {
+//       g_waitingForRefresh = false;
+//       g_timer = setTimeout("refresh()",15000);
+//       finishUpdate();
+//    }
+
+//    // Did state change while we were refreshing? *sigh*
+//    if (g_refreshAgain) {
+//       g_refreshAgain = false;
+//       refresh();
+//    }
+// }
 
 function alertErrorResponse(response)
 {
@@ -258,7 +264,10 @@ function onTransportCtrlFinished(response) {
          return;
       }
 
-      updateNowPlaying(response.result);
+      if (response.result)
+      {
+         updateNowPlaying(response.result);
+      }
    }
    finally
    {

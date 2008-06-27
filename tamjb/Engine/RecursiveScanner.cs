@@ -173,11 +173,15 @@ namespace byteheaven.tamjb.Engine
          
          if ((null == tag.tit2) || (tag.tit2.Length == 0))
          {
-            _Trace( "Song title is empty, skipping: '"
-                    + path 
+            // Match anything after the last forward/backslash
+            string basename = Path.GetFileName( path );
+            Debug.Assert( null != basename, "All files have names!" );
+            Debug.Assert( basename.Length > 0, "All files have names!" );
+            _Trace( "Song title is empty, using file name: '"
+                    + basename 
                     + "'" );
             
-            return;
+            tag.tit2 = basename;
          }
 
          string genre = tag.DefaultGenre;
