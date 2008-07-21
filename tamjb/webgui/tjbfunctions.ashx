@@ -64,7 +64,8 @@ namespace byteheaven.tamjb.webgui
    {
       ///
       /// Gets the current status as a StatusBase struct.
-      /// pass -1 as oldChangeCount to force refresh, otherwise will return
+      /// \param oldChangeCount is the change count the client currently
+      /// has. Pass -1 as oldChangeCount to force refresh, otherwise will return
       /// a "nothing changed" status if the index has not changed.
       ///
       [ JsonRpcMethod("getStatus") ]
@@ -260,6 +261,7 @@ namespace byteheaven.tamjb.webgui
                                               FormsAuthentication.FormsCookiePath );
 
             // Encrypt the ticket.
+            Console.WriteLine( "TICKET: {0}", ticket.ToString() );
             string encTicket = FormsAuthentication.Encrypt( ticket );
 
             // Create the cookie.
