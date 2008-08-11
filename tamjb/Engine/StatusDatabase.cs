@@ -69,6 +69,25 @@ namespace byteheaven.tamjb.Engine
          MISSING
       }
 
+// Note for future generations
+// This query retrieves all songs that user "2" doesn't think suck, including
+// those for which there is no suck database entry. Whee.
+#if QQQ
+
+select path from (
+select file_path as path, song_suck.user_id as id, song_suck.value as suck from file_info
+ left outer join song_suck on file_info.filekey=song_suck.track_ref
+)
+  WHERE
+   ( suck IS NULL
+     OR suck < 2500 )
+  AND 
+   ( id IS NULL
+     OR id = 2 )
+ ;
+
+#endif
+
       ///
       /// Creates the database wrapper.
       ///

@@ -1,5 +1,5 @@
 #!/bin/sh
 
-esdmon | ices2 /home/tekhedd/tamjb-trunk/tamjb/misc/ices.xml 
+esdmon | ices2 /home/tekhedd/tamjb-hg/tamjb/misc/ices.xml 
 
 
