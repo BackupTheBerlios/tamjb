@@ -131,6 +131,7 @@ namespace byteheaven.tamjb.Server
          uint bufferSize = 44100 / 4;
          uint bufferCount = 30;
          string connectionString = null;
+         string metadataProgram = null;
 
          // Config file processing
          try
@@ -164,6 +165,15 @@ namespace byteheaven.tamjb.Server
          {
             Console.WriteLine( "ConnectionString not found in config file" );
             return 1;
+         }
+
+         metadataProgram = 
+            ConfigurationManager.AppSettings["MetadataProgram"];
+
+         if (null == metadataProgram)
+         {
+            Console.WriteLine( "MetadataProgram not found in config file, will not use." );
+            metadataProgram = String.Empty;
          }
 
          // Command line processing
@@ -277,7 +287,8 @@ namespace byteheaven.tamjb.Server
             Backend.Init( QUEUE_MIN_SIZE, 
                           _connectionString, 
                           quality,
-                          compression );
+                          compression,
+                          metadataProgram );
 
             int desiredQueueSize = 20;
             try

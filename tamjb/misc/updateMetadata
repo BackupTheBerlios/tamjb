@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+# Helper for tamjb that updates ices metadata
+
+use strict;
+use warnings;
+
+
+my $theFile = '/var/tmp/tamjb.metadata';
+my $pidFile = '/home/tekhedd/ices.pid';
+
+# Metadata is on the command line in the form:
+#  artist='Artist Name' title='Title' etc.
+
+open (THEFILE, ">$theFile") or die;
+
+foreach my $arg (@ARGV)
+{
+  my ($name, $value) = split( '=', $arg );
+
+  if ('artist' eq $name)
+  {
+    print THEFILE "artist=$value\n";
+  }
+  elsif ('title' eq $name)
+  {
+    print THEFILE "title=$value\n";
+  }
+}
+
+close THEFILE;
+
+
+# Now send a signal to ices
+open (ICES_PID, $pidFile) or die "ICES2 Pid File not found.";
+
+my ($pid) = <ICES_PID>;
+die "ICES2 Pid file is empty" if not $pid;
+
+close ICES_PID;
+
+`/bin/kill -s SIGUSR1 $pid`;
+
+exit 0;

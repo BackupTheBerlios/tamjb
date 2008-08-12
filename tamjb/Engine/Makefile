@@ -31,6 +31,7 @@ SOURCES = AssemblyInfo.cs \
 	SoftKneeDevice.cs \
         StatusDatabase.cs \
 	StereoCrossover.cs \
+	MetadataSender.cs \
         MultiBandCompressor.cs
 
 #

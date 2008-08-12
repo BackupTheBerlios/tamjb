@@ -178,12 +178,14 @@ namespace byteheaven.tamjb.Engine
       public static void Init( int desiredQueueSize,
                                string connectionString,
                                Quality qualityLevel,
-                               CompressionType compressType )
+                               CompressionType compressType,
+                               string metadataProgram )
       {
          _theBackend = new Backend( desiredQueueSize, 
                                     connectionString,
                                     qualityLevel,
-                                    compressType );
+                                    compressType,
+                                    metadataProgram );
       }
 
       ///
@@ -194,7 +196,8 @@ namespace byteheaven.tamjb.Engine
       public Backend( int desiredQueueSize, 
                       string connectionString,
                       Quality qualityLevel,
-                      Backend.CompressionType compressionType )
+                      Backend.CompressionType compressionType,
+                      string metadataFileName )
       {
          _Trace( "[Backend]" );
 
@@ -207,6 +210,8 @@ namespace byteheaven.tamjb.Engine
             throw new ApplicationException( "Engine is not properly initialized by the server" );
 
          _database = new StatusDatabase( _connectionString );
+
+         _metadataSender = new MetadataSender( metadataFileName );
 
          // Todo: initialize compressor from stored settings in database
          _compressor = _LoadCompressor();
@@ -725,6 +730,9 @@ namespace byteheaven.tamjb.Engine
                   _player.SetNextFile( nextFile.filePath, nextFile.key );
 
                _shouldBePlaying = true;
+
+               // update metadata for streaming engine
+               _metadataSender.Update( nextFile );
                break;
             }
             else
@@ -1870,6 +1878,8 @@ namespace byteheaven.tamjb.Engine
       Quality _qualityLevel = Quality.HIGH;
 
       Backend.CompressionType _compressionType = CompressionType.MULTIBAND;
+
+      MetadataSender _metadataSender;
    }
 } // tam namespace
 
