@@ -38,6 +38,6 @@ die "ICES2 Pid file is empty" if not $pid;
 
 close ICES_PID;
 
-`/bin/kill -s SIGUSR1 $pid`;
+kill( 10, $pid );
 
 exit 0;
