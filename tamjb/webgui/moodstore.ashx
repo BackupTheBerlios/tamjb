@@ -28,7 +28,8 @@ namespace byteheaven.tamjb.webgui
    }
 
    ///
-   /// Jayrock interface to T.A.M. Jukebox
+   /// JSon storage for Mood data. Designed to work with
+   /// Dojo...
    ///
    public class MoodStore : IHttpHandler
    {

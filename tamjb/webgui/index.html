@@ -210,6 +210,10 @@ button {
    <button dojoType="dijit.form.Button" 
      onclick="onMoodSelectClick();">Select</button> 
    <button dojoType="dijit.form.Button" 
+     onclick="showMoodDialog();">New</button> 
+   <button dojoType="dijit.form.Button" 
+     onclick="onDelMoodClick();">Delete</button> 
+   <button dojoType="dijit.form.Button" 
      onclick="jsMoodPopup.hide();">Cancel</button> 
  </div>
 
@@ -231,6 +235,24 @@ button {
   <br />
   <button dojoType="dijit.form.Button" id="loginBtn"
      onclick="onIdentify" >Identify
+  </button>
+ </div>
+
+ <div dojoType="dijit.Dialog" id="moodCreatePopup" title="Create Mood" 
+   jsId="jsMoodCreatePopup"
+   style="display:none;"
+   >
+  Turn down the lights, set the mood. Promptage here.
+  <br />
+  Name:
+  <div dojoType="dijit.form.ValidationTextBox" id="moodNameBox" 
+     regExp=".+"
+     required="true"
+     invalidMessage="Name your mood"
+     columns="20" ></div>
+  <br />
+  <button dojoType="dijit.form.Button" id="createBtn"
+     onclick="onMoodCreateClick" >Create
   </button>
  </div>
 

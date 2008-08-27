@@ -286,6 +286,21 @@ namespace byteheaven.tamjb.webgui
          Session.Abandon();
       }
 
+      [ JsonRpcMethod("createMood") ]
+      public int CreateMood( string moodName )
+      {
+         WebPageBase.Authenticate( out _userId );
+         Mood newMood = WebPageBase.backend.CreateMood( _userId, moodName );
+         return (int)newMood.id;
+      }
+
+      [ JsonRpcMethod("deleteMood") ]
+      public void DeleteMood( int moodId )
+      {
+         WebPageBase.Authenticate( out _userId );
+         WebPageBase.backend.DeleteMood( _userId, (uint)moodId );
+      }
+
       ///
       /// Sets the suck and mood values for the supplied status structure
       /// by querying the back end. Assumes status.nowPlaying.key is set.

@@ -757,6 +757,109 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                dbcon.Dispose();
             }
          }
+      }
+
+      public void DeleteMood( uint userId,
+                              uint moodId )
+      {
+         _DeleteMood( userId, moodId );
+         _DeleteSongMoodData( moodId );
+      }
+
+      void _DeleteSongMoodData( uint moodId )
+      {
+         // Delete all of this user's mood data
+         string query = _FixQuery( 
+            "DELETE FROM song_mood "
+            + "WHERE mood_id=:moodId"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+
+            IDbDataParameter p2 = _NewParameter( "moodId", DbType.Int32 );
+            p2.Value = moodId;
+            cmd.Parameters.Add( p2 );
+
+            cmd.ExecuteNonQuery();
+            return;
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
+
+         throw new ApplicationException( "not reached" );
+      }
+
+      void _DeleteMood( uint userId, uint moodId )
+      {
+         // Delete all of this user's mood data
+         string query = _FixQuery( 
+            "DELETE FROM mood "
+            + "WHERE user_id=:userId AND id=:moodId"
+            );
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _GetDbConnection();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+
+            // Should I be using mono's generic database wrapper?
+            IDbDataParameter param = _NewParameter( "userId",
+                                                    DbType.Int32 );
+            param.Value = userId;
+            cmd.Parameters.Add( param );
+
+            IDbDataParameter p2 = _NewParameter( "moodId", DbType.Int32 );
+            p2.Value = moodId;
+            cmd.Parameters.Add( p2 );
+
+            cmd.ExecuteNonQuery();
+            return;
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
+            {
+               cmd.Dispose();
+            }
+
+            if (null != dbcon)
+            {
+               dbcon.Close();
+               dbcon.Dispose();
+            }
+         }
 
          throw new ApplicationException( "not reached" );
       }

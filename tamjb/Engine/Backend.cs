@@ -1652,6 +1652,22 @@ namespace byteheaven.tamjb.Engine
          }
       }
 
+      public void DeleteMood( uint userId, uint moodId )
+      {
+         lock (_serializer)
+         {
+            try
+            {
+               _database.DeleteMood( userId, moodId );
+            }
+            catch (Exception e)
+            {
+               Console.WriteLine( "{0}", e );
+               throw;
+            }
+         }
+      }
+
       public UserInfo RenewLogon( uint userId )
       {
          lock (_serializer)

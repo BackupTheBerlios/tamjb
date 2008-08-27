@@ -352,6 +352,11 @@ namespace byteheaven.tamjb.Engine
          return Backend.theBackend.CreateMood( userId, name );
       }
 
+      public void DeleteMood( uint userId, uint moodId )
+      {
+         Backend.theBackend.DeleteMood( userId, moodId );
+      }
+
       public UserInfo RenewLogon( uint userId )
       {
          return Backend.theBackend.RenewLogon( userId );

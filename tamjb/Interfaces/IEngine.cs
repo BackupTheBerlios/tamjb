@@ -81,6 +81,11 @@ namespace byteheaven.tamjb.Interfaces
       Mood CreateMood( uint userId, string name );
 
       ///
+      /// Delete a mood
+      ///
+      void DeleteMood( uint userId, uint moodId );
+
+      ///
       /// Reset a logon so it won't time out. we hope!
       ///
       /// \return info if the logon was renewed, null if it timed out,

@@ -112,7 +112,9 @@ function refresh(force) {
    catch (response_error)
    {
       var exceptionType;
-      if (response_error.errors.length > 0) {
+      if (response_error && response_error.errors 
+          && (response_error.errors.length > 0)) 
+      {
          exceptionType = response_error.errors[0].name;
       }
   
@@ -424,6 +426,71 @@ function onMoodSelectClick()
 
    var moodID = jsMoodGrid.model.getDatum( row, 0 );
    _setMood( moodID );
+}
+
+function showMoodDialog()
+{
+   // Always called from the modal mood dialog. Hide that
+   jsMoodPopup.hide();
+   dijit.byId("moodNameBox").setValue("");
+   jsMoodCreatePopup.show();
+}
+
+function onMoodCreateClick()
+{
+   // Create mood here.
+   var moodName = dijit.byId("moodNameBox").getValue();
+   var moodId = tjb.createMood( moodName );
+
+   jsMoodCreatePopup.hide();
+
+   _initMoodGrid();             // mood list changed.
+
+   // select the newly created mood.
+   _setMood( moodId );
+}
+
+function onDelMoodClick()
+{
+   var row = jsMoodGrid.selection.getFirstSelected();
+   if (row < 0)
+      return;
+
+   var moodID = jsMoodGrid.model.getDatum( row, 0 );
+   var moodName = jsMoodGrid.model.getDatum( row, 1 );
+
+   startUpdate( "Deleting mood" );
+
+   // TODO: prompt with dialog here?
+   tjb.deleteMood( moodID );
+   _initMoodGrid();
+   finishUpdate();
+}
+
+// Helper for add/delete mood
+function _onMoodModifyFinished()
+{
+   try
+   {
+      if (response.error) {
+         alertErrorResponse(response);
+         return;
+      }
+
+      if (response.result)
+      {
+         _initMoodGrid();          // refresh mood list 
+      }
+   }
+   finally
+   {
+      finishUpdate();
+   }
+}
+
+function _refreshMoodList()
+{
+   
 }
 
 function _setMood(moodID)
