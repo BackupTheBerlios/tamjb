@@ -58,7 +58,9 @@ namespace byteheaven.tamjb.Engine
          Process metadataProcess =
             Process.Start( _program,
                            " artist='" + _Escape(nowPlaying.artist) +
-                           "' title='" + _Escape(nowPlaying.title) + "'" );
+                           "' title='" + _Escape(nowPlaying.title) +
+                           "' album='" + _Escape(nowPlaying.album) + "'"
+                           );
 
          if (!metadataProcess.WaitForExit( 10000 ))
          {

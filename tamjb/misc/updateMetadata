@@ -25,6 +25,10 @@ foreach my $arg (@ARGV)
   {
     print THEFILE "title=$value\n";
   }
+  elsif ('album' eq $name)
+  {
+    print THEFILE "album=$value\n";
+  }
 }
 
 close THEFILE;
