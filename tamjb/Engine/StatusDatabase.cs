@@ -1,8 +1,7 @@
 /// \file
-/// $Id$
-///
+/// 
 
-// Copyright (C) 2004-2007 Tom Surace.
+// Copyright (C) 2004-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -31,6 +30,7 @@ using System.Diagnostics;
 using System.IO;                // Directory functions
 using System.Text.RegularExpressions;
 using System.Text;
+using System.Threading;
 
 #if USE_FIREBIRD
 using FirebirdSql.Data.Firebird;
@@ -99,10 +99,26 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
 
          _connectionString = dbConnectionString;
 
+#if USE_SQLITE
+         _dbcon = new SqliteConnection( _connectionString );
+#elif USE_POSTGRESQL
+         _dbcon = new NpgsqlConnection( _connectionString );
+#elif USE_MYSQL
+         _dbcon = new MySqlConnection( _connectionString );
+#else
+#error No database type found
+#endif
+
       }
 
       ~StatusDatabase()
       {
+         if (null != _dbcon)
+         {
+            _dbcon.Close();
+            _dbcon.Dispose();
+         }
+
          _Trace( "[~StatusDatabase]" );
       }
 
@@ -133,18 +149,6 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          GetUser( "guest", out guest );
 
          CreateMood( guest.id, "unknown" );
-
-         // Default settings (will only be UPDATEd from now on)
-         string query = 
-            "INSERT INTO settings ( \n" +
-            "  compression )\n" +
-            " VALUES (\n" +
-            "  'unknown', ''\n" +
-            " )"
-            ;
-
-         _ExecuteNonQuery( query );
-
       }
 
       ///
@@ -173,7 +177,8 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             "  track INTEGER," +
             "  genre VARCHAR(80)," +
             "  length_seconds INTEGER," +
-            "  status INTEGER" +
+            "  status INTEGER," +
+            "  play_count INTEGER DEFAULT 0" +
             "  )";
 
 #elif USE_MYSQL
@@ -188,9 +193,10 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             "  album VARCHAR(255),\n" +
             "  title VARCHAR(255),\n" +
             "  track INTEGER,\n" +
-            "  genre VARCHAR(80)\n," +
+            "  genre VARCHAR(80),\n," +
             "  length_seconds INTEGER,\n," +
-            "  status INTEGER\n" +
+            "  status INTEGER,\n" +
+            "  play_count INTEGER\n" +
             "  PRIMARY KEY ( filekey )\n" +
             "  ) \n" +
             " TYPE=InnoDB";
@@ -210,6 +216,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
               genre VARCHAR(80),
               length_seconds INTEGER,
               status INTEGER,
+              play_count INTEGER DEFAULT 0,
               PRIMARY KEY ( filekey )
               )";
 
@@ -386,13 +393,10 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          // This table contains one row only, which contains all the
          // application state for restart. Whee.
          //
-         // is_playing - 1 if playing, 0 if stopped
-         // compression - compression settings (serialized xml)
-         //
          string query = 
             "CREATE TABLE user_prefs ( \n" +
-            "  userid INTEGER PRIMARY KEY NOT NULL\n" +
-            "  prefs  TEXT NOT NULL\n" +
+            "  userid INTEGER PRIMARY KEY NOT NULL,\n" +
+            "  xmlPrefs TEXT NOT NULL\n" +
             "  )";
 
          _ExecuteNonQuery( query );
@@ -441,15 +445,14 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
 
          string query = _FixQuery(
             "UPDATE user_prefs"
-            + " SET prefs = :prefs"
+            + " SET xmlPrefs = :prefs"
             + " WHERE userid = :user"
             );
 
-         IDbConnection dbcon = null;
+         IDbConnection dbcon = _LockDb();
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -464,7 +467,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (0 >= cmd.ExecuteNonQuery()) // No rows updated. Try insert.
             {
                query = _FixQuery(
-                  "INSERT INTO user_prefs ( userid, prefs )"
+                  "INSERT INTO user_prefs ( userid, xmlPrefs )"
                   + " VALUES ( :user, :prefs )"
                   );
 
@@ -483,11 +486,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
       }
 
@@ -554,102 +553,102 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
 //       }
 
 
-      ///
-      ///
-      ///
-      public void StoreCompressSettings( string xml )
-      {
-         string query = _FixQuery( 
-            "UPDATE settings "
-            + " SET compression = :compression"
-            );
+//       ///
+//       ///
+//       ///
+//       public void StoreCompressSettings( string xml )
+//       {
+//          string query = _FixQuery( 
+//             "UPDATE settings "
+//             + " SET compression = :compression"
+//             );
 
-         IDbConnection dbcon = null;
-         IDbCommand cmd = null;
-         try
-         {
-            dbcon = _GetDbConnection();
-            cmd = dbcon.CreateCommand();
-            cmd.CommandText = query;
-
-
-            // Should I be using mono's generic database wrapper?
-            IDbDataParameter param = _NewParameter( "compression",
-                                                    DbType.String );
-            param.Value = xml;
-            cmd.Parameters.Add( param );
-
-            cmd.ExecuteNonQuery();
-            return;
-         }
-         catch (Exception e)
-         {
-            // Pass along the exception with the query added
-            _Rethrow( query, e );
-         }
-         finally
-         {
-            if (null != cmd)
-            {
-               cmd.Dispose();
-            }
-
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
-         }
-
-         throw new ApplicationException( "not reached" );
-      }
+//          IDbConnection dbcon = null;
+//          IDbCommand cmd = null;
+//          try
+//          {
+//             dbcon = _GetDbConnection();
+//             cmd = dbcon.CreateCommand();
+//             cmd.CommandText = query;
 
 
-      public string GetCompressSettings()
-      {
-         string query = "SELECT compression FROM settings";
+//             // Should I be using mono's generic database wrapper?
+//             IDbDataParameter param = _NewParameter( "compression",
+//                                                     DbType.String );
+//             param.Value = xml;
+//             cmd.Parameters.Add( param );
 
-         IDbConnection dbcon = null;
-         IDbCommand cmd = null;
-         IDataReader reader = null;
-         try
-         {
-            dbcon = _GetDbConnection();
-            cmd = dbcon.CreateCommand();
-            cmd.CommandText = query;
-            reader = cmd.ExecuteReader();
+//             cmd.ExecuteNonQuery();
+//             return;
+//          }
+//          catch (Exception e)
+//          {
+//             // Pass along the exception with the query added
+//             _Rethrow( query, e );
+//          }
+//          finally
+//          {
+//             if (null != cmd)
+//             {
+//                cmd.Dispose();
+//             }
 
-            if (!reader.Read())
-               return null;     // NOT FOUND
+//             if (null != dbcon)
+//             {
+//                dbcon.Close();
+//                dbcon.Dispose();
+//             }
+//          }
 
-            return reader.GetString(0); 
-         }
-         catch (Exception e)
-         {
-            _Rethrow( query, e );
-         }
-         finally
-         {
-            if (null != reader)
-            {
-               reader.Close();
-               reader.Dispose();
-            }
+//          throw new ApplicationException( "not reached" );
+//       }
 
-            if (null != cmd)
-            {
-               cmd.Dispose();
-            }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
-         }
+//       public string GetCompressSettings()
+//       {
+//          string query = "SELECT compression FROM settings";
 
-         throw new ApplicationException( "not reached" );
-      }
+//          IDbConnection dbcon = null;
+//          IDbCommand cmd = null;
+//          IDataReader reader = null;
+//          try
+//          {
+//             dbcon = _GetDbConnection();
+//             cmd = dbcon.CreateCommand();
+//             cmd.CommandText = query;
+//             reader = cmd.ExecuteReader();
+
+//             if (!reader.Read())
+//                return null;     // NOT FOUND
+
+//             return reader.GetString(0); 
+//          }
+//          catch (Exception e)
+//          {
+//             _Rethrow( query, e );
+//          }
+//          finally
+//          {
+//             if (null != reader)
+//             {
+//                reader.Close();
+//                reader.Dispose();
+//             }
+
+//             if (null != cmd)
+//             {
+//                cmd.Dispose();
+//             }
+
+//             if (null != dbcon)
+//             {
+//                dbcon.Close();
+//                dbcon.Dispose();
+//             }
+//          }
+
+//          throw new ApplicationException( "not reached" );
+//       }
 
       ///
       /// Create a user with this name. Doesn't give you the ID
@@ -669,7 +668,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -698,11 +697,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -721,7 +716,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -751,11 +746,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
       }
 
@@ -778,7 +769,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -802,11 +793,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -824,7 +811,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -854,11 +841,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -878,7 +861,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
             reader = cmd.ExecuteReader();
@@ -910,11 +893,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -943,7 +922,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -981,11 +960,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1004,7 +979,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1040,11 +1015,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1064,7 +1035,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1102,11 +1073,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1131,7 +1098,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1169,11 +1136,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1201,7 +1164,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1244,11 +1207,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1273,7 +1232,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1311,11 +1270,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1340,7 +1295,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
       {
          string query = 
             "SELECT file_path, artist, album, title, track,"
-            + " genre, length_seconds, status" 
+            + " genre, length_seconds, status, play_count" 
             + " FROM file_info"
             + " WHERE filekey = " + key 
             ;
@@ -1350,7 +1305,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1375,6 +1330,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                returnData.lengthInSeconds = reader.GetInt32(6);
                returnData.status = 
                   (byteheaven.tamjb.Interfaces.TrackStatus)reader.GetInt32(7);
+               returnData.playCount = (uint)reader.GetInt32(8);
 
                Console.WriteLine( "HHH {0}:{1}", returnData.status, reader.GetInt32(7) );
             }
@@ -1398,11 +1354,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
          
          throw new ApplicationException( "not reached" );
@@ -1443,7 +1395,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1490,11 +1442,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
       }
 
@@ -1546,6 +1494,9 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
 
       ///
       /// Chooses a random track without considering mood or suck
+      ///
+      /// Note: this does consider song frequency. It ignores the 
+      /// most-played 20%...
       /// 
       /// \return count of tracks in the file_info table
       ///
@@ -1561,7 +1512,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
 
             query = "SELECT count(*) FROM file_info"
                + " WHERE status='" + (int)TrackStatus.OK + "'";
@@ -1572,6 +1523,9 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             // Returns the first parameter, the number of rows:
             object countObj = cmd.ExecuteScalar();
             count = Convert.ToUInt32( countObj );
+
+            // ignore the last x percent. TODO: should be configurable
+            count = (uint)((double)count * 0.80); 
 
             if (count < 1)
                return count;       // ** quick exit **
@@ -1585,9 +1539,10 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
 
             query =
                "SELECT file_path, artist, album, title, track,"
-               + " genre, length_seconds, filekey" 
+               + " genre, length_seconds, filekey, play_count" 
                + " FROM file_info"
                + " WHERE status='" + (int)TrackStatus.OK + "'"
+               + " ORDER BY play_count ASC"
                + " LIMIT 1 OFFSET " + offset;
                
             // _Trace( query );
@@ -1612,6 +1567,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             trackData.genre = reader.GetValue(5).ToString();
             trackData.lengthInSeconds = reader.GetInt32(6);
             trackData.key = (uint)reader.GetInt32(7);
+            trackData.playCount = (uint)reader.GetInt32(8);
          }
          catch (Exception e)
          {
@@ -1628,11 +1584,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          return count;
@@ -1655,11 +1607,11 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
 
             query =
                "SELECT file_path, artist, album, title, track,"
-               + " genre, length_seconds, filekey" 
+               + " genre, length_seconds, filekey, play_count" 
                + " FROM file_info"
                + " WHERE status='" + (int)TrackStatus.OK + "'"
 	       + " AND artist=:artist"
@@ -1698,6 +1650,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             trackData.genre = reader.GetValue(5).ToString();
             trackData.lengthInSeconds = reader.GetInt32(6);
             trackData.key = (uint)reader.GetInt32(7);
+            trackData.playCount = (uint)reader.GetInt32(8);
 
 	    return trackData;
          }
@@ -1716,11 +1669,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
 	 Debug.Assert( false, "not reached" );
@@ -1782,7 +1731,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          {
             // _Trace( query );
 
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1812,11 +1761,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          return count;
@@ -1838,7 +1783,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          {
             // _Trace( query );
 
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1857,11 +1802,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -1965,7 +1906,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -1997,11 +1938,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          return value;
@@ -2054,7 +1991,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -2085,11 +2022,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          return value;
@@ -2146,7 +2079,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDataReader reader = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -2177,11 +2110,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          return value;
@@ -2218,7 +2147,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -2244,11 +2173,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          return false;
@@ -2266,7 +2191,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -2297,11 +2222,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
       }
 
@@ -2318,7 +2239,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = query;
 
@@ -2347,11 +2268,53 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
                cmd.Dispose();
             }
 
-            if (null != dbcon)
+            _ReleaseDb( dbcon );
+         }
+      }
+
+      ///
+      /// Increments the play count for a track. I have no idea what
+      /// happems when the play count reaches max_int.
+      ///
+      public void IncrementPlayCount( uint key )
+      {
+         string query = _FixQuery( 
+            "UPDATE file_info" 
+            + " SET play_count = play_count + 1"
+            + " WHERE filekey=:filekey"
+            );
+
+         // + " (select play_count from file_info where filekey=:filekey) + 1"
+
+         IDbConnection dbcon = null;
+         IDbCommand cmd = null;
+         try
+         {
+            dbcon = _LockDb();
+            cmd = dbcon.CreateCommand();
+            cmd.CommandText = query;
+
+            // Should I be using mono's generic database wrapper?
+            IDbDataParameter param = _NewParameter( "filekey",
+                                                    DbType.Int32 );
+            param.Value = (int)key;
+            cmd.Parameters.Add( param );
+
+            cmd.ExecuteNonQuery();
+         }
+         catch (Exception e)
+         {
+            // Pass along the exception with the query added
+            _Rethrow( query, e );
+         }
+         finally
+         {
+            if (null != cmd)
             {
-               dbcon.Close();
-               dbcon.Dispose();
+               cmd.Dispose();
             }
+
+            _ReleaseDb( dbcon );
          }
       }
 
@@ -2365,7 +2328,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
          IDbCommand cmd = null;
          try
          {
-            dbcon = _GetDbConnection();
+            dbcon = _LockDb();
             cmd = dbcon.CreateCommand();
             cmd.CommandText = sqlString;
             return cmd.ExecuteNonQuery();
@@ -2379,11 +2342,7 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
             if (null != cmd)
                cmd.Dispose();
 
-            if (null != dbcon)
-            {
-               dbcon.Close();
-               dbcon.Dispose();
-            }
+            _ReleaseDb( dbcon );
          }
 
          throw new ApplicationException( "not reached" );
@@ -2398,32 +2357,45 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
       }
 
       ///
-      /// Close/Dispose of the returned object, OK?
+      /// When done, be sure to pass the returned object to 
+      /// _ReleaseDbConnection. If you forget, *bad* things will happen.
       ///
-      IDbConnection _GetDbConnection()
+      IDbConnection _LockDb()
       {
-         // Perhaps the one incredibly asinine thing about .NET: you have
-         // to hardcode the type of database you are connecting to. Could
-         // this be an intentional mistake? Hah.
+         if (!Monitor.TryEnter( _myLock, 15000 )) // 15s is plenty
+         {
+            throw new ApplicationException( 
+               "Timed out trying to lock the database" );
+         }
+
          try
          {
-#if USE_SQLITE
-            IDbConnection dbcon = new SqliteConnection( _connectionString );
-#elif USE_POSTGRESQL
-            IDbConnection dbcon = new NpgsqlConnection( _connectionString );
-#elif USE_MYSQL
-            IDbConnection dbcon = new MySqlConnection( _connectionString );
-#else
-#error No database type found
-#endif
-            dbcon.Open();
-            return dbcon;
+            if (ConnectionState.Broken == _dbcon.State)
+               _dbcon.Close();
+
+            if (ConnectionState.Open != _dbcon.State)
+            {
+               // Get rid of any compiled queries here.
+
+               _dbcon.Open();
+            }
+
+            return _dbcon;
          }
          catch (Exception e)
          {
             throw new ApplicationException( 
                "Problem connecting to database: " + _connectionString, e );
          }
+      }
+
+      ///
+      /// Called to clean up resources allocated by _LockDb. 
+      /// Parameter may be null.
+      ///
+      void _ReleaseDb( IDbConnection dbcon )
+      {
+         Monitor.Exit( _myLock );
       }
 
       ///
@@ -2483,12 +2455,19 @@ select file_path as path, song_suck.user_id as id, song_suck.value as suck from 
       ///
       string _connectionString;
 
+      ///
+      /// Connection to our database
+      ///
+      IDbConnection _dbcon;
+
       //
       // These are chosen to mostly match the max/min that will be 
       // 100% accepted. For now
       //
       uint _defaultSuckValue        = 01000; // Doesn't suck really
       uint _defaultAppropriateValue = 09000; // Mostly all good
+
+      object _myLock = new object(); // sqlite isn't "really" thread safe.
    }
 }
 

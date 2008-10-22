@@ -216,6 +216,7 @@ function updateNowPlaying(status)
    }
 
    dojo.byId("trackId").innerHTML = status.nowPlaying.key;
+   dojo.byId("playCount").innerHTML = status.nowPlaying.playCount;
    dojo.byId("title").innerHTML = status.nowPlaying.title;  
    dojo.byId("artist").innerHTML = status.nowPlaying.artist;
    dojo.byId("album").innerHTML = status.nowPlaying.album;

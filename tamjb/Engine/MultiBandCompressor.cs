@@ -2,7 +2,7 @@
 /// $Id$
 ///
 
-// Copyright (C) 2004-2007 Tom Surace.
+// Copyright (C) 2004-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -70,9 +70,9 @@ namespace byteheaven.tamjb.Engine
 
 
          // Default levels:
-         compressThresholdBass = 12000;
-         compressThresholdMid = 7000;
-         compressThresholdTreble = 4500;
+         compressThresholdBass = 9000;    // 12000
+         compressThresholdMid = 5775;     //  7000
+         compressThresholdTreble = 3375;  //  4500
 
          // Allow overshoot in the limiter, as long as we are using
          // soft clipping.

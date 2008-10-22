@@ -4,7 +4,7 @@
 /// Track Information interface for remoting.
 ///
 
-// Copyright (C) 2004 Tom Surace.
+// Copyright (C) 2004-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -96,5 +96,10 @@ namespace byteheaven.tamjb.Interfaces
       TrackEvaluation evaluation{ get; }
 
       TrackStatus status{ get; }
+
+      ///
+      /// How many times has the track been played?
+      ///
+      uint playCount{ get; }
    }
 }

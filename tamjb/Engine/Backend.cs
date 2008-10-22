@@ -1,5 +1,4 @@
 /// \file
-/// $Id$
 ///
 /// The jukebox player back end.
 ///
@@ -447,7 +446,8 @@ namespace byteheaven.tamjb.Engine
 
        // Don't even bother if we don't know the index of this track.
        // If we do, roll the dice using the prng
-       if ((trackIndex > 0) && ((double)_cheapRandom.Next(1024) < (chance * 1024.0)))
+       if ((trackIndex > 0) 
+           && ((double)_cheapRandom.Next(1024) < (chance * 1024.0)))
        {
           // Pick the next track, or if it's missing, fall back to random
           nextTrack = _database.GetTrackByIndex( artist, 
@@ -818,6 +818,10 @@ namespace byteheaven.tamjb.Engine
             case TrackFinishedInfo.Reason.NORMAL:
             case TrackFinishedInfo.Reason.USER_REQUEST:
             case TrackFinishedInfo.Reason.PLAY_ERROR: // What to do with this?
+               // Log that this track played until such time as it either
+               // failed or was cancelled. (Don't log on error, because it
+               // didn't really play, did it?)
+               _database.IncrementPlayCount( info.key );
                break;
 
             case TrackFinishedInfo.Reason.OPEN_ERROR: // File probably missing
@@ -1190,7 +1194,8 @@ namespace byteheaven.tamjb.Engine
          StringWriter str = new StringWriter();
          serializer.Serialize( str, _compressor );
          
-         _database.StoreCompressSettings( str.ToString() );
+         // _database.StoreCompressSettings( str.ToString() );
+         throw new NotImplementedException( "StoreCompressionSettings" );
       }
 
       ///
@@ -1200,38 +1205,38 @@ namespace byteheaven.tamjb.Engine
       IAudioProcessor _LoadCompressor()
       {
          IAudioProcessor compressor = null;
-         try
-         {
-            Type compressorType;
-            switch (_compressionType)
-            {
-            case CompressionType.SIMPLE:
-               // Note: the poor compressor is actually pretty bitchin
-               compressorType = typeof( PoorCompressor );
-               break;
+//          try
+//          {
+//             Type compressorType;
+//             switch (_compressionType)
+//             {
+//             case CompressionType.SIMPLE:
+//                // Note: the poor compressor is actually pretty bitchin
+//                compressorType = typeof( PoorCompressor );
+//                break;
 
-            case CompressionType.MULTIBAND:
-               compressorType = typeof( MultiBandCompressor );
-               break;
+//             case CompressionType.MULTIBAND:
+//                compressorType = typeof( MultiBandCompressor );
+//                break;
 
-            default:
-               throw new ApplicationException( "Unexpected quality level" );
-            }
+//             default:
+//                throw new ApplicationException( "Unexpected quality level" );
+//             }
 
-            string settings = _database.GetCompressSettings();
-            if (null != settings)
-            {
-               XmlSerializer serializer = new XmlSerializer( compressorType );
+//             string settings = _database.GetCompressSettings();
+//             if (null != settings)
+//             {
+//                XmlSerializer serializer = new XmlSerializer( compressorType );
 
-               StringReader str = new StringReader( settings );
-               compressor = 
-                  (IAudioProcessor)serializer.Deserialize( str );
-            }
-         }
-         catch (Exception e)
-         {
-            _Trace( e.ToString() );
-         }
+//                StringReader str = new StringReader( settings );
+//                compressor = 
+//                   (IAudioProcessor)serializer.Deserialize( str );
+//             }
+//          }
+//          catch (Exception e)
+//          {
+//             _Trace( e.ToString() );
+//          }
 
          if (null == compressor)
          {
@@ -1430,8 +1435,8 @@ namespace byteheaven.tamjb.Engine
          // Now, decide whether we are going to actually PLAY this
          // track.  While we're at it, delete people who have abandoned
          // us or closed their browsers.
-         double avgSuck = 0.0;  // Average suck 
-         double avgMood = 0.0;  // Average mood (from all users)
+         double unSuckProb = 1.0;  // (probability that it will play)
+         double moodProb = 1.0;  // Composite mood threshold
          DateTime now = DateTime.Now; // cached for speed?
 
          // make a copy of the hash table keys, cause otherwise we can't 
@@ -1439,7 +1444,16 @@ namespace byteheaven.tamjb.Engine
          object [] keys = new object[_controllers.Count];
          _controllers.Keys.CopyTo( keys, 0 );
 
-         _Trace( "Averaging contributor opinions..." );
+         // This is a decimation playlist, so it has to pass everybody's 
+         // test before it will be played.  If you have too many 
+         // contributors, you will end up with mediocre crap only. 
+         // The only way around this is to either listen to songs you don't
+         // like or to limit the number of contributors.
+
+         // Assuming this song has to pass everybody's tests, calculate
+         // the overall probablility and just test once (conserves randomness)
+
+         _Trace( "Merging contributor opinions..." );
          for (int i = 0; i < keys.Length; i++)
          {
             uint key = (uint)keys[i];
@@ -1456,24 +1470,37 @@ namespace byteheaven.tamjb.Engine
             }
             _Trace( " - " + contrib.user.name );
 
-            avgSuck += (double)_database.GetSuck( contrib.user.id,
-                                                  trackKey );
+            double userSuck = (double)_database.GetSuck( contrib.user.id,
+                                                         trackKey );
+            userSuck /= 10000.0; // convert to probability
 
-            avgMood += _database.GetAppropriate( contrib.user.id,
-                                                 contrib.mood.id,
-                                                 trackKey );
+            unSuckProb *= 1.0 - userSuck; // combine max suck amounts
+
+            double userMood = _database.GetAppropriate( contrib.user.id,
+                                                        contrib.mood.id,
+                                                        trackKey );
+
+            userMood /= 10000.0;
+
+            moodProb *= userMood;
          }
 
          if (0 >= nUsers)       // Nobody exists, just play it.
             return true;
 
-         avgSuck /= (double)nUsers;
-         avgMood /= (double)nUsers;
+         // Convert it back to an "int"
+         int suckProb = (int)((1.0 - unSuckProb) * 10000.0);
+         moodProb *= 10000.0;
+
+         _Trace( "MOOD_PROB: " + moodProb + " SUCK_PROB: " + suckProb );
+
+         // If suckThresh is less than the suck amount, we don't play it.
+         // Sort of like a saving throw. Save Vs. Suck.
 
          uint suckThresh = (uint)_cheapRandom.Next( 01000, 09000 );
-         if ((int)avgSuck > suckThresh)
+         if (suckProb > suckThresh)
          {
-            _Trace( " Rejected. suck:" + avgSuck
+            _Trace( " Rejected. suckProb:" + suckProb
                     + " suckThresh:" + suckThresh );
 
             info.evaluation = TrackEvaluation.SUCK_TOO_MUCH;
@@ -1481,9 +1508,9 @@ namespace byteheaven.tamjb.Engine
          }
 
          uint moodThresh = (uint)_cheapRandom.Next( 01200, 08800 );
-         if (avgMood < moodThresh)
+         if (moodProb < moodThresh)
          {
-            _Trace( " Rejected. mood:" + avgMood
+            _Trace( " Rejected. moodProb:" + moodProb
                     + " moodThresh:" + moodThresh );
 
             info.evaluation = TrackEvaluation.WRONG_MOOD;
@@ -1491,8 +1518,8 @@ namespace byteheaven.tamjb.Engine
          }
 
          _Trace( String.Format( 
-                    " Accepted. suck:{0}, suckThresh:{1}, mood:{2}, moodThresh{3}",
-                    avgSuck, suckThresh, avgMood, moodThresh ));
+                    " Accepted. suckProb:{0}, suckThresh:{1}, moodProb:{2}, moodThresh{3}",
+                    suckProb, suckThresh, moodProb, moodThresh ));
 
          info.evaluation = TrackEvaluation.ALL_GOOD;
          return true;           // good enough

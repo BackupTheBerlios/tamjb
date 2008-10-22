@@ -1,8 +1,7 @@
 /// \file
-/// $Id$
 ///
 
-// Copyright (C) 2004-2006 Tom Surace.
+// Copyright (C) 2004-2008 Tom Surace.
 //
 // This file is part of the Tam Jukebox project.
 //
@@ -199,6 +198,19 @@ namespace byteheaven.tamjb.Interfaces
          }
       }
 
+      uint _playCount = 0;
+
+      public uint playCount
+      {
+         get
+         {
+            return _playCount;
+         }
+         set
+         {
+            _playCount = value;
+         }
+      }
    };
 
 }
