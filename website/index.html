@@ -9,55 +9,96 @@
 
  <body>
   <div class="header">
-   <h3>TAM Jukebox</h3>
+   <h3>TAMJB</h3>
     <p>It's sort of like shuffle play, but with a SUCK button.</p>
+  </div>
+
+  <div class="index">
+    <a href="http://developer.berlios.de/projects/tamjb/">Project Page</a>
+    | <a href="http://https://developer.berlios.de/projects/tamjb/">Source Archive</a>
+    | <a href="https://developer.berlios.de/screenshots/?group_id=10247">Screen Shots</a>
+  </div>
+    
   </div>
 
   <div class="little_paragraph">
    <h3><em>What</em> Jukebox?</h3>
 
-   Tam (Track Attribute Manager) jukebox is a system that randomly picks
-   songs to play, and considers
-   every track you have to be in every playlist until you say otherwise.
-   Then it plays them with a relative frequency depending on how much
-   you think they suck. If a song sucks, you push the button, and the
-   jukebox learns a valuable lesson about your opinion.
+   Track Attribute Management JukeBox (Tamjb) is a music player that 
+   randomly picks songs to play, based on how much you think they suck.
+  </div>
+
+  <div class="little_paragraph">
+   <h4>It Makes No Assumptions</h4>
+   <ul>
+    <li>It considers
+     every track to be in every playlist until you say otherwise.</li>
+    <li>It chooses tracks with a relative frequency depending on how much
+     you think they suck.</li>
+    <li>If a song sucks, you push the button, and the
+     jukebox learns a <em>valuable lesson</em> about your opinion.</li>
   </div>
   <div class="little_paragraph">
-   People who need pictures should skip down to the 
-   <a href="#screenshots">screenshots</a>.
+   <h4>A Story About The Big Button Labeled Suck</h4>
+   The first user interface had just one button, the
+   <b>Suck</b> button. And it was good, but it was not quite
+   complete. Sometimes a song did not suck, but was merely wrong for the
+   current mood. Sometimes the jukebox was listened to by different people.
+   So, the concept of mood and user were added, and it was better.
   </div>
   <div class="little_paragraph">
-   The initial user interface concept had just one button, called the
-   <b>Suck</b> button. While this was a good concept, it was missing several
-   things. Sometimes a song does not suck, but is inappropriate for your
-   current mood. Other times, you may not be the one listening. So, the
-   concept of mood and user were added. 
-  </div>
-  <div class="little_paragraph">
-   And then it was realized that some
+   <h4>Because You Can't Be Negative All The Time</h4>
+   It became obvious that some
    of these moods were actually not moods, for example "rockin" or 
-   "Downtempo". And you might wish to combine them. So, while not yet
-   visible in the user interface, they are stored in the database as
-   various track attributes. And so, in fire and hot water, the 
-   Track Attribute Manager engine is born.
+   "Downtempo". And the listeners, because they were end users of the software
+   and therefore irrational and demanding, expressed a wish to combine several
+   moods at once.
+  </div>
+  <div class="little_paragraph">
+   But the programmers did not wish to add these features yet,
+   because it was &quot;difficult&quot;. As a compromise, the moods were stored 
+   in the database as
+   track <em>attributes</em>, and managed by the Track Attribute Manager. 
+  </div>
+  <div class="little_paragraph">
+   And so, in fire and hot water, TAM is born.
+  </div>
+
+  <div class="little_paragraph">
+  <h3>Some Features</h3>
+    <ul>
+     <li>It plays MP3 format files at 44.1kHz. And nothing else at this
+       time.</li>
+     <li>Reads song information from ID3V2 tags.</li>
+     <li>Web interface allows remote control of your jukebox from anywhere
+       in the house (or work, if you're streaming to yourself somehow.)</li>
+     <li>Multi-band leveling with limiting and soft clipping. Linear-phase
+       FIR crossovers for minimal artifacts. It sounds good, but boy does
+       it use CPU!</li>
+     <li>Allows multiple users to log in, and tries to please them all.
+       Note that if too many people log in, this means you get boring
+       music. (This is also how modern radio stations work!)</li>
+    </ul>
   </div>
 
   <div class="little_paragraph">
    <h3>System Requirements</h3>
 
-   If you have a modern linux, you can probably run it. If you run
-   windows, you will still have difficulty. It requires Mono and
-   (at this time) ESound. At one point, work was begun on a Windows
-   version of the audio output system, but it was a pain, and we
-   eagerly await completion of the overambitious and apparently 
-   deadlocked GStreamer project.
+   If you have a modern linux, you can probably run the jukebox. All development
+   is now done using Debian. WindowsTM is not currently supported, because 
+   TamJB uses Esound for audio output. Someday GStreamer will be complete, 
+   and a Windows port may become available. (And Duke Nukem Forever will ship, 
+   too.) What I'm saying is, you want a Debian system with some stock packages,
+   or any other Linux and the ability to install software without sending
+   annoying emails to the author.
   </div>
 
   <div class="little_paragraph">
    Hardware-wise, it will run on a Pentium 3. However, you'll have to
    turn off the more advanced leveling features, and your machine will
-   work pretty hard. 
+   work pretty hard. An AMD64 3000+ is adequate. You can also disable
+   most of the DSP and run it on a slower system, but you'll want to use
+   some sort of outboard audio equalization.
   </div>
 
   <div class="little_paragraph">
@@ -74,58 +115,16 @@
        freedb CD signatures, or some other standard, so that songs
        will retain their information when moved.
      <li>Should be some way to trade song information with peers. 
-     <li>When used as a streaming radio station (this works!), it should
-       allow multiple users to log in. Song priorities can then be calculated
-       based on the opinions of various users, scaled according to how
-       important they are. Some listeners are more equal than others.
      <li>Support for Ogg/Vorbis/FLAC. mp3 is so 1999.
    </ul>
 
   </div>
 
-  <div class="little_paragraph">
-   <h3>Downloads</h3>
-
-   The code is being actively hacked at the moment. Any releases will be
-   made on the 
-   <a href="http://sourceforge.net/project/showfiles.php?group_id=106358">SourceForge 
-     download page</a> when they are available. The code is always available
-   from SVN.
-  </div>
-
-  <div class="little_paragraph">
-   <a name="screenshots"><h3>The Inevitable Screenshots</h3></a>
-   The main page looks like this. If you hit the big red button, the song
-   is reclassified as very sucky, and you will almost certainly never
-   hear it again, no matter what your mood. This is very useful with a 
-   new, untrained installation.<br />
-   <img border=0 src="shots/main_window.jpg">
-   <br /><br />
-
-   Here is the main window with (future and past) history expanded. 
-   You can see here that the Beastie Boys' <i>Girls</i> was 
-   rejected as not quite appropriate for the "Steady Motion" mood, while
-   U2's <i>Exit</i> just sucked a little too much. The threshold is randomly
-   calculated for each song between 10 and 90%. So, if a song sucks 
-   by 98%, you will NEVER hear it. (This may be adjustable in the future.)
-   <br/> <br />
-   I admit it: I don't think U2 is &quot;all that&quot;. It doesn't mean
-   I don't like them. Really. Note that Dieselboy's album here is incorrectly
-   tagged, as the artist is not correctly stored in the track's artist
-   field. 
-   <br />
-   <img border=0 src="shots/main_expanded.jpg">
-   <br /><br />
-
-   The mood selection page in all its glory<br />
-   <img border=0 src="shots/mood_window.jpg">
-  </div>
 
   <div class="footer">
-   <a href="http://sourceforge.net"><img 
-     src="http://sourceforge.net/sflogo.php?group_id=106358&amp;type=3" 
-     width="125" height="37" border="0" 
-     alt="The Beautiful SourceForge.net Logo" /></a>
+   <a href="http://berlios.de/"><img 
+     src="https://developer.berlios.de/bslogo.php" 
+     alt="Props to BeriOS.de" /></a>
   </div>
  </body>
 </html>
