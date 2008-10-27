@@ -330,23 +330,34 @@ namespace javazoom.jl.decoder
 			{
 				allocation = stream.get_bits(4);
 				channel2_allocation = stream.get_bits(4);
-				if (crc != null)
-				{
-					crc.add_bits(allocation, 4);
-					crc.add_bits(channel2_allocation, 4);
-				}
-				if (allocation != 0)
-				{
-					samplelength = allocation + 1;
-					factor = table_factor[allocation];
-					offset = table_offset[allocation];
-				}
-				if (channel2_allocation != 0)
-				{
-					channel2_samplelength = channel2_allocation + 1;
-					channel2_factor = table_factor[channel2_allocation];
-					channel2_offset = table_offset[channel2_allocation];
-				}
+
+                                // try/catch block to handle invalid allocation
+                                // (catch array bounds error)
+                                try 
+                                {
+                                   if (crc != null)
+                                   {
+                                      crc.add_bits(allocation, 4);
+                                      crc.add_bits(channel2_allocation, 4);
+                                   }
+                                   if (allocation != 0)
+                                   {
+                                      samplelength = allocation + 1;
+                                      factor = table_factor[allocation];
+                                      offset = table_offset[allocation];
+                                   }
+                                   if (channel2_allocation != 0)
+                                   {
+                                      channel2_samplelength = channel2_allocation + 1;
+                                      channel2_factor = table_factor[channel2_allocation];
+                                      channel2_offset = table_offset[channel2_allocation];
+                                   }
+                                }
+                                catch (IndexOutOfRangeException )
+                                {
+                                   // array bounds error? Invalid allocation
+                                   // (or unsupported). Ignore for now.
+                                }
 			}
 			
 			/// <summary>*
