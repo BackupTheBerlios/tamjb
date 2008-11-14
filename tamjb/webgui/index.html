@@ -28,14 +28,13 @@
 
 <script type="text/javascript" src="tjbfunctions.ashx?proxy"></script>
 <script type="text/javascript" src="js/json.js"></script>
-<!-- script type="text/javascript" src="js/dojo/dojo.js" djConfig="parseOnLoad:true, isDebug:true, usePlainJson:true" -->
-<!-- Kindly hosted by aol. See http://dev.aol.com/dojo  -->
-<script type="text/javascript" src="http://o.aolcdn.com/dojo/1.1.1/dojo/dojo.xd.js" djConfig="parseOnLoad:true, isDebug:true, usePlainJson:true"></script>
+<script type="text/javascript" src="js/dojo/dojo.js" djConfig="parseOnLoad:true, isDebug:true, usePlainJson:true"></script>
 <script type="text/javascript" src="index.js"></script>
 
 <style type="text/css">
    @import "js/dijit/themes/tundra/tundra.css";
-   @import "js/dojox/grid/_grid/tundraGrid.css";
+   @import "js/dojox/grid/resources/Grid.css";
+   @import "js/dojox/grid/resources/tundraGrid.css";
    @import "js/dojo/resources/dojo.css";
 </style>
 
@@ -57,12 +56,25 @@ body {
   border: 0; padding: 0; margin: 0;
 }
 
+#status {
+  margin: 0px;
+  padding: 0px;
+}
+
 #controlsBox {
   background: lightGreen;
   border: thin solid black;
   margin-left: auto;
   margin-right: auto;
+  margin-bottom: 0.5em;
   width: 90%;
+}
+
+#moodGrid{
+  height: 19em; 
+  width: 85%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #nowPlaying {
@@ -87,7 +99,7 @@ body {
 }
 
 #moodTable { /* fills moodBox */
-  width: 46em;
+  width: 88%;
   margin-left: auto;
   margin-right: auto;
 }
@@ -113,13 +125,24 @@ body {
 }
 
 button {
-  width: 10em;
+  width: 9em;
+}
+
+/* Remove padding from the panes */
+.tundra .dijitTitlePaneContentInner {
+  padding:0px;
 }
 
 </style>
 </head>
 <body class="tundra">
 <div dojoType="dijit.layout.BorderContainer" id="mainFrame">
+
+<!-- Store for the mood grid -->
+<div dojoType="dojox.data.QueryReadStore"
+   jsId="jsMoodStore"
+   url="moodstore.ashx"
+   requestMethod="post"></div>
 
 <div dojoType="dijit.layout.ContentPane" id="content" region="center">
 <div id="controlsBox" dojoType="dijit.layout.ContentPane">
@@ -191,24 +214,77 @@ button {
 </div><!-- controlsBox -->
 
  <div dojoType="dijit.TitlePane" open="false"
-   title="The Past" style="width:100%">
-   (The past goes here!)
+   jsId="jsPastPane"
+   title="The Past" style="width:100%;">
+   <table id="past" jsId="jsPast" dojoType="dojox.grid.DataGrid" 
+     style="width: 100%"
+     class="tundra"
+     clientSort="false"
+     autoWidth="false"
+     autoHeight="true"
+     query="{ key: '*' }"
+     >
+    <thead>
+     <tr>
+       <th field="key" width="5em">Key</th>
+       <th field="title" width="15em">Title</th>
+       <th field="artist" width="15em">Artist</th>
+       <th field="album" width="15em">Album</th>
+       <th field="suck" width="5em" get="pastSuckGet">Suck</th>
+       <th field="mood" width="5em" get="pastMoodGet" >Mood</th>
+       <th field="status" width="8em">Status</th>
+       <th field="prob" width="4em" formatter="probabilityFormatter">Probability</th>
+     </tr>
+    </thead>
+   </table>
  </div>
-   (The present goes here!)
+   (The present is now!)
  <div dojoType="dijit.TitlePane" open="false"
+   jsId="jsFuturePane"
    title="The Future" style="width:100%">
-   (The future goes here!)
+   <table id="future" jsId="jsFuture" dojoType="dojox.grid.DataGrid" 
+     style="width: 100%"
+     class="tundra"
+     clientSort="false"
+     autoWidth="false"
+     autoHeight="true"
+     query="{ key: '*' }"
+     >
+    <thead>
+     <tr>
+       <th field="key" width="5em">Key</th>
+       <th field="title" width="15em">Title</th>
+       <th field="artist" width="15em">Artist</th>
+       <th field="album" width="15em">Album</th>
+       <th field="suck" width="5em" get="futureSuckGet">Suck</th>
+       <th field="mood" width="5em" get="futureMoodGet">Mood</th>
+       <th field="status" width="8em">Status</th>
+       <th field="prob" width="8em">Probability</th>
+     </tr>
+    </thead>
+   </table>
  </div>
 
 </div><!-- content -->
 
  <div dojoType="dijit.Dialog" id="moodPopup" title="Set Mood" 
    jsId="jsMoodPopup"
-   style="display:none;">
-   <div jsId="jsMoodGrid" dojoType="dojox.Grid" 
-     style="height: 19em; width: 40em;"
+   style="">
+   <table id="moodGrid" jsId="jsMoodGrid" dojoType="dojox.grid.DataGrid" 
+     class="tundra"
+     multiSelect="false"
+     autoWidth="true"
      onRowDblClick="onMoodRowClick"
-     ></div>
+     query="{ id: '*' }"
+     store="jsMoodStore"
+     >
+     <thead>
+      <tr>
+       <th field="name" width="25em">Mood</th>
+       <th field="id" width="5em">ID</th>
+      </tr>
+     </thead>
+   </table>
    <button dojoType="dijit.form.Button" 
      onclick="onMoodSelectClick();">Select</button> 
    <button dojoType="dijit.form.Button" 
@@ -221,7 +297,7 @@ button {
 
  <div dojoType="dijit.Dialog" id="loginPopup" title="Login" 
    jsId="jsLoginPopup"
-   style="display:none;">
+   style="visibility:hidden;">
   <div id="loginError"></div>
   <br />
   ID:
@@ -242,7 +318,7 @@ button {
 
  <div dojoType="dijit.Dialog" id="moodCreatePopup" title="Create Mood" 
    jsId="jsMoodCreatePopup"
-   style="display:none;"
+   style="visibility:hidden;"
    >
   Turn down the lights, set the mood. Promptage here.
   <br />
@@ -260,7 +336,7 @@ button {
 
  <div id="status" dojoType="dijit.layout.ContentPane" region="bottom"
      orientation="horizontal" style="border-bottom: black thin solid;">
-   <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:3em;width:100%;">
+   <div dojoType="dijit.layout.BorderContainer" splitter="true" design="sidebar" style="height:2.5em;width:100%;">
     <div dojoType="dijit.layout.ContentPane" splitter="true" region="center" >
       <div dojoType="dijit.ProgressBar"
           jsId="jsProgressBar" id="downloadProgress" 

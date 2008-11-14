@@ -52,7 +52,47 @@ namespace byteheaven.tamjb.webgui
       public int suckPercent = 100;
       public int moodPercent = 0;
       public long changeCount = -1;
+
    }
+
+   public class HistoryInfo
+   {
+      public HistoryInfo()      // empty for Jayrock?
+      {
+      }
+
+      public HistoryInfo( int key,
+                          string title,
+                          string artist,
+                          string album,
+                          int suck,
+                          int mood )
+      {
+         this.key = key;
+         this.title = title;
+         this.artist = artist;
+         this.album = album;
+         this.suck = suck;
+         this.mood = mood;
+      }
+      public int key;
+      public string title;
+      public string artist;
+      public string album;
+      public int suck;
+      public int mood;
+
+      ///
+      /// OK, MISSING... etc?
+      ///
+      public string status;
+
+      ///
+      /// Probability a track will play
+      ///
+      public string prob;
+   }
+
 
    ///
    /// Jayrock interface to T.A.M. Jukebox
@@ -302,25 +342,135 @@ namespace byteheaven.tamjb.webgui
       }
 
       ///
+      /// Gets the history status as an array of thingumies.
+      ///
+      /// \param when 'past' or 'future' (or maybe 'present' someday)
+      /// \param moodID the listener's mood id
+      ///
+      [ JsonRpcMethod("getHistory") ]
+      public HistoryInfo [] GetHistory( string when, int moodID )
+      {
+         WebPageBase.Authenticate( out _userId );
+
+         EngineState state = WebPageBase.backend.GetState();
+
+         // Figure out the first track, last track, and count. (Need the count
+         // before we start emitting json!)
+
+         int index;             // current track counter
+         int lastIndex;
+         if ("past" == when)
+         {
+            index = 0;
+            lastIndex = state.currentTrackIndex;
+         }
+         else if ("future" == when)
+         {
+            index = state.currentTrackIndex + 1;
+            lastIndex = state.playQueue.Length;
+         }
+         else
+         {
+            throw new ArgumentException( "Must be 'past' or 'future'", 
+                                         "when" );
+         }
+
+         if (index < 0)         // not playing?
+            index = 0;
+
+         int count = lastIndex - index;
+         if (count <= 0)
+         {
+            count = 0;
+         }
+
+         HistoryInfo [] history = new HistoryInfo[count];
+
+         for (int i = 0; i < count; i++, index++)
+         {
+            if (index >= lastIndex)
+            {
+               throw new ApplicationException( 
+                  "Internal error: index > history size" );
+            }
+
+            ITrackInfo info  = state.playQueue[index];
+
+            int suck;
+            int mood;
+            _GetAttributes( info.key, (uint)moodID, out suck, out mood );
+            
+            HistoryInfo trackHistory = 
+               new HistoryInfo(                  
+                  (int)info.key,
+                  info.title,
+                  info.artist,
+                  info.album,
+                  suck,
+                  mood );
+            
+            if (TrackStatus.MISSING == info.status)
+            {
+               trackHistory.status = "MISSING";
+               trackHistory.title += " (MISSING)";
+            }
+            else
+            {
+               trackHistory.status = info.evaluation.ToString();
+            }
+               
+            // What are the chances this will play? Divide into 5 ranges.
+            // Something below 10% or above 90% never plays, so that's 
+            // intervals of 16%:
+               
+            int prob = (100 - suck) * mood;
+            if (prob < (26 * 26))     // 10 * 10 = 100 - never play
+               trackHistory.prob = "probLow";
+            else if (prob < (42 * 42))
+               trackHistory.prob = "probMedLow";
+            else if (prob < (58 * 58))
+               trackHistory.prob = "probMed";
+            else if (prob < (74 * 74))
+               trackHistory.prob = "probMedHigh";
+            else
+               trackHistory.prob = "probHigh";
+
+            history[i] = trackHistory;
+         }
+
+         return history;
+      }
+
+
+      ///
       /// Sets the suck and mood values for the supplied status structure
       /// by querying the back end. Assumes status.nowPlaying.key is set.
       ///
       void _GetSuckAndMood( StatusInfo status )
       {
+         _GetAttributes( status.nowPlaying.key,
+                         status.moodID,
+                         out status.suckPercent,
+                         out status.moodPercent );
+      }
+
+      void _GetAttributes( uint key, uint current_mood, out int suck, out int mood )
+      {
          double suckPercent;
          double moodPercent;
          WebPageBase.backend.GetAttributes( _userId,
-                                            status.moodID,
-                                            status.nowPlaying.key,
+                                            current_mood,
+                                            key,
                                             out suckPercent,
                                             out moodPercent );
 
          suckPercent /= 100;
-         status.suckPercent = (int)suckPercent;
+         suck = (int)suckPercent;
 
          moodPercent /= 100;
-         status.moodPercent = (int)moodPercent;
+         mood = (int)moodPercent;
       }
+
 
 
       ///

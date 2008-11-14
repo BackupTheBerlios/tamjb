@@ -12,6 +12,7 @@ tamjb/webgui/js/dojo
 tamjb/webgui/js/dojox
 tamjb/webgui/js/util
 tamjb/webgui/js/json.js
+tamjb/thirdparty/dojo/dojo-release-*
 jayrock/src/bin/*.dll
 jayrock/src/bin/*.mdb
 jayrock/www/bin/*.dll

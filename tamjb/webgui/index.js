@@ -31,16 +31,15 @@ dojo.require("dijit.Toolbar");
 dojo.require("dijit.layout.BorderContainer");
 dojo.require("dijit.layout.ContentPane");
 dojo.require("dijit.layout.SplitContainer");
+dojo.require("dojox.grid.DataGrid");
 dojo.require("dojo.data.ItemFileReadStore");
-dojo.require("dojox.grid.Grid");
-dojo.require("dojox.grid._data.model");
 dojo.require("dojox.data.QueryReadStore");
-dojo.require("dojo.data.ItemFileReadStore");
 
 var tjb = new TJBFunctions();
 
 // Status for status bar
 var updateStatus = "idle";
+
 // Dummy structure for first login
 var g_currentTrackStatus = { 
    moodID: -1,
@@ -53,44 +52,30 @@ var g_currentTrackStatus = {
 var g_timer;
 var g_moodDlg;
 
+/* Size for future/past display */
+var g_historyLength = 5;
+
 // Variables to handle background refresh
 var g_refreshAgain = false;
 
-function index_init() {
+function index_init() 
+{
+   dojo.connect( jsPastPane, 'onClick', null, '_updatePast' );
+   dojo.connect( jsFuturePane, 'onClick', null, '_updateFuture' );
 
-   _initMoodGrid();
-  jsMoodGrid.selection.multiSelect = false;
-
-  refresh();
+   refresh();
 }
 
 dojo.addOnLoad( index_init );
-// dojo.addOnLoad();
 
 // Initializes or refreshes the mood grid data
-function _initMoodGrid()
+function refreshMoodGrid()
 {
-  var moodView1 = {
-     cells: [
-        [{name: 'Mood', field: 1, width: "25em"},
-         {name: 'ID', field: 0}]
-        ]
-  };
-  var moodLayout = [ moodView1 ];
+   jsMoodStore = new dojox.data.QueryReadStore(
+      { url : jsMoodStore.url,
+        requestMethod : jsMoodStore.requestMethod } );
 
-  var store = 
-     new dojox.data.QueryReadStore({url: 'moodstore.ashx', 
-                                   identifier: 'id',
-                                   requestMethod: 'post',
-                                   });
-  var moodModel =
-     new dojox.grid.data.DojoData(null,null,
-                                  {store: store, 
-                                   clientSort: false} );
-
-  // Now set the model and structure
-  jsMoodGrid.setModel( moodModel );
-  jsMoodGrid.setStructure( moodLayout );
+   jsMoodGrid.setStore( jsMoodStore );
 }
 
 
@@ -135,32 +120,6 @@ function refresh(force) {
    }
 }
 
-// function refreshCallback( response ) {
-//    try
-//    {
-//       if (response.error)
-//       {
-//          alertErrorResponse(response);
-//          return;
-//       }
-
-//       if (response.result)
-//          updateNowPlaying(response.result);
-//    }
-//    finally
-//    {
-//       g_waitingForRefresh = false;
-//       g_timer = setTimeout("refresh()",15000);
-//       finishUpdate();
-//    }
-
-//    // Did state change while we were refreshing? *sigh*
-//    if (g_refreshAgain) {
-//       g_refreshAgain = false;
-//       refresh();
-//    }
-// }
-
 function alertErrorResponse(response)
 {
    if (undefined == response)
@@ -204,15 +163,15 @@ function updateNowPlaying(status)
 
    if ("" == status.userName)
    {
-      jsLogin.setLabel("Log In");
-      jsMoodBtn.setLabel("unknown");
-      jsMoodBtn.setAttribute("disabled",true);
+      jsLogin.attr('label',"Log In");
+      jsMoodBtn.attr('label',"unknown");
+      jsMoodBtn.attr("disabled",true);
    }
    else
    {
-      jsLogin.setLabel( status.userName );
-      jsMoodBtn.setLabel( status.moodName );
-      jsMoodBtn.setAttribute("disabled",false);
+      jsLogin.attr('label', status.userName );
+      jsMoodBtn.attr('label', status.moodName );
+      jsMoodBtn.attr("disabled",false);
    }
 
    dojo.byId("trackId").innerHTML = status.nowPlaying.key;
@@ -224,6 +183,54 @@ function updateNowPlaying(status)
    dojo.byId("suckLevel").innerHTML = status.suckPercent;
    dojo.byId("moodLevel").innerHTML = status.moodPercent;
 
+   _updatePast();
+   _updateFuture();
+}
+
+function _updatePast()
+{
+   if (true != jsPastPane.attr('open')) 
+      return;
+
+   // History is an array of HistoryInfo objects. 
+   // Let's just put the last few events on the main page... we can put the
+   // full array on a history popup or something:
+
+   var history = tjb.getHistory( 'past', g_currentTrackStatus.moodID );
+   if (history.length > g_historyLength)
+   {
+      var first = history.length - g_historyLength;
+      history = history.slice( first );
+   }
+
+   var data = { identifier: 'key',
+                items: history };
+
+   var store = new dojo.data.ItemFileReadStore( { data: data } );
+
+   jsPast.setStore( store );
+}
+
+function _updateFuture() {
+   if (true != jsFuturePane.attr('open')) 
+      return;
+
+   // History is an array of HistoryInfo objects. 
+   // Let's just put the last few events on the main page... we can put the
+   // full array on a history popup or something:
+
+   var history = tjb.getHistory( 'future', g_currentTrackStatus.moodID );
+   if (history.length > g_historyLength)
+   {
+      history = history.slice( 0, g_historyLength );
+   }
+
+   var data = { identifier: 'key',
+                items: history };
+
+   var store = new dojo.data.ItemFileReadStore( { data: data } );
+
+   jsFuture.setStore( store );
 }
 
 /* Marks current state unknown, and so on */
@@ -232,11 +239,11 @@ function startUpdate(msg)
    updateStatus=msg;
    jsProgressBar.update({indeterminate: true});
 
-   jsSuckBtn.setAttribute("disabled",true);
-   jsMegaSuckBtn.setAttribute("disabled",true);
-   jsRuleBtn.setAttribute("disabled",true);
-   jsYesBtn.setAttribute("disabled",true);
-   jsNoBtn.setAttribute("disabled",true);
+   jsSuckBtn.attr("disabled",true);
+   jsMegaSuckBtn.attr("disabled",true);
+   jsRuleBtn.attr("disabled",true);
+   jsYesBtn.attr("disabled",true);
+   jsNoBtn.attr("disabled",true);
 }
 
 function finishUpdate()
@@ -245,11 +252,11 @@ function finishUpdate()
    updateStatus="OK";
    jsProgressBar.update({indeterminate: false});
 
-   jsSuckBtn.setAttribute("disabled",false);
-   jsMegaSuckBtn.setAttribute("disabled",false);
-   jsRuleBtn.setAttribute("disabled",false);
-   jsYesBtn.setAttribute("disabled",false);
-   jsNoBtn.setAttribute("disabled",false);
+   jsSuckBtn.attr("disabled",false);
+   jsMegaSuckBtn.attr("disabled",false);
+   jsRuleBtn.attr("disabled",false);
+   jsYesBtn.attr("disabled",false);
+   jsNoBtn.attr("disabled",false);
 }
 
 // Helper for the progress bar
@@ -279,9 +286,12 @@ function onTransportCtrlFinished(response) {
 }
 
 function onRule() {
+   _suckLess( g_currentTrackStatus.nowPlaying.key );
+}
+
+function _suckLess(trackId) {
    try
    {
-      var trackId = g_currentTrackStatus.nowPlaying.key;
       if (-1 == trackId) {
          alert("Track ID is -1, not valid. Hmm.");
          return;
@@ -299,11 +309,13 @@ function onRule() {
    }
 }
 
-function onSuck()
-{
+function onSuck() {
+   _suckMore( g_currentTrackStatus.nowPlaying.key );
+}
+
+function _suckMore( trackId ) {
    try 
    {
-      var trackId = g_currentTrackStatus.nowPlaying.key;
       if (-1 == trackId) {
          alert("Track ID is not valid. Hmm.");
          return;
@@ -343,9 +355,13 @@ function onMegaSuck() {
 }
 
 function onYes() {
+   _moodYes( g_currentTrackStatus.nowPlaying.key );
+}
+
+function _moodYes( trackId )
+{
    try
    {
-      var trackId = g_currentTrackStatus.nowPlaying.key;
       if (-1 == trackId) {
          alert("Track ID is not valid. Hmm.");
          return;
@@ -370,9 +386,13 @@ function onYes() {
 }
 
 function onNo() {
+   _moodLess( g_currentTrackStatus.nowPlaying.key );
+}
+
+function _moodLess(trackId)
+{
    try
    {
-      var trackId = g_currentTrackStatus.nowPlaying.key;
       if (-1 == trackId) {
          alert("Track ID is not valid. Hmm.");
          return;
@@ -408,12 +428,11 @@ function onMood()
 
 function onMoodRowClick(evt)
 {
-   var row = evt.rowIndex;
-   if (row < 0)
+   var row = jsMoodGrid.selection.getFirstSelected();
+   if (null == row || row < 0)
       return;
 
-   // offset 0 is id.
-   var moodID = jsMoodGrid.model.getDatum( row, 0 );
+   var moodID = jsMoodGrid.store.getValue( row, "id" );
    _setMood( moodID );
 
    return true;
@@ -422,10 +441,10 @@ function onMoodRowClick(evt)
 function onMoodSelectClick()
 {
    var row = jsMoodGrid.selection.getFirstSelected();
-   if (row < 0)
+   if (null == row || row < 0)
       return;
 
-   var moodID = jsMoodGrid.model.getDatum( row, 0 );
+   var moodID = jsMoodGrid.store.getValue( row, "id" );
    _setMood( moodID );
 }
 
@@ -433,19 +452,19 @@ function showMoodDialog()
 {
    // Always called from the modal mood dialog. Hide that
    jsMoodPopup.hide();
-   dijit.byId("moodNameBox").setValue("");
+   dijit.byId("moodNameBox").attr('value',"");
    jsMoodCreatePopup.show();
 }
 
 function onMoodCreateClick()
 {
    // Create mood here.
-   var moodName = dijit.byId("moodNameBox").getValue();
+   var moodName = dijit.byId("moodNameBox").attr('value');
    var moodId = tjb.createMood( moodName );
 
    jsMoodCreatePopup.hide();
 
-   _initMoodGrid();             // mood list changed.
+   refreshMoodGrid();             // mood list changed.
 
    // select the newly created mood.
    _setMood( moodId );
@@ -454,17 +473,17 @@ function onMoodCreateClick()
 function onDelMoodClick()
 {
    var row = jsMoodGrid.selection.getFirstSelected();
-   if (row < 0)
+   if (null == row || row < 0)
       return;
 
-   var moodID = jsMoodGrid.model.getDatum( row, 0 );
-   var moodName = jsMoodGrid.model.getDatum( row, 1 );
+   var moodID = jsMoodGrid.store.getValue( row, "id" );
+   var moodName = jsMoodGrid.store.getValue( row, "name" );
 
    startUpdate( "Deleting mood" );
 
    // TODO: prompt with dialog here?
    tjb.deleteMood( moodID );
-   _initMoodGrid();
+   refreshMoodGrid();
    finishUpdate();
 }
 
@@ -480,7 +499,7 @@ function _onMoodModifyFinished()
 
       if (response.result)
       {
-         _initMoodGrid();          // refresh mood list 
+         refreshMoodGrid();          // refresh mood list 
       }
    }
    finally
@@ -534,10 +553,10 @@ function onIdentify()
 {
    dojo.byId("loginError").innerHTML = "";
    startUpdate( "Authenticating" );
-   var id = dijit.byId("idBox").getValue();
-   var pass = dijit.byId("passwordBox").getValue();
+   var id = dijit.byId("idBox").attr('value');
+   var pass = dijit.byId("passwordBox").attr('value');
 
-   dijit.byId("passwordBox").setValue("");
+   dijit.byId("passwordBox").attr('value',"");
 
    tjb.login( id, pass, onIdentifyCallback );
 }
@@ -567,10 +586,81 @@ function onIdentifyCallback(response)
       // if we are now logged in. 
       updateNowPlaying(response.result);
 
-      _initMoodGrid();          // refresh mood for current user!
+      refreshMoodGrid();          // refresh mood for current user!
    }
    finally
    {
       finishUpdate();
    }
+}
+
+function moodFormatter(moodIn)
+{
+   return moodIn;
+}
+
+function futureMoodGet(rowIndex,item)
+{
+   return moodGet(rowIndex,item,jsFuture);
+}
+function pastMoodGet(rowIndex,item)
+{
+   return moodGet(rowIndex,item,jsPast);
+}
+
+function moodGet(rowIndex,item,grid)
+{
+   if (!item)
+      return this.defaultValue;
+
+   var key = grid.store.getValue(item, 'key');
+   var mood = grid.store.getValue(item, 'mood');
+
+   var output = '<a href="#' + key + '" onClick="_moodLess(' + key + ')">(-)</a> ';
+   output += mood;
+   output += '% <a href="#" onClick="_moodMore(' + key + ')">(+)</a>';
+   return output;
+}
+
+function futureSuckGet(rowIndex,item)
+{
+   return suckGet(rowIndex,item,jsFuture);
+}
+function pastSuckGet(rowIndex,item)
+{
+   return suckGet(rowIndex,item,jsPast);
+}
+
+function suckGet(rowIndex,item,grid)
+{
+   if (!item)
+      return this.defaultValue;
+
+   var key = grid.store.getValue(item, 'key');
+   var suck = grid.store.getValue(item, 'suck');
+
+   var output = '<a href="#' + key + '" onClick="_suckLess(' + key + ')">(-)</a> ';
+   output += suck;
+   output += '% <a href="#" onClick="_suckMore(' + key + ')">(+)</a>';
+   return output;
+}
+
+function probabilityFormatter(prob)
+{
+   if (prob == 'probHigh')
+      return "High";
+
+   if (prob == 'probMedHigh')
+      return "MedHi";
+
+   if (prob == 'probMed')
+      return "Med";
+
+   if (prob == 'probMedLow')
+      return "MedLo";
+
+   if (prob == 'probLow')
+      return "Low";
+
+   return "?: " + prob;
 }

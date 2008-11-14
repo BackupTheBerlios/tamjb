@@ -5,6 +5,7 @@ DEBUGFLAGS = -debug -define:DEBUG -define:TRACE
 SRCS = tamjb.master.cs \
 	login.aspx.cs \
 	moodselect.aspx.cs \
+	DojoStoreRequest.cs \
 	WebPageBase.cs \
 	AssemblyInfo.cs
 

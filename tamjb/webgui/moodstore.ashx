@@ -13,20 +13,6 @@ namespace byteheaven.tamjb.webgui
 
    using byteheaven.tamjb.Interfaces;
 
-   public class DojoStoreRequest
-   {
-      public class QueryOptions
-      {
-         public bool ignoreCase;
-      }
-
-      public string query;
-      public QueryOptions queryOptions;
-      public IDictionary sort;   // attribute, descending
-      public int start;
-      public int count;
-   }
-
    ///
    /// JSon storage for Mood data. Designed to work with
    /// Dojo...
